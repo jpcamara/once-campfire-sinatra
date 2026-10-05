@@ -515,6 +515,122 @@ module Campfire
       redirect url_for("/account/bots")
     end
 
+    # ---- Autocomplete, PWA, push subscriptions
+
+    get %r{/autocompletable/users(\.json)?} do |json|
+      require_authentication!
+      query = params["filter"].to_s.empty? ? params["query"].to_s : params["filter"].to_s
+      users = Autocomplete.users(self, params["room_id"], query)
+      if json || request.accept.first&.to_s == "application/json"
+        headers "Content-Type" => "application/json; charset=utf-8"
+        JSON.generate(users.map { { name: HTML.h(it.name), value: it.id, avatar_url: url_for(build_view.avatar_path(it)), sgid: secrets.attachable_sgid("User", it.id) } })
+      else
+        view = build_view
+        html_headers
+        users.map { Autocomplete.prompt_item(view, it) }.join
+      end
+    end
+
+    get %r{/webmanifest(\.json)?} do
+      account = runtime.account
+      view = build_view
+      headers "Content-Type" => "application/json; charset=utf-8", "Cache-Control" => "max-age=0, private, must-revalidate"
+      Pwa.manifest(view, account, base_url)
+    end
+
+    get %r{/service-worker(\.js)?} do
+      headers "Content-Type" => "text/javascript; charset=utf-8", "Cache-Control" => "max-age=0, private, must-revalidate"
+      File.read(File.join(ROOT, "public/service-worker.js"))
+    end
+
+    get "/users/me/push_subscriptions" do
+      require_authentication!
+      subscriptions = db.rows("SELECT id, endpoint, user_agent FROM push_subscriptions WHERE user_id = ?", current_user.id)
+      view = build_view(subscriptions: subscriptions, last_room_visited: last_room_visited)
+      render_layout(view, page_title: "Push notification subscriptions", nav: view.tpl_rooms_settings_nav, main: view.tpl_push_index)
+    end
+
+    post "/users/me/push_subscriptions" do
+      verify_same_origin!
+      require_authentication!
+      attributes = params["push_subscription"] || {}
+      halt 400, "" if attributes.empty?
+      status PushSubscriptions.create(self, attributes) ? 200 : 422
+      ""
+    end
+
+    delete %r{/users/me/push_subscriptions/(\d+)} do |id|
+      verify_same_origin!
+      require_authentication!
+      db.transaction { |w| w.run("DELETE FROM push_subscriptions WHERE id = ? AND user_id = ?", id.to_i, current_user.id) }
+      redirect url_for("/users/me/push_subscriptions")
+    end
+
+    post %r{/users/me/push_subscriptions/(\d+)/test_notifications} do |id|
+      verify_same_origin!
+      require_authentication!
+      row = db.row("SELECT endpoint, p256dh_key, auth_key FROM push_subscriptions WHERE id = ? AND user_id = ?", id.to_i, current_user.id) or halt 404
+      payload = { title: "Campfire Test", body: SecureRandom.uuid, path: url_for("/users/me/push_subscriptions") }
+      badge = db.value("SELECT COUNT(*) FROM memberships WHERE user_id = ? AND unread_at IS NOT NULL", current_user.id)
+      Push.deliver(runtime, id.to_i, *row, payload, badge) if Push.permitted?(row[0])
+      redirect url_for("/users/me/push_subscriptions")
+    end
+
+    # ---- Bot API: /rooms/:room_id/:bot_key/messages
+
+    get %r{/rooms/(\d+)/(\d+-[A-Za-z0-9]+)/messages(?:\.json)?} do |room_id, bot_key|
+      bot, room = bot_room!(bot_key, room_id)
+      messages =
+        if !params["before"].to_s.empty? then repo.page_before(room.id, (repo.room_message(room.id, params["before"].to_i) or halt 404).created_at)
+        elsif !params["after"].to_s.empty? then repo.page_after(room.id, (repo.room_message(room.id, params["after"].to_i) or halt 404).created_at)
+        else repo.last_page(room.id)
+        end
+      headers "X-Total-Count" => repo.room_message_count(room.id).to_s
+      if (link = BotApi.next_page_link(self, room, bot_key, messages))
+        headers "Link" => link
+      end
+      headers "Content-Type" => "application/json; charset=utf-8"
+      JSON.generate(messages.map { BotApi.message_json(self, it) })
+    end
+
+    post %r{/rooms/(\d+)/(\d+-[A-Za-z0-9]+)/messages(?:\.json)?} do |room_id, bot_key|
+      bot, room = bot_room!(bot_key, room_id)
+      @current_user = bot
+      attachment = params["attachment"]
+      request.body.rewind
+      raw = request.body.read.to_s.force_encoding("UTF-8")
+      halt 422, "" if attachment.to_s.empty? && raw.empty?
+      message_params = attachment.is_a?(Hash) ? { "attachment" => attachment } : { "body" => raw }
+      message = Messages.create(self, room: room, creator: bot, params: message_params)
+      Messages.after_create(self, room, message, message_views([ message ]).first)
+      status 201
+      headers "Location" => url_for("/messages/#{message.id}")
+      ""
+    end
+
+    route_verbs = [ :put, :patch ]
+    route_verbs.each do |verb|
+      send(verb, %r{/rooms/(\d+)/(\d+-[A-Za-z0-9]+)/messages/(\d+)(?:\.json)?}) do |room_id, bot_key, id|
+        bot, room = bot_room!(bot_key, room_id)
+        @current_user = bot
+        message = repo.room_message(room.id, id.to_i) or halt 404
+        halt 403, "" unless bot.can_administer?(message)
+        message = Messages.update(self, room, message, (params["message"] || {})["body"])
+        headers "Content-Type" => "application/json; charset=utf-8"
+        JSON.generate(BotApi.message_json(self, message))
+      end
+    end
+
+    delete %r{/rooms/(\d+)/(\d+-[A-Za-z0-9]+)/messages/(\d+)(?:\.json)?} do |room_id, bot_key, id|
+      bot, room = bot_room!(bot_key, room_id)
+      message = repo.room_message(room.id, id.to_i) or halt 404
+      halt 403, "" unless bot.can_administer?(message)
+      MessageRemoval.destroy(runtime, message)
+      Broadcasts.turbo_stream("#{RailsCompat.gid_param(room.type, room.id)}:messages", %(<turbo-stream action="remove" target="message_#{message.client_message_id}"></turbo-stream>))
+      status 204
+      ""
+    end
+
     # ---- Users, profiles, bans
 
     get %r{/users/(\d+)} do |id|
@@ -835,7 +951,8 @@ module Campfire
         session = repo.session_by_token(token) or return nil
         user = repo.user(session.user_id) or return nil
         resume_session(session)
-        @session, @current_user = session, user
+        @session = session
+        @current_user = user
       end
 
       def require_authentication!
@@ -934,6 +1051,19 @@ module Campfire
       end
 
       # ---- Rooms
+
+      # Authentication's restore_authentication || bot_authentication, then the user's room
+      def bot_room!(bot_key, room_id)
+        bot = restore_authentication
+        unless bot
+          id, token = bot_key.strip.split("-", 2)
+          row = db.row("SELECT #{User.columns} FROM users WHERE id = ? AND bot_token = ? AND status = 0 AND role = 2 LIMIT 1", id.to_i, token.to_s)
+          halt 302, { "Location" => url_for("/session/new") }, "" unless row
+          bot = User.new(*row)
+        end
+        room = repo.user_room(bot.id, room_id.to_i) or halt 404, ""
+        [ bot, room ]
+      end
 
       def active_bot!(id)
         row = db.row("SELECT #{User.columns} FROM users WHERE id = ? AND status = 0 AND role = 2", id.to_i) or halt 404
@@ -1287,6 +1417,122 @@ module Campfire
       halt 403, "" unless current_user.can_administer?
       Accounts.deactivate(self, active_bot!(id))
       redirect url_for("/account/bots")
+    end
+
+    # ---- Autocomplete, PWA, push subscriptions
+
+    get %r{/autocompletable/users(\.json)?} do |json|
+      require_authentication!
+      query = params["filter"].to_s.empty? ? params["query"].to_s : params["filter"].to_s
+      users = Autocomplete.users(self, params["room_id"], query)
+      if json || request.accept.first&.to_s == "application/json"
+        headers "Content-Type" => "application/json; charset=utf-8"
+        JSON.generate(users.map { { name: HTML.h(it.name), value: it.id, avatar_url: url_for(build_view.avatar_path(it)), sgid: secrets.attachable_sgid("User", it.id) } })
+      else
+        view = build_view
+        html_headers
+        users.map { Autocomplete.prompt_item(view, it) }.join
+      end
+    end
+
+    get %r{/webmanifest(\.json)?} do
+      account = runtime.account
+      view = build_view
+      headers "Content-Type" => "application/json; charset=utf-8", "Cache-Control" => "max-age=0, private, must-revalidate"
+      Pwa.manifest(view, account, base_url)
+    end
+
+    get %r{/service-worker(\.js)?} do
+      headers "Content-Type" => "text/javascript; charset=utf-8", "Cache-Control" => "max-age=0, private, must-revalidate"
+      File.read(File.join(ROOT, "public/service-worker.js"))
+    end
+
+    get "/users/me/push_subscriptions" do
+      require_authentication!
+      subscriptions = db.rows("SELECT id, endpoint, user_agent FROM push_subscriptions WHERE user_id = ?", current_user.id)
+      view = build_view(subscriptions: subscriptions, last_room_visited: last_room_visited)
+      render_layout(view, page_title: "Push notification subscriptions", nav: view.tpl_rooms_settings_nav, main: view.tpl_push_index)
+    end
+
+    post "/users/me/push_subscriptions" do
+      verify_same_origin!
+      require_authentication!
+      attributes = params["push_subscription"] || {}
+      halt 400, "" if attributes.empty?
+      status PushSubscriptions.create(self, attributes) ? 200 : 422
+      ""
+    end
+
+    delete %r{/users/me/push_subscriptions/(\d+)} do |id|
+      verify_same_origin!
+      require_authentication!
+      db.transaction { |w| w.run("DELETE FROM push_subscriptions WHERE id = ? AND user_id = ?", id.to_i, current_user.id) }
+      redirect url_for("/users/me/push_subscriptions")
+    end
+
+    post %r{/users/me/push_subscriptions/(\d+)/test_notifications} do |id|
+      verify_same_origin!
+      require_authentication!
+      row = db.row("SELECT endpoint, p256dh_key, auth_key FROM push_subscriptions WHERE id = ? AND user_id = ?", id.to_i, current_user.id) or halt 404
+      payload = { title: "Campfire Test", body: SecureRandom.uuid, path: url_for("/users/me/push_subscriptions") }
+      badge = db.value("SELECT COUNT(*) FROM memberships WHERE user_id = ? AND unread_at IS NOT NULL", current_user.id)
+      Push.deliver(runtime, id.to_i, *row, payload, badge) if Push.permitted?(row[0])
+      redirect url_for("/users/me/push_subscriptions")
+    end
+
+    # ---- Bot API: /rooms/:room_id/:bot_key/messages
+
+    get %r{/rooms/(\d+)/(\d+-[A-Za-z0-9]+)/messages(?:\.json)?} do |room_id, bot_key|
+      bot, room = bot_room!(bot_key, room_id)
+      messages =
+        if !params["before"].to_s.empty? then repo.page_before(room.id, (repo.room_message(room.id, params["before"].to_i) or halt 404).created_at)
+        elsif !params["after"].to_s.empty? then repo.page_after(room.id, (repo.room_message(room.id, params["after"].to_i) or halt 404).created_at)
+        else repo.last_page(room.id)
+        end
+      headers "X-Total-Count" => repo.room_message_count(room.id).to_s
+      if (link = BotApi.next_page_link(self, room, bot_key, messages))
+        headers "Link" => link
+      end
+      headers "Content-Type" => "application/json; charset=utf-8"
+      JSON.generate(messages.map { BotApi.message_json(self, it) })
+    end
+
+    post %r{/rooms/(\d+)/(\d+-[A-Za-z0-9]+)/messages(?:\.json)?} do |room_id, bot_key|
+      bot, room = bot_room!(bot_key, room_id)
+      @current_user = bot
+      attachment = params["attachment"]
+      request.body.rewind
+      raw = request.body.read.to_s.force_encoding("UTF-8")
+      halt 422, "" if attachment.to_s.empty? && raw.empty?
+      message_params = attachment.is_a?(Hash) ? { "attachment" => attachment } : { "body" => raw }
+      message = Messages.create(self, room: room, creator: bot, params: message_params)
+      Messages.after_create(self, room, message, message_views([ message ]).first)
+      status 201
+      headers "Location" => url_for("/messages/#{message.id}")
+      ""
+    end
+
+    route_verbs = [ :put, :patch ]
+    route_verbs.each do |verb|
+      send(verb, %r{/rooms/(\d+)/(\d+-[A-Za-z0-9]+)/messages/(\d+)(?:\.json)?}) do |room_id, bot_key, id|
+        bot, room = bot_room!(bot_key, room_id)
+        @current_user = bot
+        message = repo.room_message(room.id, id.to_i) or halt 404
+        halt 403, "" unless bot.can_administer?(message)
+        message = Messages.update(self, room, message, (params["message"] || {})["body"])
+        headers "Content-Type" => "application/json; charset=utf-8"
+        JSON.generate(BotApi.message_json(self, message))
+      end
+    end
+
+    delete %r{/rooms/(\d+)/(\d+-[A-Za-z0-9]+)/messages/(\d+)(?:\.json)?} do |room_id, bot_key, id|
+      bot, room = bot_room!(bot_key, room_id)
+      message = repo.room_message(room.id, id.to_i) or halt 404
+      halt 403, "" unless bot.can_administer?(message)
+      MessageRemoval.destroy(runtime, message)
+      Broadcasts.turbo_stream("#{RailsCompat.gid_param(room.type, room.id)}:messages", %(<turbo-stream action="remove" target="message_#{message.client_message_id}"></turbo-stream>))
+      status 204
+      ""
     end
 
     # ---- Users, profiles, bans

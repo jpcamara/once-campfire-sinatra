@@ -201,6 +201,10 @@ module Campfire
       end
     end
 
+    def test_body
+      "This is a test notification"
+    end
+
     def permitted?(endpoint)
       uri = URI.parse(endpoint.to_s)
       host = uri.host.to_s.downcase
@@ -715,6 +719,166 @@ module Campfire
       if attributes["avatar"].is_a?(Hash)
         Profiles.remove_avatar(ctx, bot)
         Users.attach_avatar(ctx, bot.id, attributes["avatar"])
+      end
+    end
+  end
+end
+
+module Campfire
+  module Autocomplete
+    module_function
+
+    def users(ctx, room_id, query)
+      scope = if room_id.to_s.empty?
+        "SELECT #{User.columns} FROM users WHERE users.status = 0"
+      else
+        room = ctx.repo.user_room(ctx.current_user.id, room_id.to_i) or ctx.halt(404)
+        "SELECT #{User.columns} FROM users INNER JOIN memberships ON users.id = memberships.user_id WHERE memberships.room_id = #{room.id} AND users.status = 0"
+      end
+      sql = query.empty? ? "#{scope} ORDER BY LOWER(name) LIMIT 20" : "#{scope} AND (name like ?) ORDER BY LOWER(name) LIMIT 20"
+      ctx.db.rows(sql, *("%#{query}%" unless query.empty?)).map { User.new(*it) }
+    end
+
+    def prompt_item(view, user)
+      sgid = view.secrets.attachable_sgid("User", user.id)
+      mention = %(<span class="mention" sgid="#{sgid}">#{view.avatar_tag(user)} #{HTML.h(user.name)}</span>)
+      <<~HTML
+        <lexxy-prompt-item search="#{HTML.h(user.name)}" sgid="#{sgid}">
+          <template type="menu">
+            <span class="autocomplete__item flex align-center gap unpad">
+              #{view.avatar_tag(user)}
+              <span class="autocompletable__name">#{HTML.h(user.name)}</span>
+            </span>
+          </template>
+          <template type="editor">
+            #{mention}
+          </template>
+        </lexxy-prompt-item>
+      HTML
+    end
+  end
+
+  module Pwa
+    module_function
+
+    def manifest(view, account, base_url)
+      logo = view.account_logo_path
+      <<~JSON
+        {
+          "name": #{JSON.generate(account&.name || "Campfire")},
+          "icons": [
+            {
+              "src": "#{logo.sub("?", "?size=small&")}",
+              "type": "image/png",
+              "sizes": "192x192"
+            },
+            {
+              "src": "#{logo}",
+              "type": "image/png",
+              "sizes": "512x512"
+            },
+            {
+              "src": "#{logo}",
+              "type": "image/png",
+              "sizes": "512x512",
+              "purpose": "maskable"
+            }
+          ],
+          "start_url": "/",
+          "display": "standalone",
+          "scope": "/",
+          "description": "A chat app from the makers of Basecamp and HEY.",
+          "categories": ["social", "business", "productivity"],
+          "theme_color": "#ffffff",
+          "background_color": "#ffffff",
+          "shortcuts": [
+            {
+              "name": "New chat room",
+              "description": "Open Campfire and start a new chat room",
+              "url": "rooms/opens/new",
+              "icons": [{ "src": "#{base_url}#{Assets.path("add.svg")}", "sizes": "any" }]
+            },
+            {
+              "name": "My profile",
+              "description": "Open Campfire and view your profile",
+              "url": "/users/me/profile",
+              "icons": [{ "src": "#{base_url}#{Assets.path("person.svg")}", "sizes": "any" }]
+            }
+          ],
+          "screenshots": [
+            {
+              "src": "#{base_url}#{Assets.path("screenshots/android-chat.png")}",
+              "sizes": "1080x2400",
+              "form_factor": "narrow",
+              "label": "Campfire is an installable, self-hosted group chat system."
+            },
+            {
+              "src": "#{base_url}#{Assets.path("screenshots/android-sidebar.png")}",
+              "sizes": "1080x2400",
+              "form_factor": "narrow",
+              "label": "Easily invite people. Make rooms. @mentions, DMs, and mobile support."
+            },
+            {
+              "src": "#{base_url}#{Assets.path("screenshots/android-dark-mode.png")}",
+              "sizes": "1080x2400",
+              "form_factor": "narrow",
+              "label": "Full support for dark mode, customizable to your brand."
+            }
+          ]
+        }
+      JSON
+    end
+  end
+
+  module PushSubscriptions
+    module_function
+
+    def create(ctx, attributes)
+      endpoint, p256dh, auth = attributes.values_at("endpoint", "p256dh_key", "auth_key")
+      return false unless Push.permitted?(endpoint)
+      now = TimeFormat.now_text
+      ctx.db.transaction do |w|
+        if (id = w.value("SELECT id FROM push_subscriptions WHERE user_id = ? AND endpoint = ? AND p256dh_key = ? AND auth_key = ?", ctx.current_user.id, endpoint, p256dh, auth))
+          w.run("UPDATE push_subscriptions SET updated_at = ? WHERE id = ?", now, id)
+        else
+          w.run("INSERT INTO push_subscriptions (auth_key, created_at, endpoint, p256dh_key, updated_at, user_agent, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            auth, now, endpoint, p256dh, now, ctx.request.user_agent, ctx.current_user.id)
+        end
+      end
+      true
+    end
+  end
+
+  # The bot API's JSON (messages/_message.json.jbuilder, users/_user.json.jbuilder)
+  module BotApi
+    module_function
+
+    def message_json(ctx, message)
+      repo = ctx.repo
+      body = repo.bodies([ message.id ])[message.id]
+      attachment = repo.message_attachments([ message.id ])[message.id]
+      creator = repo.user(message.creator_id)
+      html = body ? %(<div class="lexxy-content">\n  #{RichText.sanitizer.sanitize(RichText.render_attachments(body, ->(node) { Attachments.render(ctx, node) }), tags: RichText::ACTION_TEXT_TAGS, attributes: RichText::ACTION_TEXT_ATTRIBUTES)}\n</div>\n) : ""
+      {
+        id: message.id,
+        created_at: TimeFormat.parse(message.created_at).strftime("%Y-%m-%dT%H:%M:%S.%LZ"),
+        body: { plain_text: Messages.plain_text_body(ctx, body, attachment), html: html },
+        creator: { id: creator.id, name: creator.name, role: creator.role_name, avatar_url: ctx.url_for(ctx.build_view.avatar_path(creator)) },
+        room: { id: message.room_id },
+        url: ctx.url_for("/rooms/#{message.room_id}/messages/#{message.id}")
+      }
+    end
+
+    def next_page_link(ctx, room, bot_key, messages)
+      return nil if messages.empty?
+      if !ctx.params["after"].to_s.empty?
+        last = messages.last
+        more = ctx.db.value("SELECT 1 FROM messages WHERE room_id = ? AND created_at > ? LIMIT 1", room.id, last.created_at)
+        more && %(<#{ctx.url_for("/rooms/#{room.id}/#{bot_key}/messages?after=#{last.id}")}>; rel="next")
+      else
+        first = messages.first
+        more = ctx.db.value("SELECT 1 FROM messages WHERE room_id = ? AND created_at < ? LIMIT 1", room.id, first.created_at)
+        more && %(<#{ctx.url_for("/rooms/#{room.id}/#{bot_key}/messages?before=#{first.id}")}>; rel="next")
       end
     end
   end
