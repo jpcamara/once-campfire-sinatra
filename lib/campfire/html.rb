@@ -46,6 +46,15 @@ module Campfire
     end
   end
 
+  # ActiveSupport::JSON.encode: HTML-unsafe characters escaped as \uXXXX.
+  module RailsJSON
+    ESCAPES = { "<" => "\\u003c", ">" => "\\u003e", "&" => "\\u0026", "\u2028" => "\\u2028", "\u2029" => "\\u2029" }.freeze
+
+    def self.generate(object)
+      JSON.generate(object).gsub(/[<>&\u2028\u2029]/, ESCAPES)
+    end
+  end
+
   # Propshaft's digested asset paths, from public/assets/.manifest.json.
   module Assets
     @paths = {}
