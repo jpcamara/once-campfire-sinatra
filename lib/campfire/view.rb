@@ -146,10 +146,26 @@ module Campfire
       app.blob_path(blob, disposition: disposition)
     end
 
-    # The message partial, cached per message version and host like Rails' fragment cache.
+    # The message partial, cached per message version and host like Rails' fragment cache. In a page
+    # that collects fragments (see FragmentBody) it leaves a marker in place of the HTML.
     def render_message_cached(view)
-      app.fragment_cache.fetch([ view.message.id, view.message.updated_at, base_url ]) { render_message(view) }
+      key = [ view.message.id, view.message.updated_at, base_url ]
+      fragment = app.fragment_cache.fetch(key) { Fragment.new(render_message(view), key) }
+      if @fragments
+        @fragments << fragment
+        "\u0001#{@fragments.size - 1}\u0002"
+      else
+        fragment.html
+      end
     end
+
+    # Renders with message fragments collected, for a FragmentBody.
+    def collecting_fragments
+      @fragments = []
+      yield
+    end
+
+    attr_reader :fragments
 
     UNRENDERABLE = <<~HTML.freeze
       <div class="message message--formatted message--failed center">

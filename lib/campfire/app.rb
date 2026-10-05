@@ -894,8 +894,13 @@ module Campfire
       def url_for(path) = "#{base_url}#{path}"
 
       def build_view(**locals)
-        View.new(app: runtime, current_user: current_user, base_url: base_url, user_agent: request.user_agent, flash: flash_now)
+        view = View.new(app: runtime, current_user: current_user, base_url: base_url, user_agent: request.user_agent, flash: flash_now)
           .with(referrer: request.referer, request_url: request.url, **locals)
+        if @collect_fragments && !@fragment_view
+          @fragment_view = view
+          view.collecting_fragments { }
+        end
+        view
       end
 
       def html_headers(type = "text/html")
@@ -1139,6 +1144,22 @@ module Campfire
       end
 
       def render_room(room, messages)
+        fragment_page { render_room_page(room, messages) }
+      end
+
+      # A page whose message fragments go out as a FragmentBody (cached gzip blocks).
+      def fragment_page
+        @collect_fragments = true
+        html = yield
+        view = @fragment_view
+        body = view&.fragments ? FragmentBody.from(html, view.fragments) : [ html ]
+        headers "Content-Length" => body.is_a?(FragmentBody) ? body.bytesize.to_s : html.bytesize.to_s
+        body
+      ensure
+        @collect_fragments = false
+      end
+
+      def render_room_page(room, messages)
         views = message_views(messages)
         invitation = room.id == repo.original_room_id && repo.room_message_count(room.id) <= Repo::PAGE_SIZE
         account = runtime.account
@@ -1176,8 +1197,10 @@ module Campfire
       end
 
       def messages_html(messages)
-        view = build_view
-        message_views(messages).map { view.render_message_cached(it) }.join
+        fragment_page do
+          view = build_view
+          message_views(messages).map { view.render_message_cached(it) }.join
+        end
       end
 
       # ActionController::ConditionalGet#fresh_when(@messages): the collection's cache key.
@@ -1748,6 +1771,10 @@ module Campfire
       # ---- Searches
 
       def render_search(query, raw_query, messages)
+        fragment_page { render_search_page(query, raw_query, messages) }
+      end
+
+      def render_search_page(query, raw_query, messages)
         views = message_views(messages)
         recent = repo.recent_search_queries(current_user.id)
         return_to_room = last_room_visited
