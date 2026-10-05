@@ -119,7 +119,15 @@ module Campfire
     before do
       next if request.path_info.start_with?("/rails/active_storage", "/up")
       halt render_incompatible_browser if Browsers.blocked?(request.user_agent)
-      halt 429, "" if !(request.get? || request.head?) && db.value("SELECT 1 FROM bans WHERE ip_address = ? LIMIT 1", request.ip)
+      head_response(429) if !(request.get? || request.head?) && db.value("SELECT 1 FROM bans WHERE ip_address = ? LIMIT 1", remote_ip)
+    end
+
+    # ActionDispatch::Response's default Cache-Control: revalidation only for responses with an ETag
+    # or Last-Modified (Rack::ETag adds one to 200s), no-cache for the rest.
+    after do
+      if response.headers["Cache-Control"] == "max-age=0, private, must-revalidate" && status != 200
+        response.headers["Cache-Control"] = "no-cache"
+      end
     end
 
     # ---- Health
@@ -152,7 +160,7 @@ module Campfire
 
     post "/session" do
       verify_same_origin!
-      return render_sign_in_rejection(429) if RateLimit.exceeded?("sessions:#{request.ip}", limit: 10, within: 180)
+      return render_sign_in_rejection(429) if RateLimit.exceeded?("sessions:#{remote_ip}", limit: 10, within: 180)
       user = repo.active_user_by_email(params["email_address"].to_s)
       if user && user.password_digest && BCrypt::Password.new(user.password_digest) == params["password"].to_s
         start_new_session_for(user)
@@ -179,7 +187,7 @@ module Campfire
 
     get "/join/:join_code" do
       return redirect(url_for("/")) if restore_authentication
-      halt 404, "" unless runtime.account.join_code == params["join_code"]
+      head_response(404) unless runtime.account.join_code == params["join_code"]
       view = build_view(join_code: params["join_code"])
       render_layout(view, page_title: "Sign up", body_class: "signup", nav: view.tpl_users_new_nav, main: view.tpl_users_new)
     end
@@ -187,7 +195,7 @@ module Campfire
     post "/join/:join_code" do
       verify_same_origin!
       return redirect(url_for("/")) if restore_authentication
-      halt 404, "" unless runtime.account.join_code == params["join_code"]
+      head_response(404) unless runtime.account.join_code == params["join_code"]
       attributes = params["user"] || {}
       if (user = Users.create(self, attributes))
         start_new_session_for(user)
@@ -206,7 +214,7 @@ module Campfire
       verify_same_origin!
       user_id = secrets.find_signed_id(params["id"], "user/transfer")
       user = user_id && repo.user(user_id)
-      halt 400, "" unless user&.active?
+      head_response(400) unless user&.active?
       start_new_session_for(user)
       redirect_after_authentication
     end
@@ -290,7 +298,7 @@ module Campfire
 
     get %r{/rooms/(opens|closeds)/new} do |kind|
       require_authentication!
-      halt 403, "" unless can_create_rooms?
+      head_response(403) unless can_create_rooms?
       render_room_settings(kind.chomp("s"), nil)
     end
 
@@ -312,7 +320,7 @@ module Campfire
     post %r{/rooms/(opens|closeds)} do |kind|
       verify_same_origin!
       require_authentication!
-      halt 403, "" unless can_create_rooms?
+      head_response(403) unless can_create_rooms?
       room = Rooms.create(self, kind == "opens" ? "Rooms::Open" : "Rooms::Closed", (params["room"] || {})["name"].to_s, Array(params["user_ids"]))
       redirect url_for("/rooms/#{room.id}")
     end
@@ -322,7 +330,7 @@ module Campfire
       require_authentication!
       room = repo.user_room(current_user.id, id.to_i)
       return redirect_with_alert("/", "Room not found or inaccessible") unless room && !room.direct?
-      halt 403, "" unless current_user.can_administer?(room)
+      head_response(403) unless current_user.can_administer?(room)
       room = Rooms.update(self, room, kind == "opens" ? "Rooms::Open" : "Rooms::Closed", (params["room"] || {})["name"], Array(params["user_ids"]))
       redirect url_for("/rooms/#{room.id}")
     end
@@ -362,7 +370,7 @@ module Campfire
       require_authentication!
       room = repo.user_room(current_user.id, id.to_i)
       return redirect_with_alert("/", "Room not found or inaccessible") unless room && (room.direct? == request.path_info.include?("/directs/"))
-      halt 403, "" unless room.direct? || current_user.can_administer?(room)
+      head_response(403) unless room.direct? || current_user.can_administer?(room)
       Rooms.destroy(self, room)
       redirect url_for("/")
     end
@@ -388,7 +396,7 @@ module Campfire
       def update_account
       verify_same_origin!
       require_authentication!
-      halt 403, "" unless current_user.can_administer?
+      head_response(403) unless current_user.can_administer?
       Accounts.update(self, params["account"] || {})
       redirect_with_notice("/account/edit", "✓")
       end
@@ -409,7 +417,7 @@ module Campfire
     patch %r{/account/users/(\d+)} do |id|
       verify_same_origin!
       require_authentication!
-      halt 403, "" unless current_user.can_administer?
+      head_response(403) unless current_user.can_administer?
       user = repo.user(id.to_i)
       record_not_found! unless user&.active?
       role = %w[ member administrator ].include?((params["user"] || {})["role"]) ? params["user"]["role"] : "member"
@@ -420,7 +428,7 @@ module Campfire
     delete %r{/account/users/(\d+)} do |id|
       verify_same_origin!
       require_authentication!
-      halt 403, "" unless current_user.can_administer?
+      head_response(403) unless current_user.can_administer?
       user = repo.user(id.to_i)
       record_not_found! unless user&.active?
       Accounts.deactivate(self, user)
@@ -430,7 +438,7 @@ module Campfire
     post "/account/join_code" do
       verify_same_origin!
       require_authentication!
-      halt 403, "" unless current_user.can_administer?
+      head_response(403) unless current_user.can_administer?
       code = SecureRandom.alphanumeric(12).scan(/.{4}/).join("-")
       db.transaction { |w| w.run("UPDATE accounts SET join_code = ?, updated_at = ?", code, TimeFormat.now_text) }
       redirect url_for("/account/edit")
@@ -438,7 +446,7 @@ module Campfire
 
     get "/account/custom_styles/edit" do
       require_authentication!
-      halt 403, "" unless current_user.can_administer?
+      head_response(403) unless current_user.can_administer?
       view = build_view
       render_layout(view, page_title: "Custom styles", nav: view.tpl_accounts_custom_styles_nav, main: view.tpl_accounts_custom_styles)
     end
@@ -446,7 +454,7 @@ module Campfire
     patch "/account/custom_styles" do
       verify_same_origin!
       require_authentication!
-      halt 403, "" unless current_user.can_administer?
+      head_response(403) unless current_user.can_administer?
       db.transaction { |w| w.run("UPDATE accounts SET custom_styles = ?, updated_at = ?", (params["account"] || {})["custom_styles"], TimeFormat.now_text) }
       redirect_with_notice("/account/custom_styles/edit", "✓")
     end
@@ -454,7 +462,7 @@ module Campfire
     delete "/account/logo" do
       verify_same_origin!
       require_authentication!
-      halt 403, "" unless current_user.can_administer?
+      head_response(403) unless current_user.can_administer?
       db.transaction do |w|
         w.run("DELETE FROM active_storage_attachments WHERE record_type = 'Account' AND name = 'logo'")
         w.run("UPDATE accounts SET updated_at = ?", TimeFormat.now_text)
@@ -466,7 +474,7 @@ module Campfire
 
     get "/account/bots" do
       require_authentication!
-      halt 403, "" unless current_user.can_administer?
+      head_response(403) unless current_user.can_administer?
       bots = db.rows("SELECT #{User.columns} FROM users WHERE status = 0 AND role = 2 ORDER BY LOWER(name)").map { User.new(*it) }
       bots = bots.map do |bot|
         rooms = db.rows(<<~SQL, bot.id).map { Room.new(*it) }
@@ -481,14 +489,14 @@ module Campfire
 
     get "/account/bots/new" do
       require_authentication!
-      halt 403, "" unless current_user.can_administer?
+      head_response(403) unless current_user.can_administer?
       view = build_view(bot: nil, bot_avatar_src: Assets.path("default-bot-avatar.svg"), webhook_url: nil, back_path: "/account/bots")
       render_layout(view, page_title: "New chat bot", nav: view.tpl_bots_back_nav, main: view.tpl_bots_form)
     end
 
     get %r{/account/bots/(\d+)/edit} do |id|
       require_authentication!
-      halt 403, "" unless current_user.can_administer?
+      head_response(403) unless current_user.can_administer?
       bot = active_bot!(id)
       avatar = repo.attachment_blob("User", bot.id, "avatar")
       view = build_view(bot: bot, bot_avatar_src: avatar ? url_for(Storage.blob_path(runtime, avatar)) : Assets.path("default-bot-avatar.svg"),
@@ -499,7 +507,7 @@ module Campfire
     post "/account/bots" do
       verify_same_origin!
       require_authentication!
-      halt 403, "" unless current_user.can_administer?
+      head_response(403) unless current_user.can_administer?
       BotAccounts.create(self, params["user"] || {})
       redirect url_for("/account/bots")
     end
@@ -507,7 +515,7 @@ module Campfire
     patch %r{/account/bots/(\d+)} do |id|
       verify_same_origin!
       require_authentication!
-      halt 403, "" unless current_user.can_administer?
+      head_response(403) unless current_user.can_administer?
       BotAccounts.update(self, active_bot!(id), params["user"] || {})
       redirect url_for("/account/bots")
     end
@@ -515,7 +523,7 @@ module Campfire
     put %r{/account/bots/(\d+)/key} do |id|
       verify_same_origin!
       require_authentication!
-      halt 403, "" unless current_user.can_administer?
+      head_response(403) unless current_user.can_administer?
       bot = active_bot!(id)
       db.transaction { |w| w.run("UPDATE users SET bot_token = ?, updated_at = ? WHERE id = ?", SecureRandom.alphanumeric(12), TimeFormat.now_text, bot.id) }
       redirect url_for("/account/bots")
@@ -524,7 +532,7 @@ module Campfire
     delete %r{/account/bots/(\d+)} do |id|
       verify_same_origin!
       require_authentication!
-      halt 403, "" unless current_user.can_administer?
+      head_response(403) unless current_user.can_administer?
       Accounts.deactivate(self, active_bot!(id))
       redirect url_for("/account/bots")
     end
@@ -626,7 +634,7 @@ module Campfire
       attachment = params["attachment"]
       request.body.rewind
       raw = request.body.read.to_s.force_encoding("UTF-8")
-      halt 422, "" if attachment.to_s.empty? && raw.empty?
+      head_response(422) if attachment.to_s.empty? && raw.empty?
       message_params = attachment.is_a?(Hash) ? { "attachment" => attachment } : { "body" => raw }
       message = Messages.create(self, room: room, creator: bot, params: message_params)
       Messages.after_create(self, room, message, message_views([ message ]).first)
@@ -641,7 +649,7 @@ module Campfire
         bot, room = bot_room!(bot_key, room_id)
         @current_user = bot
         message = repo.room_message(room.id, id.to_i) or record_not_found!
-        halt 403, "" unless bot.can_administer?(message)
+        head_response(403) unless bot.can_administer?(message)
         message = Messages.update(self, room, message, (params["message"] || {})["body"])
         headers "Content-Type" => "application/json; charset=utf-8"
         RailsJSON.generate(BotApi.message_json(self, message))
@@ -651,7 +659,7 @@ module Campfire
     delete %r{/rooms/(\d+)/(\d+-[A-Za-z0-9]+)/messages/(\d+)(?:\.json)?} do |room_id, bot_key, id|
       bot, room = bot_room!(bot_key, room_id)
       message = repo.room_message(room.id, id.to_i) or record_not_found!
-      halt 403, "" unless bot.can_administer?(message)
+      head_response(403) unless bot.can_administer?(message)
       MessageRemoval.destroy(runtime, message)
       Broadcasts.turbo_stream("#{RailsCompat.gid_param(room.type, room.id)}:messages", %(<turbo-stream action="remove" target="message_#{message.client_message_id}"></turbo-stream>))
       status 204
@@ -694,7 +702,7 @@ module Campfire
     post %r{/users/(\d+)/ban} do |id|
       verify_same_origin!
       require_authentication!
-      halt 403, "" unless current_user.can_administer?
+      head_response(403) unless current_user.can_administer?
       user = repo.user(id.to_i) or record_not_found!
       Bans.ban(self, user)
       redirect url_for("/users/#{user.id}")
@@ -703,7 +711,7 @@ module Campfire
     delete %r{/users/(\d+)/ban} do |id|
       verify_same_origin!
       require_authentication!
-      halt 403, "" unless current_user.can_administer?
+      head_response(403) unless current_user.can_administer?
       user = repo.user(id.to_i) or record_not_found!
       Bans.unban(self, user)
       redirect url_for("/users/#{user.id}")
@@ -742,7 +750,7 @@ module Campfire
       require_authentication!
       room = room_scoped!(room_id)
       message = repo.room_message(room.id, id.to_i) or record_not_found!
-      halt 403, "" unless current_user.can_administer?(message)
+      head_response(403) unless current_user.can_administer?(message)
       message_view = Messages.views(self, [ message ], cached: false).first
       body = repo.bodies([ message.id ])[message.id]
       view = build_view(view: message_view, message: message, room: room, editor_value: Messages.editor_value(self, body))
@@ -754,7 +762,7 @@ module Campfire
       require_authentication!
       room = room_scoped!(room_id)
       message = repo.room_message(room.id, id.to_i) or record_not_found!
-      halt 403, "" unless current_user.can_administer?(message)
+      head_response(403) unless current_user.can_administer?(message)
       message = Messages.update(self, room, message, (params["message"] || {})["body"])
       redirect url_for("/rooms/#{room.id}/messages/#{message.id}")
     end
@@ -764,7 +772,7 @@ module Campfire
       require_authentication!
       room = room_scoped!(room_id)
       message = repo.room_message(room.id, id.to_i) or record_not_found!
-      halt 403, "" unless current_user.can_administer?(message)
+      head_response(403) unless current_user.can_administer?(message)
       MessageRemoval.destroy(runtime, message)
       remove = %(<turbo-stream action="remove" target="message_#{message.client_message_id}"></turbo-stream>)
       Broadcasts.turbo_stream("#{RailsCompat.gid_param(room.type, room.id)}:messages", remove)
@@ -919,6 +927,24 @@ module Campfire
         halt(*args)
       end
 
+      TRUSTED_PROXIES = %w[ 127.0.0.0/8 ::1/128 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 fc00::/7 ].map { IPAddr.new(it) }.freeze
+
+      # ActionDispatch::RemoteIp: the client is the last X-Forwarded-For address that isn't a trusted
+      # proxy, when the request came through one.
+      def remote_ip
+        @remote_ip ||= begin
+          normalize = ->(ip) { ip.to_s.strip.delete_prefix("::ffff:") }
+          trusted = ->(ip) { (addr = IPAddr.new(ip) rescue nil) && TRUSTED_PROXIES.any? { it.include?(addr) } }
+          remote = normalize.(request.env["REMOTE_ADDR"])
+          forwarded = request.env["HTTP_X_FORWARDED_FOR"].to_s.split(",").map(&normalize).reject(&:empty?).reverse
+          if !forwarded.empty? && trusted.(remote)
+            forwarded.find { !trusted.(it) } || forwarded.last
+          else
+            remote
+          end
+        end
+      end
+
       def current_user = @current_user
       def base_url = (@base_url ||= "#{request.scheme}://#{request.host_with_port}")
       def url_for(path) = "#{base_url}#{path}"
@@ -1010,6 +1036,12 @@ module Campfire
 
       # ActiveRecord::RecordNotFound from a find: the public 404 page, as ActionDispatch::ShowExceptions
       # serves it (none of the controller's headers).
+      # ActionController::Head#head: no body, no-cache, the request's format as the content type.
+      def head_response(code)
+        type = request.env["HTTP_ACCEPT"].to_s.start_with?("text/vnd.turbo-stream.html") ? "text/vnd.turbo-stream.html" : "text/html"
+        halt code, { "Content-Type" => type, "Cache-Control" => "no-cache" }, ""
+      end
+
       def record_not_found!
         without_security_headers
         without_version_headers
@@ -1059,7 +1091,7 @@ module Campfire
           now = TimeFormat.now_text
           db.transaction do |w|
             w.run("UPDATE sessions SET user_agent = ?, ip_address = ?, last_active_at = ?, updated_at = ? WHERE id = ?",
-              request.user_agent, request.ip, now, now, session.id)
+              request.user_agent, remote_ip, now, now, session.id)
           end
           set_session_cookie(session.token)
         end
@@ -1070,7 +1102,7 @@ module Campfire
         now = TimeFormat.now_text
         db.transaction do |w|
           w.run("INSERT INTO sessions (created_at, ip_address, last_active_at, token, updated_at, user_agent, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            now, request.ip, now, token, now, request.user_agent, user.id)
+            now, remote_ip, now, token, now, request.user_agent, user.id)
         end
         set_session_cookie(token)
         @current_user = user
@@ -1151,7 +1183,7 @@ module Campfire
           halt 302, { "Location" => url_for("/session/new") }, "" unless row
           bot = User.new(*row)
         end
-        room = repo.user_room(bot.id, room_id.to_i) or halt 404, ""
+        room = repo.user_room(bot.id, room_id.to_i) or head_response(404)
         [ bot, room ]
       end
 

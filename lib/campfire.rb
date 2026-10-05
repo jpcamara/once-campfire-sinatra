@@ -1,5 +1,6 @@
 require "json"
 require "uri"
+require "ipaddr"
 require "digest"
 require "delegate"
 require "net/http"
