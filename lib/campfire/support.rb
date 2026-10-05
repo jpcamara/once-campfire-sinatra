@@ -55,7 +55,8 @@ module Campfire
     def avatar_variant(runtime, user)
       blob = runtime.repo.attachment_blob("User", user.id, "avatar") or return nil
       return nil unless Attachments.variable?(blob)
-      Uploads.variant_blob(Context.new(runtime), blob, { "resize_to_limit" => [ 512, 512 ], "format" => "webp" })
+      # The :square named variant: Rails digests its format as a Symbol, so this finds existing variants.
+      Uploads.variant_blob(Context.new(runtime), blob, { "format" => :webp, "resize_to_limit" => [ 512, 512 ] })
     end
 
     def account_logo(app)
@@ -67,7 +68,7 @@ module Campfire
       blob = runtime.repo.attachment_blob("Account", account.id, "logo")
       if blob && Attachments.variable?(blob)
         size = small ? 192 : 512
-        variant = Uploads.variant_blob(Context.new(runtime), blob, { "resize_to_limit" => [ size, size ], "format" => "png" })
+        variant = Uploads.variant_blob(Context.new(runtime), blob, { "format" => :png, "resize_to_limit" => [ size, size ] })
         app.send_file Storage.path_for(variant.key), type: "image/png", disposition: "inline"
       else
         app.send_file File.join(ROOT, "public/logos", small ? "app-icon-192.png" : "app-icon.png"), type: "image/png", disposition: "inline"

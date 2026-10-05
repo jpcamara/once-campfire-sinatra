@@ -867,6 +867,14 @@ module Campfire
     get "/rails/active_storage/representations/redirect/:signed_blob_id/:variation_key/*" do
       blob = signed_blob!(params["signed_blob_id"])
       transformations = Storage.verify(runtime, params["variation_key"], "variation") or halt 404
+      # ActiveStorage::Preview: a video's representation is a variant of its stored preview image.
+      if blob.video?
+        row = db.row(<<~SQL, blob.id) or halt 404
+          SELECT #{Blob.columns} FROM active_storage_attachments JOIN active_storage_blobs ON active_storage_blobs.id = active_storage_attachments.blob_id
+          WHERE active_storage_attachments.record_type = 'ActiveStorage::Blob' AND active_storage_attachments.record_id = ? AND active_storage_attachments.name = 'preview_image' LIMIT 1
+        SQL
+        blob = Blob.new(*row)
+      end
       variant = Uploads.variant_blob(Context.new(runtime), blob, transformations)
       redirect_to_disk(variant, params["disposition"])
     end

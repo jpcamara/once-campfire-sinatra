@@ -80,7 +80,7 @@ module Campfire
       SQL
       return Blob.new(*existing) if existing
 
-      format = transformations["format"]
+      format = transformations["format"].to_s
       key = Storage.generate_key
       path = Storage.path_for(key)
       FileUtils.mkdir_p(File.dirname(path))
