@@ -679,3 +679,43 @@ module Campfire
     end
   end
 end
+
+module Campfire
+  # User.create_bot! and User#update_bot!
+  module BotAccounts
+    module_function
+
+    def create(ctx, attributes)
+      now = TimeFormat.now_text
+      id = ctx.db.transaction do |w|
+        w.run("INSERT INTO users (bot_token, created_at, name, role, status, updated_at) VALUES (?, ?, ?, 2, 0, ?)",
+          SecureRandom.alphanumeric(12), now, attributes["name"].to_s, now)
+        id = w.last_insert_row_id
+        url = attributes["webhook_url"].to_s
+        w.run("INSERT INTO webhooks (created_at, updated_at, url, user_id) VALUES (?, ?, ?, ?)", now, now, url, id) unless url.empty?
+        w.rows("SELECT id FROM rooms WHERE type = 'Rooms::Open'").each { |(room_id)| w.run("INSERT OR IGNORE INTO memberships (created_at, room_id, updated_at, user_id) VALUES (?, ?, ?, ?)", now, room_id, now, id) }
+        id
+      end
+      Users.attach_avatar(ctx, id, attributes["avatar"])
+    end
+
+    def update(ctx, bot, attributes)
+      now = TimeFormat.now_text
+      ctx.db.transaction do |w|
+        url = attributes["webhook_url"].to_s
+        if url.empty?
+          w.run("DELETE FROM webhooks WHERE user_id = ?", bot.id)
+        elsif w.value("SELECT 1 FROM webhooks WHERE user_id = ?", bot.id)
+          w.run("UPDATE webhooks SET url = ?, updated_at = ? WHERE user_id = ?", url, now, bot.id)
+        else
+          w.run("INSERT INTO webhooks (created_at, updated_at, url, user_id) VALUES (?, ?, ?, ?)", now, now, url, bot.id)
+        end
+        w.run("UPDATE users SET name = ?, updated_at = ? WHERE id = ?", attributes["name"], now, bot.id) if attributes["name"]
+      end
+      if attributes["avatar"].is_a?(Hash)
+        Profiles.remove_avatar(ctx, bot)
+        Users.attach_avatar(ctx, bot.id, attributes["avatar"])
+      end
+    end
+  end
+end

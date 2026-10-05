@@ -237,6 +237,7 @@ module Campfire
       :direct_memberships, :other_memberships, :placeholder_users, :query, :raw_query, :count, :recents, :recent_searches,
       :return_to_room, :email_address, :join_code, :request_path, :user, :transfer_id, :avatar_attached,
       :shared_memberships, :editor_value, :editing, :form_type, :can_administer, :room_name, :type_change_path, :user_count,
-      :selected_users, :unselected_users, :member, :selected, :last_room_visited, :administrators, :members, :next_page
+      :selected_users, :unselected_users, :member, :selected, :last_room_visited, :administrators, :members, :next_page, :bots, :bot, :bot_avatar_src,
+      :webhook_url, :back_path
   end
 end
