@@ -16,9 +16,8 @@ module Campfire
       return [ status, headers, body ] if status == 101
 
       headers["x-cache"] = %w[ GET HEAD ].include?(env["REQUEST_METHOD"]) ? "miss" : "bypass"
-      return [ status, headers, body ] if NO_BODY.include?(status) || env["REQUEST_METHOD"] == "HEAD" || headers.key?("content-range")
-
       headers["vary"] = [ headers["vary"], "Accept-Encoding" ].compact.join(",")
+      return [ status, headers, body ] if NO_BODY.include?(status) || env["REQUEST_METHOD"] == "HEAD" || headers.key?("content-range")
       return [ status, headers, body ] if headers["content-encoding"] || !env["HTTP_ACCEPT_ENCODING"].to_s.include?("gzip")
 
       if body.is_a?(FragmentBody)

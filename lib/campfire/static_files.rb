@@ -21,7 +21,6 @@ module Campfire
       headers = { "cache-control" => @cache_control, "content-type" => entry.type, "last-modified" => entry.last_modified }
       if entry.gzip && env["HTTP_ACCEPT_ENCODING"].to_s.include?("gzip")
         headers["content-encoding"] = "gzip"
-        headers["vary"] = "Accept-Encoding"
         body = entry.gzip
       else
         body = entry.body

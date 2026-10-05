@@ -775,7 +775,11 @@ module Campfire
     get %r{/rooms/(\d+)/refresh} do |room_id|
       require_authentication!
       # respond_to turbo_stream only
-      halt 406, { "Content-Type" => "text/html; charset=utf-8" }, "" unless request.env["HTTP_ACCEPT"].to_s.include?("text/vnd.turbo-stream.html")
+      unless request.env["HTTP_ACCEPT"].to_s.include?("text/vnd.turbo-stream.html")
+        without_security_headers
+        without_version_headers
+        halt 406, { "Content-Type" => "text/html; charset=utf-8" }, ""
+      end
       room = room_scoped!(room_id)
       since = TimeFormat.dump(Time.at(0, params["since"].to_i, :millisecond))
       created = repo.messages_created_since(room.id, since)
@@ -881,7 +885,7 @@ module Campfire
 
     get "/rails/active_storage/representations/redirect/:signed_blob_id/:variation_key/*" do
       blob = signed_blob!(params["signed_blob_id"])
-      transformations = Storage.verify(runtime, params["variation_key"], "variation") or halt 404
+      transformations = Storage.verify(runtime, params["variation_key"], "variation") or active_storage_not_found
       # ActiveStorage::Preview: a video's representation is a variant of its stored preview image.
       if blob.video?
         row = db.row(<<~SQL, blob.id) or halt 404
@@ -895,9 +899,10 @@ module Campfire
     end
 
     get "/rails/active_storage/disk/:encoded_key/*" do
-      key = Storage.verify(runtime, params["encoded_key"], "blob_key") or halt 404
+      without_version_headers
+      key = Storage.verify(runtime, params["encoded_key"], "blob_key") or active_storage_not_found
       path = Storage.path_for(key["key"].to_s)
-      halt 404 unless File.file?(path)
+      active_storage_not_found unless File.file?(path)
       headers "Cache-Control" => "max-age=3600, public", "Content-Disposition" => key["disposition"].to_s
       send_file path, type: key["content_type"] || "application/octet-stream", disposition: nil
     end
@@ -997,13 +1002,21 @@ module Campfire
       end
 
       def signed_blob!(signed_id)
-        id = Storage.find_signed_blob_id(runtime, signed_id) or halt 404
-        row = db.row("SELECT #{Blob.columns} FROM active_storage_blobs WHERE id = ?", id) or halt 404
+        id = Storage.find_signed_blob_id(runtime, signed_id) or active_storage_not_found
+        row = db.row("SELECT #{Blob.columns} FROM active_storage_blobs WHERE id = ?", id) or active_storage_not_found
         Blob.new(*row)
+      end
+
+      # Active Storage's controllers aren't ApplicationControllers: a missing blob is the public 404
+      # page, without version headers.
+      def active_storage_not_found
+        without_version_headers
+        halt 404, { "Content-Type" => "text/html", "Cache-Control" => "no-cache" }, File.read(File.join(ROOT, "public/404.html"))
       end
 
       # ActiveStorage::Blobs::RedirectController and Representations::RedirectController
       def redirect_to_disk(blob, disposition)
+        without_version_headers
         disposition = disposition == "attachment" ? "attachment" : "inline"
         headers "Cache-Control" => "max-age=300, private"
         redirect url_for(Storage.disk_path(runtime, key: blob.key, filename: blob.filename, content_type: blob.content_type,
