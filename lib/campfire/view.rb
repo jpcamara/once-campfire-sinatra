@@ -219,6 +219,6 @@ module Campfire
     attr_reader :message, :creator, :room, :view, :boost, :booster, :membership, :members, :messages, :invitation,
       :direct_memberships, :other_memberships, :placeholder_users, :query, :raw_query, :count, :recents, :recent_searches,
       :return_to_room, :email_address, :join_code, :request_path, :user, :transfer_id, :avatar_attached,
-      :shared_memberships
+      :shared_memberships, :editor_value
   end
 end

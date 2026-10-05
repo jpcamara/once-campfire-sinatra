@@ -115,6 +115,19 @@ module Campfire
       SQL
     end
 
+    def messages_created_since(room_id, since)
+      @db.rows(<<~SQL, room_id, since, PAGE_SIZE).map { Message.new(*it) }
+        SELECT #{Message.columns} FROM messages WHERE messages.room_id = ? AND (created_at > ?) ORDER BY messages.created_at ASC LIMIT ?
+      SQL
+    end
+
+    def messages_updated_since(room_id, since, excluding)
+      excluded = excluding.empty? ? "" : "AND messages.id NOT IN (#{DB.in_list(excluding.size)})"
+      @db.rows(<<~SQL, room_id, *excluding, since, PAGE_SIZE).reverse.map { Message.new(*it) }
+        SELECT #{Message.columns} FROM messages WHERE messages.room_id = ? #{excluded} AND (updated_at > ?) ORDER BY messages.created_at DESC LIMIT ?
+      SQL
+    end
+
     def room_message(room_id, id)
       row = @db.row("SELECT #{Message.columns} FROM messages WHERE messages.room_id = ? AND messages.id = ? LIMIT 1", room_id, id)
       row && Message.new(*row)

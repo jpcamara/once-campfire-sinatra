@@ -498,3 +498,38 @@ module Campfire
     end
   end
 end
+
+module Campfire
+  module Boosts
+    module_function
+
+    def create(ctx, message, content)
+      now = TimeFormat.now_text
+      boost = ctx.db.transaction do |w|
+        w.run("INSERT INTO boosts (booster_id, content, created_at, message_id, updated_at) VALUES (?, ?, ?, ?, ?)",
+          ctx.current_user.id, content[0, 16], now, message.id, now)
+        id = w.last_insert_row_id
+        w.run("UPDATE messages SET updated_at = ? WHERE id = ?", now, message.id)
+        Boost.new(id, ctx.current_user.id, content[0, 16], now, message.id, now)
+      end
+      room = ctx.repo.room(message.room_id)
+      html = ctx.build_view.render_boost(boost, ctx.current_user)
+      Broadcasts.turbo_stream("#{RailsCompat.gid_param(room.type, room.id)}:messages",
+        %(<turbo-stream maintain_scroll="true" action="append" target="boosts_message_#{message.client_message_id}"><template>#{html}</template></turbo-stream>))
+      boost
+    end
+
+    def destroy(ctx, message, id)
+      deleted = ctx.db.transaction do |w|
+        next false unless w.value("SELECT 1 FROM boosts WHERE id = ? AND message_id = ? AND booster_id = ?", id, message.id, ctx.current_user.id)
+        w.run("DELETE FROM boosts WHERE id = ?", id)
+        w.run("UPDATE messages SET updated_at = ? WHERE id = ?", TimeFormat.now_text, message.id)
+        true
+      end
+      return false unless deleted
+      room = ctx.repo.room(message.room_id)
+      Broadcasts.turbo_stream("#{RailsCompat.gid_param(room.type, room.id)}:messages", %(<turbo-stream action="remove" target="boost_#{id}"></turbo-stream>))
+      true
+    end
+  end
+end

@@ -24,8 +24,8 @@ module Campfire
     #   :envelope_data     signed ids: {"_rails":{"data":value,"pur":..}}, URL-safe Base64 without padding, SHA256
     #   :bare              Turbo stream names: base64(json), strict Base64, SHA256
     class MessageVerifier
-      def initialize(secret, digest:, format:, url_safe: format == :envelope_data)
-        @secret, @digest, @format, @url_safe = secret, digest, format, url_safe
+      def initialize(secret, digest:, format:, url_safe: format == :envelope_data, padding: false)
+        @secret, @digest, @format, @url_safe, @padding = secret, digest, format, url_safe, padding
       end
 
       def generate(value, purpose: nil, expires_at: nil)
@@ -80,7 +80,7 @@ module Campfire
         end
 
         def encode(json)
-          @url_safe ? Base64.urlsafe_encode64(json, padding: false) : Base64.strict_encode64(json)
+          @url_safe ? Base64.urlsafe_encode64(json, padding: @padding) : Base64.strict_encode64(json)
         end
 
         def decode(data)
@@ -136,6 +136,7 @@ module Campfire
         @encrypted_cookies = MessageEncryptor.new(keys.generate_key("authenticated encrypted cookie", 32))
         @signed_ids = MessageVerifier.new(keys.generate_key("active_record/signed_id"), digest: "SHA256", format: :envelope_data)
         @turbo_streams = MessageVerifier.new(keys.generate_key("turbo/signed_stream_verifier_key"), digest: "SHA256", format: :bare)
+        @global_ids = MessageVerifier.new(keys.generate_key("signed_global_ids"), digest: "SHA1", format: :envelope_data, padding: true)
         @stream_names = {}
       end
 
@@ -171,6 +172,11 @@ module Campfire
       def find_signed_id(token, purpose)
         value = @signed_ids.verify(token, purpose: purpose)
         Integer(value) rescue nil
+      end
+
+      # User#attachable_sgid: to_sgid(expires_in: nil, for: "attachable")
+      def attachable_sgid(model_name, id)
+        @global_ids.generate("gid://campfire/#{model_name}/#{id}?expires_in", purpose: "attachable")
       end
 
       def signed_stream_name(name)

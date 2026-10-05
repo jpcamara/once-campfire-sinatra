@@ -82,12 +82,23 @@ module Campfire
       end
     end
 
+    def content_type(ctx, node)
+      kind, _ = attachable(ctx, node)
+      case kind
+      when :opengraph then OPENGRAPH_CONTENT_TYPE
+      when :mention then "application/vnd.campfire.mention"
+      else node["content-type"]
+      end
+    end
+
     # The partial each attachment renders into the node.
-    def render(ctx, node)
+    def render(ctx, node, editor: false)
       kind, value = attachable(ctx, node)
       case kind
       when :opengraph then render_opengraph(value)
-      when :mention then %(<span class="mention" sgid="#{HTML.h(node["sgid"])}">#{ctx.build_view.avatar_tag(value)} #{HTML.h(value.name)}</span>)
+      when :mention
+        sgid = ctx.runtime.secrets.attachable_sgid("User", value.id)
+        %(<span class="mention" sgid="#{sgid}">#{ctx.build_view.avatar_tag(value)} #{HTML.h(value.name)}</span>)
       when :content then %(<figure class="attachment attachment--content">\n  #{value}\n</figure>)
       else "☒"
       end

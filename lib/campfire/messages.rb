@@ -6,12 +6,12 @@ module Campfire
 
     # Repo::MessageView for each message. Messages whose fragment is already cached get a bare view
     # (only the cache key is read); the rest load their bodies, attachments, creators and boosts.
-    def views(ctx, messages)
+    def views(ctx, messages, cached: true)
       return [] if messages.empty?
 
       cache = ctx.runtime.fragment_cache
       host = ctx.base_url
-      misses = messages.reject { cache.key?([ it.id, it.updated_at, host ]) }
+      misses = cached ? messages.reject { cache.key?([ it.id, it.updated_at, host ]) } : messages
       return messages.map { bare(it) } if misses.empty?
 
       repo = ctx.repo
@@ -111,6 +111,47 @@ module Campfire
       html = value.to_s
       return html if html.strip.empty?
       RichText.to_html(Attachments.canonicalize(RichText.fragment(html)))
+    end
+
+    # RichTextHelper#editable_body, then Lexxy's render_custom_attachments_in: each attachment
+    # carries its content type and its rendered partial (as JSON) for the editor.
+    def editor_value(ctx, body)
+      return "" if body.nil?
+      frag = RichText.fragment(body)
+      frag.css(RichText::ATTACHMENT_TAG).each do |node|
+        node["content-type"] = Attachments.content_type(ctx, node)
+        node["content"] = Attachments.render(ctx, node, editor: true)
+      end
+      frag = RichText.fragment(RichText.to_html(frag))
+      frag.css(RichText::ATTACHMENT_TAG).each do |node|
+        next unless node["url"].to_s.strip.empty?
+        node["content"] = JSON.generate(Attachments.render(ctx, node, editor: true)).gsub("<", "\\u003c").gsub(">", "\\u003e").gsub("&", "\\u0026")
+        node["content-type"] ||= Attachments.content_type(ctx, node)
+      end
+      RichText.to_html(frag)
+    end
+
+    # MessagesController#update: the new body, the search index, and the presentation broadcast.
+    def update(ctx, room, message, body)
+      body = canonical_body(body)
+      now = TimeFormat.now_text
+      plain = PlainText.convert(body.to_s, attachment_text: ->(node) { Attachments.plain_text(ctx, node) })
+      ctx.db.transaction do |w|
+        if w.value("SELECT 1 FROM action_text_rich_texts WHERE record_type = 'Message' AND record_id = ? AND name = 'body'", message.id)
+          w.run("UPDATE action_text_rich_texts SET body = ?, updated_at = ? WHERE record_type = 'Message' AND record_id = ? AND name = 'body'", body, now, message.id)
+        else
+          w.run("INSERT INTO action_text_rich_texts (body, created_at, name, record_id, record_type, updated_at) VALUES (?, ?, 'body', ?, 'Message', ?)", body, now, message.id, now)
+        end
+        w.run("UPDATE messages SET updated_at = ? WHERE id = ?", now, message.id)
+        w.run("UPDATE rooms SET updated_at = ? WHERE id = ?", now, room.id)
+        w.run("UPDATE message_search_index SET body = ? WHERE rowid = ?", plain, message.id)
+      end
+      message = ctx.repo.room_message(room.id, message.id)
+      view = views(ctx, [ message ], cached: false).first
+      html = %(<div id="presentation_message_#{message.client_message_id}" dir="auto" data-reply-target="body" data-messages-target="body">\n  #{view.presentation}\n</div>\n)
+      Broadcasts.turbo_stream("#{RailsCompat.gid_param(room.type, room.id)}:messages",
+        %(<turbo-stream maintain_scroll="true" action="replace" target="presentation_message_#{message.client_message_id}"><template>#{html}</template></turbo-stream>))
+      message
     end
 
     # After commit: the room broadcast, unread notifications, push notifications and bot webhooks.

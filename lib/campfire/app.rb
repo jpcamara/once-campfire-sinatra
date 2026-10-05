@@ -342,6 +342,100 @@ module Campfire
       redirect url_for("/rooms/#{membership.room_id}/involvement")
     end
 
+    # ---- Message show, edit, update, destroy
+
+    get %r{/rooms/(\d+)/messages/(\d+)} do |room_id, id|
+      require_authentication!
+      room = room_scoped!(room_id)
+      message = repo.room_message(room.id, id.to_i) or halt 404
+      view = build_view
+      render_layout(view, main: view.render_message_cached(message_views([ message ]).first))
+    end
+
+    get %r{/rooms/(\d+)/messages/(\d+)/edit} do |room_id, id|
+      require_authentication!
+      room = room_scoped!(room_id)
+      message = repo.room_message(room.id, id.to_i) or halt 404
+      halt 403, "" unless current_user.can_administer?(message)
+      message_view = Messages.views(self, [ message ], cached: false).first
+      body = repo.bodies([ message.id ])[message.id]
+      view = build_view(view: message_view, message: message, room: room, editor_value: Messages.editor_value(self, body))
+      render_layout(view, main: view.tpl_messages_edit)
+    end
+
+    patch %r{/rooms/(\d+)/messages/(\d+)} do |room_id, id|
+      verify_same_origin!
+      require_authentication!
+      room = room_scoped!(room_id)
+      message = repo.room_message(room.id, id.to_i) or halt 404
+      halt 403, "" unless current_user.can_administer?(message)
+      message = Messages.update(self, room, message, (params["message"] || {})["body"])
+      redirect url_for("/rooms/#{room.id}/messages/#{message.id}")
+    end
+
+    delete %r{/rooms/(\d+)/messages/(\d+)} do |room_id, id|
+      verify_same_origin!
+      require_authentication!
+      room = room_scoped!(room_id)
+      message = repo.room_message(room.id, id.to_i) or halt 404
+      halt 403, "" unless current_user.can_administer?(message)
+      MessageRemoval.destroy(runtime, message)
+      remove = %(<turbo-stream action="remove" target="message_#{message.client_message_id}"></turbo-stream>)
+      Broadcasts.turbo_stream("#{RailsCompat.gid_param(room.type, room.id)}:messages", remove)
+      html_headers("text/vnd.turbo-stream.html")
+      remove
+    end
+
+    get %r{/rooms/(\d+)/refresh} do |room_id|
+      require_authentication!
+      room = room_scoped!(room_id)
+      since = TimeFormat.dump(Time.at(0, params["since"].to_i, :millisecond))
+      created = repo.messages_created_since(room.id, since)
+      updated = repo.messages_updated_since(room.id, since, created.map(&:id))
+      view = build_view
+      html = +""
+      html << %(<turbo-stream action="append" target="messages_#{room.param_key}_#{room.id}"><template>#{message_views(created).map { view.render_message_cached(it) }.join}</template></turbo-stream>) if created.any?
+      message_views(updated).each do |message_view|
+        html << %(<turbo-stream action="replace" target="message_#{message_view.message.client_message_id}"><template>#{view.render_message_cached(message_view)}</template></turbo-stream>)
+      end
+      html_headers("text/vnd.turbo-stream.html")
+      html
+    end
+
+    # ---- Boosts
+
+    get %r{/messages/(\d+)/boosts} do |message_id|
+      require_authentication!
+      message = reachable_message!(message_id)
+      view = build_view
+      message_view = Messages.views(self, [ message ], cached: false).first
+      render_layout(view, main: view.with(message: message, view: message_view).render_boosts(message_view))
+    end
+
+    get %r{/messages/(\d+)/boosts/new} do |message_id|
+      require_authentication!
+      message = reachable_message!(message_id)
+      view = build_view(message: message)
+      render_layout(view, main: view.tpl_boosts_new)
+    end
+
+    post %r{/messages/(\d+)/boosts} do |message_id|
+      verify_same_origin!
+      require_authentication!
+      message = reachable_message!(message_id)
+      Boosts.create(self, message, (params["boost"] || {})["content"].to_s)
+      redirect url_for("/messages/#{message.id}/boosts")
+    end
+
+    delete %r{/messages/(\d+)/boosts/(\d+)} do |message_id, id|
+      verify_same_origin!
+      require_authentication!
+      message = reachable_message!(message_id)
+      Boosts.destroy(self, message, id.to_i) or halt 404
+      status 204
+      ""
+    end
+
     # ---- Sidebar
 
     get %r{/users/(me|\d+)/sidebar} do
@@ -598,6 +692,14 @@ module Campfire
 
       # ---- Rooms
 
+      def reachable_message!(id)
+        row = db.row(<<~SQL, current_user.id, id.to_i) or halt 404
+          SELECT #{Message.columns} FROM messages INNER JOIN rooms ON messages.room_id = rooms.id
+          INNER JOIN memberships ON rooms.id = memberships.room_id WHERE memberships.user_id = ? AND messages.id = ? LIMIT 1
+        SQL
+        Message.new(*row)
+      end
+
       def room_scoped!(room_id)
         membership = repo.membership(current_user.id, room_id.to_i) or halt 404
         repo.room(membership.room_id)
@@ -742,6 +844,100 @@ module Campfire
       membership = repo.membership(current_user.id, room_id.to_i) or halt 404
       Involvements.update(self, membership, params["involvement"].to_s)
       redirect url_for("/rooms/#{membership.room_id}/involvement")
+    end
+
+    # ---- Message show, edit, update, destroy
+
+    get %r{/rooms/(\d+)/messages/(\d+)} do |room_id, id|
+      require_authentication!
+      room = room_scoped!(room_id)
+      message = repo.room_message(room.id, id.to_i) or halt 404
+      view = build_view
+      render_layout(view, main: view.render_message_cached(message_views([ message ]).first))
+    end
+
+    get %r{/rooms/(\d+)/messages/(\d+)/edit} do |room_id, id|
+      require_authentication!
+      room = room_scoped!(room_id)
+      message = repo.room_message(room.id, id.to_i) or halt 404
+      halt 403, "" unless current_user.can_administer?(message)
+      message_view = Messages.views(self, [ message ], cached: false).first
+      body = repo.bodies([ message.id ])[message.id]
+      view = build_view(view: message_view, message: message, room: room, editor_value: Messages.editor_value(self, body))
+      render_layout(view, main: view.tpl_messages_edit)
+    end
+
+    patch %r{/rooms/(\d+)/messages/(\d+)} do |room_id, id|
+      verify_same_origin!
+      require_authentication!
+      room = room_scoped!(room_id)
+      message = repo.room_message(room.id, id.to_i) or halt 404
+      halt 403, "" unless current_user.can_administer?(message)
+      message = Messages.update(self, room, message, (params["message"] || {})["body"])
+      redirect url_for("/rooms/#{room.id}/messages/#{message.id}")
+    end
+
+    delete %r{/rooms/(\d+)/messages/(\d+)} do |room_id, id|
+      verify_same_origin!
+      require_authentication!
+      room = room_scoped!(room_id)
+      message = repo.room_message(room.id, id.to_i) or halt 404
+      halt 403, "" unless current_user.can_administer?(message)
+      MessageRemoval.destroy(runtime, message)
+      remove = %(<turbo-stream action="remove" target="message_#{message.client_message_id}"></turbo-stream>)
+      Broadcasts.turbo_stream("#{RailsCompat.gid_param(room.type, room.id)}:messages", remove)
+      html_headers("text/vnd.turbo-stream.html")
+      remove
+    end
+
+    get %r{/rooms/(\d+)/refresh} do |room_id|
+      require_authentication!
+      room = room_scoped!(room_id)
+      since = TimeFormat.dump(Time.at(0, params["since"].to_i, :millisecond))
+      created = repo.messages_created_since(room.id, since)
+      updated = repo.messages_updated_since(room.id, since, created.map(&:id))
+      view = build_view
+      html = +""
+      html << %(<turbo-stream action="append" target="messages_#{room.param_key}_#{room.id}"><template>#{message_views(created).map { view.render_message_cached(it) }.join}</template></turbo-stream>) if created.any?
+      message_views(updated).each do |message_view|
+        html << %(<turbo-stream action="replace" target="message_#{message_view.message.client_message_id}"><template>#{view.render_message_cached(message_view)}</template></turbo-stream>)
+      end
+      html_headers("text/vnd.turbo-stream.html")
+      html
+    end
+
+    # ---- Boosts
+
+    get %r{/messages/(\d+)/boosts} do |message_id|
+      require_authentication!
+      message = reachable_message!(message_id)
+      view = build_view
+      message_view = Messages.views(self, [ message ], cached: false).first
+      render_layout(view, main: view.with(message: message, view: message_view).render_boosts(message_view))
+    end
+
+    get %r{/messages/(\d+)/boosts/new} do |message_id|
+      require_authentication!
+      message = reachable_message!(message_id)
+      view = build_view(message: message)
+      render_layout(view, main: view.tpl_boosts_new)
+    end
+
+    post %r{/messages/(\d+)/boosts} do |message_id|
+      verify_same_origin!
+      require_authentication!
+      message = reachable_message!(message_id)
+      Boosts.create(self, message, (params["boost"] || {})["content"].to_s)
+      redirect url_for("/messages/#{message.id}/boosts")
+    end
+
+    delete %r{/messages/(\d+)/boosts/(\d+)} do |message_id, id|
+      verify_same_origin!
+      require_authentication!
+      message = reachable_message!(message_id)
+      Boosts.destroy(self, message, id.to_i) or halt 404
+      status 204
+      ""
     end
 
     # ---- Sidebar
