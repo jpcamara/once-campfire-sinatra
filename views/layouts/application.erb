@@ -21,10 +21,12 @@
     <link rel="icon" href="<%= account_logo_path %>" type="image/png">
     <link rel="apple-touch-icon" href="<%= account_logo_path %>">
 
-    <%== Assets.head %>
+    <%== Assets.stylesheets %>
 <% if (styles = account&.custom_styles) %>
     <style data-turbo-track="reload"><%== styles %></style>
 <% end %>
+
+    <%== Assets.javascripts %>
     <%== @content_head %>
   </head>
 

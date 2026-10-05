@@ -54,7 +54,9 @@ module Campfire
       def load(root)
         manifest = JSON.parse(File.read(File.join(root, "public/assets/.manifest.json")))
         @paths = manifest.to_h { |logical, entry| [ logical, "/assets/#{entry["digested_path"]}".freeze ] }
-        @head = File.read(File.join(root, "views/_head_assets.html")).freeze
+        head = File.read(File.join(root, "views/_head_assets.html"))
+        split = head.index('<script type="importmap"')
+        @stylesheets, @javascripts = head[0...split].rstrip.freeze, head[split..].freeze
         @link_header = File.read(File.join(root, "views/_link_header.txt")).strip.freeze
       end
 
@@ -62,7 +64,7 @@ module Campfire
         @paths.fetch(logical) { "/#{logical}" }
       end
 
-      attr_reader :head, :link_header
+      attr_reader :stylesheets, :javascripts, :link_header
     end
   end
 end
