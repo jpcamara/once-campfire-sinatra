@@ -272,6 +272,76 @@ module Campfire
       %(<turbo-stream action="append" target="messages_#{room.param_key}_#{room.id}"><template>#{build_view.render_message_cached(view)}</template></turbo-stream>)
     end
 
+    # ---- Users, profiles, bans
+
+    get %r{/users/(\d+)} do |id|
+      require_authentication!
+      user = repo.user(id.to_i) or halt 404
+      view = build_view(user: user)
+      render_layout(view, page_title: user.name, nav: view.tpl_users_show_nav, main: view.tpl_users_show)
+    end
+
+    get "/users/me/profile" do
+      require_authentication!
+      memberships = repo.sidebar_memberships(current_user.id, visible_only: false)
+      directs, shared = memberships.partition { |_, room| room.direct? }
+      view = build_view(user: current_user, direct_memberships: directs, shared_memberships: shared,
+        avatar_attached: !repo.attachment_blob("User", current_user.id, "avatar").nil?)
+      render_layout(view, page_title: current_user.name, nav: view.tpl_profiles_show_nav, main: view.tpl_profiles_show)
+    end
+
+    patch "/users/me/profile" do
+      verify_same_origin!
+      require_authentication!
+      attributes = params["user"] || {}
+      Profiles.update(self, current_user, attributes)
+      redirect_with_notice("/users/me/profile", attributes["avatar"] ? "It may take up to 30 minutes to change everywhere." : "✓")
+    end
+
+    delete %r{/users/(me|\d+)/avatar} do
+      verify_same_origin!
+      require_authentication!
+      Profiles.remove_avatar(self, current_user)
+      redirect url_for("/users/me/profile")
+    end
+
+    post %r{/users/(\d+)/ban} do |id|
+      verify_same_origin!
+      require_authentication!
+      halt 403, "" unless current_user.can_administer?
+      user = repo.user(id.to_i) or halt 404
+      Bans.ban(self, user)
+      redirect url_for("/users/#{user.id}")
+    end
+
+    delete %r{/users/(\d+)/ban} do |id|
+      verify_same_origin!
+      require_authentication!
+      halt 403, "" unless current_user.can_administer?
+      user = repo.user(id.to_i) or halt 404
+      Bans.unban(self, user)
+      redirect url_for("/users/#{user.id}")
+    end
+
+    # ---- Involvement
+
+    get %r{/rooms/(\d+)/involvement} do |room_id|
+      require_authentication!
+      membership = repo.membership(current_user.id, room_id.to_i) or halt 404
+      room = repo.room(membership.room_id)
+      view = build_view
+      frame = %(<turbo-frame data-controller="turbo-frame" data-action="notifications:ready@window-&gt;turbo-frame#load" data-turbo-frame-url-param="/rooms/#{room.id}/involvement" id="involvement_#{room.param_key}_#{room.id}">\n  #{view.involvement_button(room, membership.involvement)}\n</turbo-frame>)
+      render_layout(view, main: frame)
+    end
+
+    put %r{/rooms/(\d+)/involvement} do |room_id|
+      verify_same_origin!
+      require_authentication!
+      membership = repo.membership(current_user.id, room_id.to_i) or halt 404
+      Involvements.update(self, membership, params["involvement"].to_s)
+      redirect url_for("/rooms/#{membership.room_id}/involvement")
+    end
+
     # ---- Sidebar
 
     get %r{/users/(me|\d+)/sidebar} do
@@ -356,7 +426,8 @@ module Campfire
       def url_for(path) = "#{base_url}#{path}"
 
       def build_view(**locals)
-        View.new(app: runtime, current_user: current_user, base_url: base_url, user_agent: request.user_agent, flash: flash_now).with(**locals)
+        View.new(app: runtime, current_user: current_user, base_url: base_url, user_agent: request.user_agent, flash: flash_now)
+          .with(referrer: request.referer, request_url: request.url, **locals)
       end
 
       def html_headers(type = "text/html")
@@ -371,9 +442,14 @@ module Campfire
       end
 
       def render_layout(view, main:, page_title: nil, body_class: nil, head: nil, nav: nil, footer: nil, sidebar: nil)
+        html_headers
+        # Turbo::Frames::FrameRequest: frame requests get turbo-rails' bare frame layout.
+        if request.env["HTTP_TURBO_FRAME"].to_s != ""
+          return "<html>\n  <head>\n    \n    #{head}\n  </head>\n  <body>\n    #{main}\n  </body>\n</html>\n"
+        end
+
         view.with(page_title: page_title, body_class: body_class, content_head: head, content_nav: nav, content_main: main,
           content_footer: footer, content_sidebar: sidebar)
-        html_headers
         headers "Link" => Assets.link_header
         view.tpl_layouts_application
       end
@@ -500,9 +576,12 @@ module Campfire
         (flash["flashes"] || {}).reject { |key, _| Array(flash["discard"]).include?(key) }
       end
 
-      def redirect_with_alert(path, alert)
+      def redirect_with_alert(path, alert) = redirect_with_flash(path, "alert", alert)
+      def redirect_with_notice(path, notice) = redirect_with_flash(path, "notice", notice)
+
+      def redirect_with_flash(path, key, message)
         session = read_session
-        session["flash"] = { "discard" => [], "flashes" => { "alert" => alert } }
+        session["flash"] = { "discard" => [], "flashes" => { key => message } }
         write_session(session)
         redirect url_for(path)
       end
@@ -595,7 +674,77 @@ module Campfire
         Messages.views(self, messages)
       end
 
-      # ---- Sidebar
+      # ---- Users, profiles, bans
+
+    get %r{/users/(\d+)} do |id|
+      require_authentication!
+      user = repo.user(id.to_i) or halt 404
+      view = build_view(user: user)
+      render_layout(view, page_title: user.name, nav: view.tpl_users_show_nav, main: view.tpl_users_show)
+    end
+
+    get "/users/me/profile" do
+      require_authentication!
+      memberships = repo.sidebar_memberships(current_user.id, visible_only: false)
+      directs, shared = memberships.partition { |_, room| room.direct? }
+      view = build_view(user: current_user, direct_memberships: directs, shared_memberships: shared,
+        avatar_attached: !repo.attachment_blob("User", current_user.id, "avatar").nil?)
+      render_layout(view, page_title: current_user.name, nav: view.tpl_profiles_show_nav, main: view.tpl_profiles_show)
+    end
+
+    patch "/users/me/profile" do
+      verify_same_origin!
+      require_authentication!
+      attributes = params["user"] || {}
+      Profiles.update(self, current_user, attributes)
+      redirect_with_notice("/users/me/profile", attributes["avatar"] ? "It may take up to 30 minutes to change everywhere." : "✓")
+    end
+
+    delete %r{/users/(me|\d+)/avatar} do
+      verify_same_origin!
+      require_authentication!
+      Profiles.remove_avatar(self, current_user)
+      redirect url_for("/users/me/profile")
+    end
+
+    post %r{/users/(\d+)/ban} do |id|
+      verify_same_origin!
+      require_authentication!
+      halt 403, "" unless current_user.can_administer?
+      user = repo.user(id.to_i) or halt 404
+      Bans.ban(self, user)
+      redirect url_for("/users/#{user.id}")
+    end
+
+    delete %r{/users/(\d+)/ban} do |id|
+      verify_same_origin!
+      require_authentication!
+      halt 403, "" unless current_user.can_administer?
+      user = repo.user(id.to_i) or halt 404
+      Bans.unban(self, user)
+      redirect url_for("/users/#{user.id}")
+    end
+
+    # ---- Involvement
+
+    get %r{/rooms/(\d+)/involvement} do |room_id|
+      require_authentication!
+      membership = repo.membership(current_user.id, room_id.to_i) or halt 404
+      room = repo.room(membership.room_id)
+      view = build_view
+      frame = %(<turbo-frame data-controller="turbo-frame" data-action="notifications:ready@window-&gt;turbo-frame#load" data-turbo-frame-url-param="/rooms/#{room.id}/involvement" id="involvement_#{room.param_key}_#{room.id}">\n  #{view.involvement_button(room, membership.involvement)}\n</turbo-frame>)
+      render_layout(view, main: frame)
+    end
+
+    put %r{/rooms/(\d+)/involvement} do |room_id|
+      verify_same_origin!
+      require_authentication!
+      membership = repo.membership(current_user.id, room_id.to_i) or halt 404
+      Involvements.update(self, membership, params["involvement"].to_s)
+      redirect url_for("/rooms/#{membership.room_id}/involvement")
+    end
+
+    # ---- Sidebar
 
       def render_sidebar
         memberships = repo.sidebar_memberships(current_user.id)

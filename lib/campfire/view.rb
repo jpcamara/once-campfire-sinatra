@@ -177,6 +177,35 @@ module Campfire
     def render_help_contact = tpl_sessions_help_contact
     def render_user_fields = tpl_users_fields
 
+    # ApplicationHelper#link_back
+    def link_back
+      destination = @referrer.to_s.empty? || @referrer == @request_url ? "/" : @referrer
+      %(<a class="btn" href="#{h destination}"><img aria-hidden="true" src="#{asset_path "arrow-left.svg"}" width="20" height="20" /><span class="for-screen-reader">Go Back</span></a>)
+    end
+
+    INVOLVEMENT_LABELS = {
+      "mentions" => "Notifying about @ mentions", "everything" => "Notifying about all messages",
+      "nothing" => "Notifications are off", "invisible" => "Notifications are off and room invisible in sidebar"
+    }.freeze
+    SHARED_INVOLVEMENTS = %w[ mentions everything nothing invisible ].freeze
+    DIRECT_INVOLVEMENTS = %w[ everything nothing ].freeze
+
+    # Rooms::InvolvementsHelper#button_to_change_involvement
+    def involvement_button(room, involvement)
+      order = room.direct? ? DIRECT_INVOLVEMENTS : SHARED_INVOLVEMENTS
+      following = order[(order.index(involvement) || -1) + 1] || order.first
+      label_id = "involvement_label_#{room.param_key}_#{room.id}"
+      %(<form class="button_to" method="post" action="/rooms/#{room.id}/involvement?involvement=#{following}"><input type="hidden" name="_method" value="put" /><button role="checkbox" aria-checked="true" aria-labelledby="#{label_id}" tabindex="0" class="btn #{involvement}" type="submit"><img aria-hidden="true" src="#{asset_path "notification-bell-#{involvement}.svg"}" width="20" height="20" /><span class="for-screen-reader" id="#{label_id}">#{INVOLVEMENT_LABELS[involvement]}</span></button></form>)
+    end
+
+    def render_transfer(user)
+      scoped(user: user, transfer_id: secrets.signed_id(user.id, "user/transfer", expires_at: Time.now + 4 * 3600)) { tpl_profiles_transfer }
+    end
+
+    def render_profile_membership(membership, room)
+      scoped(membership: membership, room: room) { tpl_profiles_membership }
+    end
+
     # Sets locals for one partial and restores the caller's afterwards.
     def scoped(**locals)
       saved = locals.keys.to_h { [ it, instance_variable_get(:"@#{it}") ] }
@@ -189,6 +218,7 @@ module Campfire
     # Locals the templates use.
     attr_reader :message, :creator, :room, :view, :boost, :booster, :membership, :members, :messages, :invitation,
       :direct_memberships, :other_memberships, :placeholder_users, :query, :raw_query, :count, :recents, :recent_searches,
-      :return_to_room, :email_address, :join_code, :request_path
+      :return_to_room, :email_address, :join_code, :request_path, :user, :transfer_id, :avatar_attached,
+      :shared_memberships
   end
 end

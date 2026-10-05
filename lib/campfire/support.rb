@@ -397,3 +397,104 @@ module Campfire
     end
   end
 end
+
+module Campfire
+  module Profiles
+    module_function
+
+    # Users::ProfilesController#update: blank fields are left alone (`.compact` drops only nils,
+    # and the form sends every field, so an empty password is ignored by has_secure_password).
+    def update(ctx, user, attributes)
+      now = TimeFormat.now_text
+      ctx.db.transaction do |w|
+        w.run("UPDATE users SET name = ?, updated_at = ? WHERE id = ?", attributes["name"], now, user.id) if attributes.key?("name") && !attributes["name"].to_s.empty?
+        w.run("UPDATE users SET email_address = ?, updated_at = ? WHERE id = ?", attributes["email_address"].to_s.strip.downcase, now, user.id) if attributes.key?("email_address")
+        w.run("UPDATE users SET bio = ?, updated_at = ? WHERE id = ?", attributes["bio"], now, user.id) if attributes.key?("bio")
+        unless attributes["password"].to_s.empty?
+          w.run("UPDATE users SET password_digest = ?, updated_at = ? WHERE id = ?", BCrypt::Password.create(attributes["password"]).to_s, now, user.id)
+        end
+      end
+      if attributes["avatar"].is_a?(Hash)
+        remove_avatar(ctx, user)
+        Users.attach_avatar(ctx, user.id, attributes["avatar"])
+        ctx.db.transaction { |w| w.run("UPDATE users SET updated_at = ? WHERE id = ?", TimeFormat.now_text, user.id) }
+      end
+    end
+
+    def remove_avatar(ctx, user)
+      ctx.db.transaction do |w|
+        w.run("DELETE FROM active_storage_attachments WHERE record_type = 'User' AND record_id = ? AND name = 'avatar'", user.id)
+        w.run("UPDATE users SET updated_at = ? WHERE id = ?", TimeFormat.now_text, user.id)
+      end
+    end
+  end
+
+  # User::Bannable
+  module Bans
+    module_function
+
+    def ban(ctx, user)
+      now = TimeFormat.now_text
+      ctx.db.transaction do |w|
+        ips = w.rows("SELECT DISTINCT ip_address FROM sessions WHERE user_id = ? AND ip_address IS NOT NULL AND ip_address != ''", user.id).map(&:first)
+        ips.each { w.run("INSERT INTO bans (created_at, ip_address, updated_at, user_id) VALUES (?, ?, ?, ?)", now, it, now, user.id) }
+        w.run("DELETE FROM sessions WHERE user_id = ?", user.id)
+        w.run("UPDATE users SET status = 2, updated_at = ? WHERE id = ?", now, user.id)
+      end
+      Jobs.later { remove_banned_content(user.id) }
+    end
+
+    def unban(ctx, user)
+      ctx.db.transaction do |w|
+        w.run("DELETE FROM bans WHERE user_id = ?", user.id)
+        w.run("UPDATE users SET status = 0, updated_at = ? WHERE id = ?", TimeFormat.now_text, user.id)
+      end
+    end
+
+    # RemoveBannedContentJob: each message destroyed and its removal broadcast.
+    def remove_banned_content(user_id)
+      runtime = Jobs.runtime
+      runtime.db.rows("SELECT #{Message.columns} FROM messages WHERE creator_id = ?", user_id).each do |row|
+        message = Message.new(*row)
+        room = runtime.repo.room(message.room_id)
+        MessageRemoval.destroy(runtime, message)
+        Broadcasts.turbo_stream("#{RailsCompat.gid_param(room.type, room.id)}:messages", %(<turbo-stream action="remove" target="message_#{message.client_message_id}"></turbo-stream>))
+      end
+    end
+  end
+
+  module MessageRemoval
+    module_function
+
+    # Message destroy: boosts, the rich text, the attachment and the search index row go with it.
+    def destroy(runtime, message)
+      runtime.db.transaction do |w|
+        w.run("DELETE FROM boosts WHERE message_id = ?", message.id)
+        w.run("DELETE FROM action_text_rich_texts WHERE record_type = 'Message' AND record_id = ?", message.id)
+        w.run("DELETE FROM active_storage_attachments WHERE record_type = 'Message' AND record_id = ?", message.id)
+        w.run("DELETE FROM message_search_index WHERE rowid = ?", message.id)
+        w.run("DELETE FROM messages WHERE id = ?", message.id)
+        w.run("UPDATE rooms SET updated_at = ? WHERE id = ?", TimeFormat.now_text, message.room_id)
+      end
+    end
+  end
+
+  module Involvements
+    module_function
+
+    # Rooms::InvolvementsController#update and its sidebar broadcasts
+    def update(ctx, membership, involvement)
+      return unless %w[ invisible nothing mentions everything ].include?(involvement)
+      ctx.db.transaction { |w| w.run("UPDATE memberships SET involvement = ?, updated_at = ? WHERE id = ?", involvement, TimeFormat.now_text, membership.id) }
+      room = ctx.repo.room(membership.room_id)
+      return if room.direct?
+      stream = "#{RailsCompat.gid_param("User", membership.user_id)}:rooms"
+      if involvement == "invisible"
+        Broadcasts.turbo_stream(stream, %(<turbo-stream action="remove" target="list_#{room.param_key}_#{room.id}"></turbo-stream>))
+      elsif membership.involvement == "invisible"
+        html = %(<a id="list_#{room.param_key}_#{room.id}" data-rooms-list-target="room" data-room-id="#{room.id}" data-badge-dot-target="unread" data-sorted-list-target="item" data-sorted-list-name="#{HTML.h(room.name)}" style="--column-gap: 0.5em" class="align-center gap room btn txt-nowrap" href="/rooms/#{room.id}">\n  <span class="overflow-ellipsis">#{HTML.h(room.name)}</span>\n</a>)
+        Broadcasts.turbo_stream(stream, %(<turbo-stream action="prepend" target="shared_rooms"><template>#{html}</template></turbo-stream>))
+      end
+    end
+  end
+end

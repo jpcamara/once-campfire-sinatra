@@ -133,10 +133,10 @@ module Campfire
     end
 
     # Users::SidebarsController#show
-    def sidebar_memberships(user_id)
+    def sidebar_memberships(user_id, visible_only: true)
       @db.rows(<<~SQL, user_id).map { [ Membership.new(*it[0, 9]), Room.new(*it[9, 6]) ] }
         SELECT #{Membership.columns}, #{Room.columns} FROM memberships INNER JOIN rooms ON rooms.id = memberships.room_id
-        WHERE memberships.user_id = ? AND memberships.involvement != 'invisible' ORDER BY LOWER(rooms.name)
+        WHERE memberships.user_id = ? #{"AND memberships.involvement != 'invisible'" if visible_only} ORDER BY LOWER(rooms.name)
       SQL
     end
 
