@@ -179,6 +179,20 @@ module Campfire
       SQL
     end
 
+    def active_users_ordered
+      @db.rows("SELECT #{User.columns} FROM users WHERE users.status = 0 ORDER BY LOWER(name)").map { User.new(*it) }
+    end
+
+    def room_user_ids(room_id)
+      @db.rows("SELECT users.id FROM users INNER JOIN memberships ON users.id = memberships.user_id WHERE memberships.room_id = ?", room_id).map(&:first)
+    end
+
+    def room_users(room_id)
+      @db.rows(<<~SQL, room_id).map { User.new(*it) }
+        SELECT #{User.columns} FROM users INNER JOIN memberships ON users.id = memberships.user_id WHERE memberships.room_id = ?
+      SQL
+    end
+
     def active_users_excluding(ids, limit)
       @db.rows(<<~SQL, *ids, limit).map { User.new(*it) }
         SELECT #{User.columns} FROM users WHERE users.status = 0 AND users.id NOT IN (#{DB.in_list(ids.size)}) ORDER BY users.created_at ASC LIMIT ?

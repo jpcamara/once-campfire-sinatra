@@ -77,9 +77,22 @@ module Campfire
       "/users/#{avatar_token(user)}/avatar?v=#{TimeFormat.number(user.updated_at)}"
     end
 
-    def avatar_tag(user, aria_label: nil)
+    def avatar_tag(user, aria_label: nil, loading: nil)
       aria = aria_label ? %(aria-label="#{h aria_label}") : %(aria-hidden="true")
+      aria = %(#{aria} loading="#{loading}") if loading
       %(<a title="#{h user.title}" class="btn avatar" data-turbo-frame="_top" href="/users/#{user.id}"><img #{aria} src="#{avatar_path(user)}" width="48" height="48" /></a>)
+    end
+
+    def render_autocompletable_template = tpl_users_autocompletable_template
+
+    def render_room_user(member, selected)
+      scoped(member: member, selected: selected) { tpl_rooms_settings_user }
+    end
+
+    def link_back_to_last_room_visited
+      room = @last_room_visited
+      destination = room ? "/rooms/#{room.id}" : "/"
+      %(<a class="btn" href="#{destination}"><img aria-hidden="true" src="#{asset_path "arrow-left.svg"}" width="20" height="20" /><span class="for-screen-reader">Go Back</span></a>)
     end
 
     def avatar_background_color(user)
@@ -219,6 +232,7 @@ module Campfire
     attr_reader :message, :creator, :room, :view, :boost, :booster, :membership, :members, :messages, :invitation,
       :direct_memberships, :other_memberships, :placeholder_users, :query, :raw_query, :count, :recents, :recent_searches,
       :return_to_room, :email_address, :join_code, :request_path, :user, :transfer_id, :avatar_attached,
-      :shared_memberships, :editor_value
+      :shared_memberships, :editor_value, :editing, :form_type, :can_administer, :room_name, :type_change_path, :user_count,
+      :selected_users, :unselected_users, :member, :selected, :last_room_visited
   end
 end

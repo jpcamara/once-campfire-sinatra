@@ -272,6 +272,87 @@ module Campfire
       %(<turbo-stream action="append" target="messages_#{room.param_key}_#{room.id}"><template>#{build_view.render_message_cached(view)}</template></turbo-stream>)
     end
 
+    # ---- Room settings: open, closed and direct rooms
+
+    get %r{/rooms/(opens|closeds)/new} do |kind|
+      require_authentication!
+      halt 403, "" unless can_create_rooms?
+      render_room_settings(kind.chomp("s"), nil)
+    end
+
+    get %r{/rooms/(opens|closeds)/(\d+)/edit} do |kind, id|
+      require_authentication!
+      room = repo.user_room(current_user.id, id.to_i)
+      return redirect_with_alert("/", "Room not found or inaccessible") unless room && !room.direct?
+      render_room_settings(kind.chomp("s"), room)
+    end
+
+    get %r{/rooms/(opens|closeds)/(\d+)} do |_kind, id|
+      require_authentication!
+      room = repo.user_room(current_user.id, id.to_i)
+      return redirect_with_alert("/", "Room not found or inaccessible") unless room && !room.direct?
+      remember_last_room_visited(room)
+      redirect url_for("/rooms/#{room.id}")
+    end
+
+    post %r{/rooms/(opens|closeds)} do |kind|
+      verify_same_origin!
+      require_authentication!
+      halt 403, "" unless can_create_rooms?
+      room = Rooms.create(self, kind == "opens" ? "Rooms::Open" : "Rooms::Closed", (params["room"] || {})["name"].to_s, Array(params["user_ids"]))
+      redirect url_for("/rooms/#{room.id}")
+    end
+
+    patch %r{/rooms/(opens|closeds)/(\d+)} do |kind, id|
+      verify_same_origin!
+      require_authentication!
+      room = repo.user_room(current_user.id, id.to_i)
+      return redirect_with_alert("/", "Room not found or inaccessible") unless room && !room.direct?
+      halt 403, "" unless current_user.can_administer?(room)
+      room = Rooms.update(self, room, kind == "opens" ? "Rooms::Open" : "Rooms::Closed", (params["room"] || {})["name"], Array(params["user_ids"]))
+      redirect url_for("/rooms/#{room.id}")
+    end
+
+    get "/rooms/directs/new" do
+      require_authentication!
+      view = build_view
+      render_layout(view, main: view.tpl_rooms_direct_new)
+    end
+
+    post "/rooms/directs" do
+      verify_same_origin!
+      require_authentication!
+      room = Rooms.find_or_create_direct(self, (Array(params["user_ids"]).map(&:to_i) + [ current_user.id ]).uniq)
+      redirect url_for("/rooms/#{room.id}")
+    end
+
+    get %r{/rooms/directs/(\d+)/edit} do |id|
+      require_authentication!
+      room = repo.user_room(current_user.id, id.to_i)
+      return redirect_with_alert("/", "Room not found or inaccessible") unless room&.direct?
+      users = repo.room_users(room.id)
+      members = users.size > 1 ? users.reject { it.id == current_user.id } : users
+      view = build_view(room: room, members: members, last_room_visited: last_room_visited)
+      render_layout(view, page_title: "Edit settings for #{view.room_display_name(room)}", nav: view.tpl_rooms_settings_nav, main: view.tpl_rooms_direct_edit)
+    end
+
+    get %r{/rooms/directs/(\d+)} do |id|
+      require_authentication!
+      room = repo.user_room(current_user.id, id.to_i)
+      return redirect_with_alert("/", "Room not found or inaccessible") unless room&.direct?
+      redirect url_for("/rooms/#{room.id}")
+    end
+
+    delete %r{/rooms(?:/directs)?/(\d+)} do |id|
+      verify_same_origin!
+      require_authentication!
+      room = repo.user_room(current_user.id, id.to_i)
+      return redirect_with_alert("/", "Room not found or inaccessible") unless room && (room.direct? == request.path_info.include?("/directs/"))
+      halt 403, "" unless room.direct? || current_user.can_administer?(room)
+      Rooms.destroy(self, room)
+      redirect url_for("/")
+    end
+
     # ---- Users, profiles, bans
 
     get %r{/users/(\d+)} do |id|
@@ -692,6 +773,28 @@ module Campfire
 
       # ---- Rooms
 
+      def can_create_rooms?
+        current_user.administrator? || !runtime.account.restrict_room_creation_to_administrators?
+      end
+
+      def render_room_settings(form_type, room)
+        users = repo.active_users_ordered
+        editing = !room.nil?
+        administer = editing ? current_user.can_administer?(room) : true
+        if form_type == "closed"
+          member_ids = editing ? repo.room_user_ids(room.id) : []
+          selected, unselected = users.partition { member_ids.include?(it.id) }
+        else
+          selected, unselected = [], users
+        end
+        type_change_path = editing ? "/rooms/#{form_type == "open" ? "closeds" : "opens"}/#{room.id}/edit" : "/rooms/#{form_type == "open" ? "closeds" : "opens"}/new"
+        view = build_view(room: room, editing: editing, form_type: form_type, can_administer: administer,
+          room_name: editing ? room.name : "New room", type_change_path: type_change_path, user_count: users.size,
+          selected_users: selected, unselected_users: unselected, last_room_visited: last_room_visited)
+        render_layout(view, page_title: editing ? "Edit settings for #{room.name}" : "New chat room",
+          nav: view.tpl_rooms_settings_nav, main: view.tpl_rooms_settings)
+      end
+
       def reachable_message!(id)
         row = db.row(<<~SQL, current_user.id, id.to_i) or halt 404
           SELECT #{Message.columns} FROM messages INNER JOIN rooms ON messages.room_id = rooms.id
@@ -776,7 +879,88 @@ module Campfire
         Messages.views(self, messages)
       end
 
-      # ---- Users, profiles, bans
+      # ---- Room settings: open, closed and direct rooms
+
+    get %r{/rooms/(opens|closeds)/new} do |kind|
+      require_authentication!
+      halt 403, "" unless can_create_rooms?
+      render_room_settings(kind.chomp("s"), nil)
+    end
+
+    get %r{/rooms/(opens|closeds)/(\d+)/edit} do |kind, id|
+      require_authentication!
+      room = repo.user_room(current_user.id, id.to_i)
+      return redirect_with_alert("/", "Room not found or inaccessible") unless room && !room.direct?
+      render_room_settings(kind.chomp("s"), room)
+    end
+
+    get %r{/rooms/(opens|closeds)/(\d+)} do |_kind, id|
+      require_authentication!
+      room = repo.user_room(current_user.id, id.to_i)
+      return redirect_with_alert("/", "Room not found or inaccessible") unless room && !room.direct?
+      remember_last_room_visited(room)
+      redirect url_for("/rooms/#{room.id}")
+    end
+
+    post %r{/rooms/(opens|closeds)} do |kind|
+      verify_same_origin!
+      require_authentication!
+      halt 403, "" unless can_create_rooms?
+      room = Rooms.create(self, kind == "opens" ? "Rooms::Open" : "Rooms::Closed", (params["room"] || {})["name"].to_s, Array(params["user_ids"]))
+      redirect url_for("/rooms/#{room.id}")
+    end
+
+    patch %r{/rooms/(opens|closeds)/(\d+)} do |kind, id|
+      verify_same_origin!
+      require_authentication!
+      room = repo.user_room(current_user.id, id.to_i)
+      return redirect_with_alert("/", "Room not found or inaccessible") unless room && !room.direct?
+      halt 403, "" unless current_user.can_administer?(room)
+      room = Rooms.update(self, room, kind == "opens" ? "Rooms::Open" : "Rooms::Closed", (params["room"] || {})["name"], Array(params["user_ids"]))
+      redirect url_for("/rooms/#{room.id}")
+    end
+
+    get "/rooms/directs/new" do
+      require_authentication!
+      view = build_view
+      render_layout(view, main: view.tpl_rooms_direct_new)
+    end
+
+    post "/rooms/directs" do
+      verify_same_origin!
+      require_authentication!
+      room = Rooms.find_or_create_direct(self, (Array(params["user_ids"]).map(&:to_i) + [ current_user.id ]).uniq)
+      redirect url_for("/rooms/#{room.id}")
+    end
+
+    get %r{/rooms/directs/(\d+)/edit} do |id|
+      require_authentication!
+      room = repo.user_room(current_user.id, id.to_i)
+      return redirect_with_alert("/", "Room not found or inaccessible") unless room&.direct?
+      users = repo.room_users(room.id)
+      members = users.size > 1 ? users.reject { it.id == current_user.id } : users
+      view = build_view(room: room, members: members, last_room_visited: last_room_visited)
+      render_layout(view, page_title: "Edit settings for #{view.room_display_name(room)}", nav: view.tpl_rooms_settings_nav, main: view.tpl_rooms_direct_edit)
+    end
+
+    get %r{/rooms/directs/(\d+)} do |id|
+      require_authentication!
+      room = repo.user_room(current_user.id, id.to_i)
+      return redirect_with_alert("/", "Room not found or inaccessible") unless room&.direct?
+      redirect url_for("/rooms/#{room.id}")
+    end
+
+    delete %r{/rooms(?:/directs)?/(\d+)} do |id|
+      verify_same_origin!
+      require_authentication!
+      room = repo.user_room(current_user.id, id.to_i)
+      return redirect_with_alert("/", "Room not found or inaccessible") unless room && (room.direct? == request.path_info.include?("/directs/"))
+      halt 403, "" unless room.direct? || current_user.can_administer?(room)
+      Rooms.destroy(self, room)
+      redirect url_for("/")
+    end
+
+    # ---- Users, profiles, bans
 
     get %r{/users/(\d+)} do |id|
       require_authentication!

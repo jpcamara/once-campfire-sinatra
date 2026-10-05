@@ -533,3 +533,108 @@ module Campfire
     end
   end
 end
+
+module Campfire
+  # Room creation, conversion between open and closed, direct rooms and deletion, with the
+  # sidebar broadcasts the Rails controllers send.
+  module Rooms
+    module_function
+
+    def shared_html(room)
+      %(<a id="list_#{room.param_key}_#{room.id}" data-rooms-list-target="room" data-room-id="#{room.id}" data-badge-dot-target="unread" data-sorted-list-target="item" data-sorted-list-name="#{HTML.h(room.name)}" style="--column-gap: 0.5em" class="align-center gap room btn txt-nowrap" href="/rooms/#{room.id}">\n  <span class="overflow-ellipsis">#{HTML.h(room.name)}</span>\n</a>)
+    end
+
+    def user_stream(user_id) = "#{RailsCompat.gid_param("User", user_id)}:rooms"
+
+    def create(ctx, type, name, user_ids)
+      now = TimeFormat.now_text
+      creator = ctx.current_user
+      grantees = type == "Rooms::Open" ? [ creator.id ] : user_ids.map(&:to_i).select { ctx.repo.user(it) }
+      room = ctx.db.transaction do |w|
+        w.run("INSERT INTO rooms (created_at, creator_id, name, type, updated_at) VALUES (?, ?, ?, ?, ?)", now, creator.id, name, type, now)
+        id = w.last_insert_row_id
+        grantees.each { w.run("INSERT OR IGNORE INTO memberships (created_at, involvement, room_id, updated_at, user_id) VALUES (?, 'mentions', ?, ?, ?)", now, id, now, it) }
+        if type == "Rooms::Open" # Rooms::Open#grant_access_to_all_users
+          w.rows("SELECT id FROM users WHERE status = 0").each { |(uid)| w.run("INSERT OR IGNORE INTO memberships (created_at, room_id, updated_at, user_id) VALUES (?, ?, ?, ?)", now, id, now, uid) }
+        end
+        Room.new(id, now, creator.id, name, type, now)
+      end
+      broadcast_created(ctx, room)
+      room
+    end
+
+    def broadcast_created(ctx, room)
+      html = shared_html(room)
+      if room.open?
+        Broadcasts.turbo_stream("rooms", %(<turbo-stream action="prepend" target="shared_rooms"><template>#{html}</template></turbo-stream>))
+      else
+        ctx.repo.room_user_ids(room.id).each { Broadcasts.turbo_stream(user_stream(it), %(<turbo-stream action="prepend" target="shared_rooms"><template>#{html}</template></turbo-stream>)) }
+      end
+    end
+
+    def update(ctx, room, type, name, user_ids)
+      now = TimeFormat.now_text
+      ctx.db.transaction do |w|
+        w.run("UPDATE rooms SET name = COALESCE(?, name), type = ?, updated_at = ? WHERE id = ?", name, type, now, room.id)
+        if type == "Rooms::Closed"
+          grantees = user_ids.map(&:to_i)
+          current = w.rows("SELECT user_id FROM memberships WHERE room_id = ?", room.id).map(&:first)
+          (grantees - current).each { w.run("INSERT OR IGNORE INTO memberships (created_at, involvement, room_id, updated_at, user_id) VALUES (?, 'mentions', ?, ?, ?)", now, room.id, now, it) }
+          (current - grantees).each { w.run("DELETE FROM memberships WHERE room_id = ? AND user_id = ?", room.id, it) }
+        elsif room.type != "Rooms::Open"
+          w.rows("SELECT id FROM users WHERE status = 0").each { |(uid)| w.run("INSERT OR IGNORE INTO memberships (created_at, room_id, updated_at, user_id) VALUES (?, ?, ?, ?)", now, room.id, now, uid) }
+        end
+      end
+      room = ctx.repo.room(room.id)
+      html = shared_html(room)
+      replace = %(<turbo-stream action="replace" target="list_#{room.param_key}_#{room.id}"><template>#{html}</template></turbo-stream>)
+      if room.open?
+        Broadcasts.turbo_stream("rooms", replace)
+      else
+        ctx.repo.room_user_ids(room.id).each { Broadcasts.turbo_stream(user_stream(it), replace) }
+      end
+      room
+    end
+
+    # Rooms::Direct.find_or_create_for: the direct room whose members are exactly these users.
+    def find_or_create_direct(ctx, user_ids)
+      user_ids = user_ids.select { ctx.repo.user(it) }.sort
+      existing = ctx.repo.direct_room_ids(ctx.current_user.id).find { ctx.repo.room_user_ids(it).sort == user_ids }
+      return ctx.repo.room(existing) if existing
+
+      now = TimeFormat.now_text
+      room = ctx.db.transaction do |w|
+        w.run("INSERT INTO rooms (created_at, creator_id, name, type, updated_at) VALUES (?, ?, NULL, 'Rooms::Direct', ?)", now, ctx.current_user.id, now)
+        id = w.last_insert_row_id
+        user_ids.each { w.run("INSERT OR IGNORE INTO memberships (created_at, involvement, room_id, updated_at, user_id) VALUES (?, 'everything', ?, ?, ?)", now, id, now, it) }
+        Room.new(id, now, ctx.current_user.id, nil, "Rooms::Direct", now)
+      end
+      memberships = ctx.db.rows("SELECT #{Membership.columns} FROM memberships WHERE room_id = ?", room.id).map { Membership.new(*it) }
+      memberships.each do |membership|
+        user = ctx.repo.user(membership.user_id)
+        members = ctx.repo.room_users_except(room.id, user.id)
+        members = [ user ] if members.empty?
+        html = ctx.build_view.render_sidebar_direct(membership, room, members)
+        Broadcasts.turbo_stream(user_stream(user.id), %(<turbo-stream action="prepend" target="direct_rooms"><template>#{html}</template></turbo-stream>))
+      end
+      room
+    end
+
+    def destroy(ctx, room)
+      ctx.db.transaction do |w|
+        ids = w.rows("SELECT id FROM messages WHERE room_id = ?", room.id).map(&:first)
+        ids.each_slice(500) do |slice|
+          list = DB.in_list(slice.size)
+          w.run("DELETE FROM boosts WHERE message_id IN (#{list})", *slice)
+          w.run("DELETE FROM action_text_rich_texts WHERE record_type = 'Message' AND record_id IN (#{list})", *slice)
+          w.run("DELETE FROM active_storage_attachments WHERE record_type = 'Message' AND record_id IN (#{list})", *slice)
+          w.run("DELETE FROM message_search_index WHERE rowid IN (#{list})", *slice)
+        end
+        w.run("DELETE FROM messages WHERE room_id = ?", room.id)
+        w.run("DELETE FROM memberships WHERE room_id = ?", room.id)
+        w.run("DELETE FROM rooms WHERE id = ?", room.id)
+      end
+      Broadcasts.turbo_stream("rooms", %(<turbo-stream action="remove" target="list_#{room.param_key}_#{room.id}"></turbo-stream>))
+    end
+  end
+end
