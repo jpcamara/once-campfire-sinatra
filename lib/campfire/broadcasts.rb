@@ -76,7 +76,7 @@ module Campfire
       end
 
       def url
-        ENV.fetch("REDIS_URL") { "redis://127.0.0.1:#{ENV.fetch("REDIS_PORT", 6391)}/0" }
+        ENV.fetch("REDIS_URL", "redis://127.0.0.1:6379/0") # bin/start runs Redis there unless REDIS_URL says otherwise
       end
 
       private

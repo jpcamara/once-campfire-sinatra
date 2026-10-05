@@ -107,6 +107,9 @@ module Campfire
           end
         rescue JSON::ParserError
           nil
+        rescue => error
+          # One failing command (a broadcast that can't reach Redis, say) doesn't drop the connection.
+          warn "cable command failed: #{error.class}: #{error.message}"
         end
 
         def subscribe(identifier)

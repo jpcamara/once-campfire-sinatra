@@ -37,7 +37,8 @@ module Campfire
         return nil unless signed.is_a?(String)
         data, digest = signed.split("--", 2)
         return nil if data.nil? || digest.nil? || digest.include?("--")
-        return nil unless OpenSSL.fixed_length_secure_compare(digest, sign(data)) rescue nil
+        expected = sign(data)
+        return nil unless digest.bytesize == expected.bytesize && OpenSSL.fixed_length_secure_compare(digest, expected)
 
         unwrap(JSON.parse(decode(data)), purpose, now)
       rescue JSON::ParserError, ArgumentError
