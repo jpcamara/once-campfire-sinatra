@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Runs the app locally on a copy of the parity seed: bin/dev [PORT] (default 4494).
+set -euo pipefail
+here=$(cd "$(dirname "$0")/.." && pwd)
+source "$here/.envrc-ruby"
+set -a; source "$here/../../once-campfire-rust/parity/.env.reference"; set +a
+export STORAGE_PATH=${STORAGE_PATH:-$here/../../.work-sinatra/dev}
+export REDIS_URL=${REDIS_URL:-redis://127.0.0.1:6391/0}
+cd "$here"
+exec bundle exec falcon serve --bind "http://127.0.0.1:${1:-4494}" --count "${WEB_CONCURRENCY:-1}" --forked

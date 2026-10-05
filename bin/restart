@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Restarts the local dev server (bin/dev) in the background, logging to /tmp/sinatra-dev.log.
+pkill -f "falcon serve --bind http://127.0.0.1:${1:-4494}" 2>/dev/null
+sleep 0.5
+nohup "$(dirname "$0")/dev" "${1:-4494}" > /tmp/sinatra-dev.log 2>&1 < /dev/null &
+for _ in $(seq 1 100); do curl -fsS -o /dev/null "http://127.0.0.1:${1:-4494}/up" 2>/dev/null && exit 0; sleep 0.1; done
+echo "server did not start" >&2; tail -20 /tmp/sinatra-dev.log >&2; exit 1
