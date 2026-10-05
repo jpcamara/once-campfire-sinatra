@@ -53,8 +53,7 @@ module Campfire
     def disk_path(runtime, key:, filename:, content_type:, disposition:)
       payload = { "key" => key, "disposition" => disposition, "content_type" => content_type, "service_name" => "local" }
       encoded = verifier(runtime).generate(payload, purpose: "blob_key", expires_at: Time.now + 300)
-      query = URI.encode_www_form(content_type: content_type, disposition: disposition)
-      "/rails/active_storage/disk/#{encoded}/#{escape_filename(filename)}?#{query}"
+      "/rails/active_storage/disk/#{encoded}/#{escape_filename(filename)}"
     end
 
     TRADITIONAL_ESCAPED_CHAR = /[^ A-Za-z0-9!\#$+.^_`|~-]/

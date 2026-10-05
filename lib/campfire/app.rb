@@ -249,10 +249,10 @@ module Campfire
       room = room_scoped!(room_id)
       messages =
         if (before = params["before"]).to_s != ""
-          anchor = repo.room_message(room.id, before.to_i) or halt 404
+          anchor = repo.room_message(room.id, before.to_i) or record_not_found!
           repo.page_before(room.id, anchor.created_at)
         elsif (after = params["after"]).to_s != ""
-          anchor = repo.room_message(room.id, after.to_i) or halt 404
+          anchor = repo.room_message(room.id, after.to_i) or record_not_found!
           repo.page_after(room.id, anchor.created_at)
         else
           repo.last_page(room.id)
@@ -411,7 +411,7 @@ module Campfire
       require_authentication!
       halt 403, "" unless current_user.can_administer?
       user = repo.user(id.to_i)
-      halt 404 unless user&.active?
+      record_not_found! unless user&.active?
       role = %w[ member administrator ].include?((params["user"] || {})["role"]) ? params["user"]["role"] : "member"
       db.transaction { |w| w.run("UPDATE users SET role = ?, updated_at = ? WHERE id = ?", role == "administrator" ? 1 : 0, TimeFormat.now_text, user.id) }
       redirect url_for("/account/edit")
@@ -422,7 +422,7 @@ module Campfire
       require_authentication!
       halt 403, "" unless current_user.can_administer?
       user = repo.user(id.to_i)
-      halt 404 unless user&.active?
+      record_not_found! unless user&.active?
       Accounts.deactivate(self, user)
       redirect url_for("/account/edit")
     end
@@ -583,7 +583,7 @@ module Campfire
     post %r{/users/me/push_subscriptions/(\d+)/test_notifications} do |id|
       verify_same_origin!
       require_authentication!
-      row = db.row("SELECT endpoint, p256dh_key, auth_key FROM push_subscriptions WHERE id = ? AND user_id = ?", id.to_i, current_user.id) or halt 404
+      row = db.row("SELECT endpoint, p256dh_key, auth_key FROM push_subscriptions WHERE id = ? AND user_id = ?", id.to_i, current_user.id) or record_not_found!
       payload = { title: "Campfire Test", body: SecureRandom.uuid, path: url_for("/users/me/push_subscriptions") }
       badge = db.value("SELECT COUNT(*) FROM memberships WHERE user_id = ? AND unread_at IS NOT NULL", current_user.id)
       Push.deliver(runtime, id.to_i, *row, payload, badge) if Push.permitted?(row[0])
@@ -608,8 +608,8 @@ module Campfire
     get %r{/rooms/(\d+)/(\d+-[A-Za-z0-9]+)/messages(?:\.json)?} do |room_id, bot_key|
       bot, room = bot_room!(bot_key, room_id)
       messages =
-        if !params["before"].to_s.empty? then repo.page_before(room.id, (repo.room_message(room.id, params["before"].to_i) or halt 404).created_at)
-        elsif !params["after"].to_s.empty? then repo.page_after(room.id, (repo.room_message(room.id, params["after"].to_i) or halt 404).created_at)
+        if !params["before"].to_s.empty? then repo.page_before(room.id, (repo.room_message(room.id, params["before"].to_i) or record_not_found!).created_at)
+        elsif !params["after"].to_s.empty? then repo.page_after(room.id, (repo.room_message(room.id, params["after"].to_i) or record_not_found!).created_at)
         else repo.last_page(room.id)
         end
       headers "X-Total-Count" => repo.room_message_count(room.id).to_s
@@ -640,7 +640,7 @@ module Campfire
       send(verb, %r{/rooms/(\d+)/(\d+-[A-Za-z0-9]+)/messages/(\d+)(?:\.json)?}) do |room_id, bot_key, id|
         bot, room = bot_room!(bot_key, room_id)
         @current_user = bot
-        message = repo.room_message(room.id, id.to_i) or halt 404
+        message = repo.room_message(room.id, id.to_i) or record_not_found!
         halt 403, "" unless bot.can_administer?(message)
         message = Messages.update(self, room, message, (params["message"] || {})["body"])
         headers "Content-Type" => "application/json; charset=utf-8"
@@ -650,7 +650,7 @@ module Campfire
 
     delete %r{/rooms/(\d+)/(\d+-[A-Za-z0-9]+)/messages/(\d+)(?:\.json)?} do |room_id, bot_key, id|
       bot, room = bot_room!(bot_key, room_id)
-      message = repo.room_message(room.id, id.to_i) or halt 404
+      message = repo.room_message(room.id, id.to_i) or record_not_found!
       halt 403, "" unless bot.can_administer?(message)
       MessageRemoval.destroy(runtime, message)
       Broadcasts.turbo_stream("#{RailsCompat.gid_param(room.type, room.id)}:messages", %(<turbo-stream action="remove" target="message_#{message.client_message_id}"></turbo-stream>))
@@ -662,7 +662,7 @@ module Campfire
 
     get %r{/users/(\d+)} do |id|
       require_authentication!
-      user = repo.user(id.to_i) or halt 404
+      user = repo.user(id.to_i) or record_not_found!
       view = build_view(user: user)
       render_layout(view, page_title: user.name, nav: view.tpl_users_show_nav, main: view.tpl_users_show)
     end
@@ -695,7 +695,7 @@ module Campfire
       verify_same_origin!
       require_authentication!
       halt 403, "" unless current_user.can_administer?
-      user = repo.user(id.to_i) or halt 404
+      user = repo.user(id.to_i) or record_not_found!
       Bans.ban(self, user)
       redirect url_for("/users/#{user.id}")
     end
@@ -704,7 +704,7 @@ module Campfire
       verify_same_origin!
       require_authentication!
       halt 403, "" unless current_user.can_administer?
-      user = repo.user(id.to_i) or halt 404
+      user = repo.user(id.to_i) or record_not_found!
       Bans.unban(self, user)
       redirect url_for("/users/#{user.id}")
     end
@@ -713,7 +713,7 @@ module Campfire
 
     get %r{/rooms/(\d+)/involvement} do |room_id|
       require_authentication!
-      membership = repo.membership(current_user.id, room_id.to_i) or halt 404
+      membership = repo.membership(current_user.id, room_id.to_i) or record_not_found!
       room = repo.room(membership.room_id)
       view = build_view
       frame = %(<turbo-frame data-controller="turbo-frame" data-action="notifications:ready@window-&gt;turbo-frame#load" data-turbo-frame-url-param="/rooms/#{room.id}/involvement" id="involvement_#{room.param_key}_#{room.id}">\n  #{view.involvement_button(room, membership.involvement)}\n</turbo-frame>)
@@ -723,7 +723,7 @@ module Campfire
     put %r{/rooms/(\d+)/involvement} do |room_id|
       verify_same_origin!
       require_authentication!
-      membership = repo.membership(current_user.id, room_id.to_i) or halt 404
+      membership = repo.membership(current_user.id, room_id.to_i) or record_not_found!
       Involvements.update(self, membership, params["involvement"].to_s)
       redirect url_for("/rooms/#{membership.room_id}/involvement")
     end
@@ -733,7 +733,7 @@ module Campfire
     get %r{/rooms/(\d+)/messages/(\d+)} do |room_id, id|
       require_authentication!
       room = room_scoped!(room_id)
-      message = repo.room_message(room.id, id.to_i) or halt 404
+      message = repo.room_message(room.id, id.to_i) or record_not_found!
       view = build_view
       render_layout(view, main: view.render_message_cached(message_views([ message ]).first))
     end
@@ -741,7 +741,7 @@ module Campfire
     get %r{/rooms/(\d+)/messages/(\d+)/edit} do |room_id, id|
       require_authentication!
       room = room_scoped!(room_id)
-      message = repo.room_message(room.id, id.to_i) or halt 404
+      message = repo.room_message(room.id, id.to_i) or record_not_found!
       halt 403, "" unless current_user.can_administer?(message)
       message_view = Messages.views(self, [ message ], cached: false).first
       body = repo.bodies([ message.id ])[message.id]
@@ -753,7 +753,7 @@ module Campfire
       verify_same_origin!
       require_authentication!
       room = room_scoped!(room_id)
-      message = repo.room_message(room.id, id.to_i) or halt 404
+      message = repo.room_message(room.id, id.to_i) or record_not_found!
       halt 403, "" unless current_user.can_administer?(message)
       message = Messages.update(self, room, message, (params["message"] || {})["body"])
       redirect url_for("/rooms/#{room.id}/messages/#{message.id}")
@@ -763,7 +763,7 @@ module Campfire
       verify_same_origin!
       require_authentication!
       room = room_scoped!(room_id)
-      message = repo.room_message(room.id, id.to_i) or halt 404
+      message = repo.room_message(room.id, id.to_i) or record_not_found!
       halt 403, "" unless current_user.can_administer?(message)
       MessageRemoval.destroy(runtime, message)
       remove = %(<turbo-stream action="remove" target="message_#{message.client_message_id}"></turbo-stream>)
@@ -791,7 +791,7 @@ module Campfire
         html << %(<turbo-stream action="replace" target="message_#{message_view.message.client_message_id}"><template>#{view.render_message_cached(message_view)}</template></turbo-stream>)
       end
       html_headers("text/vnd.turbo-stream.html")
-      html
+      html.empty? ? "\n" : html # the template's trailing newline when there's nothing to send
     end
 
     # ---- Boosts
@@ -823,7 +823,7 @@ module Campfire
       verify_same_origin!
       require_authentication!
       message = reachable_message!(message_id)
-      Boosts.destroy(self, message, id.to_i) or halt 404
+      Boosts.destroy(self, message, id.to_i) or record_not_found!
       status 204
       ""
     end
@@ -888,7 +888,7 @@ module Campfire
       transformations = Storage.verify(runtime, params["variation_key"], "variation") or active_storage_not_found
       # ActiveStorage::Preview: a video's representation is a variant of its stored preview image.
       if blob.video?
-        row = db.row(<<~SQL, blob.id) or halt 404
+        row = db.row(<<~SQL, blob.id) or active_storage_not_found
           SELECT #{Blob.columns} FROM active_storage_attachments JOIN active_storage_blobs ON active_storage_blobs.id = active_storage_attachments.blob_id
           WHERE active_storage_attachments.record_type = 'ActiveStorage::Blob' AND active_storage_attachments.record_id = ? AND active_storage_attachments.name = 'preview_image' LIMIT 1
         SQL
@@ -914,7 +914,8 @@ module Campfire
       def redirect(uri, *args)
         status 302
         response["Location"] = uri
-        headers "Content-Type" => "text/html; charset=utf-8", "Cache-Control" => "no-cache"
+        headers "Content-Type" => "text/html; charset=utf-8"
+        response.headers["Cache-Control"] ||= "no-cache"
         halt(*args)
       end
 
@@ -1007,6 +1008,14 @@ module Campfire
         Blob.new(*row)
       end
 
+      # ActiveRecord::RecordNotFound from a find: the public 404 page, as ActionDispatch::ShowExceptions
+      # serves it (none of the controller's headers).
+      def record_not_found!
+        without_security_headers
+        without_version_headers
+        halt 404, { "Content-Type" => "text/html; charset=UTF-8" }, File.read(File.join(ROOT, "public/404.html"))
+      end
+
       # Active Storage's controllers aren't ApplicationControllers: a missing blob is the public 404
       # page, without version headers.
       def active_storage_not_found
@@ -1042,7 +1051,6 @@ module Campfire
         if request.get? || request.head?
           write_session("return_to_after_authenticating" => request.url)
         end
-        without_version_headers # the before_action that sets them comes after require_authentication
         halt redirect(url_for("/session/new"))
       end
 
@@ -1148,7 +1156,7 @@ module Campfire
       end
 
       def active_bot!(id)
-        row = db.row("SELECT #{User.columns} FROM users WHERE id = ? AND status = 0 AND role = 2", id.to_i) or halt 404
+        row = db.row("SELECT #{User.columns} FROM users WHERE id = ? AND status = 0 AND role = 2", id.to_i) or record_not_found!
         User.new(*row)
       end
 
@@ -1175,7 +1183,7 @@ module Campfire
       end
 
       def reachable_message!(id)
-        row = db.row(<<~SQL, current_user.id, id.to_i) or halt 404
+        row = db.row(<<~SQL, current_user.id, id.to_i) or record_not_found!
           SELECT #{Message.columns} FROM messages INNER JOIN rooms ON messages.room_id = rooms.id
           INNER JOIN memberships ON rooms.id = memberships.room_id WHERE memberships.user_id = ? AND messages.id = ? LIMIT 1
         SQL
@@ -1183,7 +1191,7 @@ module Campfire
       end
 
       def room_scoped!(room_id)
-        membership = repo.membership(current_user.id, room_id.to_i) or halt 404
+        membership = repo.membership(current_user.id, room_id.to_i) or record_not_found!
         repo.room(membership.room_id)
       end
 
