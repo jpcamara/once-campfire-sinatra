@@ -42,18 +42,25 @@ module Campfire
 
       # Runs in this process's reactor for the life of the process.
       def listen
-        config = RedisClient.config(url: url)
+        config = RedisClient.config(url: url, read_timeout: nil)
         loop do
           connection = config.new_client.pubsub
           connection.call("SUBSCRIBE", CHANNEL)
-          while (event = connection.next_event)
+          loop do
+            event = connection.next_event or next # nil when a read times out
             next unless event[0] == "message"
-            stream, payload = event[2].split("\0", 2)
-            deliver(stream, payload)
+            stream, payload = event[2].dup.force_encoding(Encoding::UTF_8).split("\0", 2)
+            begin
+              deliver(stream, payload)
+            rescue => error
+              warn "broadcast delivery failed: #{error.class}: #{error.message}"
+            end
           end
         rescue RedisClient::Error, IOError, SystemCallError => error
           warn "broadcast listener: #{error.class}: #{error.message}"
           sleep 0.5
+        ensure
+          connection&.close
         end
       end
 

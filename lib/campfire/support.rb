@@ -219,7 +219,8 @@ module Campfire
       message = JSON.generate(title: payload[:title], options: { body: payload[:body], icon: "/account/logo", data: { path: payload[:path], badge: badge } })
       WebPush.payload_send(message: message, endpoint: endpoint, p256dh: p256dh, auth: auth, urgency: "high",
         vapid: { subject: "mailto:support@37signals.com", public_key: ENV["VAPID_PUBLIC_KEY"], private_key: ENV["VAPID_PRIVATE_KEY"] })
-    rescue WebPush::ExpiredSubscription, WebPush::InvalidSubscription
+    rescue WebPush::ExpiredSubscription, WebPush::InvalidSubscription, OpenSSL::OpenSSLError
+      # WebPush::Pool: expired subscriptions and ones whose keys don't work are removed.
       runtime.db.transaction { |w| w.run("DELETE FROM push_subscriptions WHERE id = ?", id) }
     rescue => error
       warn "push failed: #{error.class}: #{error.message}"
