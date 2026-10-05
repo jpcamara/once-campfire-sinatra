@@ -85,6 +85,10 @@ module Campfire
 
     def render_autocompletable_template = tpl_users_autocompletable_template
 
+    def render_account_user(member)
+      scoped(member: member) { tpl_accounts_user }
+    end
+
     def render_room_user(member, selected)
       scoped(member: member, selected: selected) { tpl_rooms_settings_user }
     end
@@ -233,6 +237,6 @@ module Campfire
       :direct_memberships, :other_memberships, :placeholder_users, :query, :raw_query, :count, :recents, :recent_searches,
       :return_to_room, :email_address, :join_code, :request_path, :user, :transfer_id, :avatar_attached,
       :shared_memberships, :editor_value, :editing, :form_type, :can_administer, :room_name, :type_change_path, :user_count,
-      :selected_users, :unselected_users, :member, :selected, :last_room_visited
+      :selected_users, :unselected_users, :member, :selected, :last_room_visited, :administrators, :members, :next_page
   end
 end

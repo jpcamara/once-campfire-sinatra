@@ -353,6 +353,101 @@ module Campfire
       redirect url_for("/")
     end
 
+    # ---- Account
+
+    get "/account/edit" do
+      require_authentication!
+      statuses = current_user.can_administer? ? "0, 2" : "0"
+      users = db.rows("SELECT #{User.columns} FROM users WHERE status IN (#{statuses}) AND role != 2 ORDER BY LOWER(name)").map { User.new(*it) }
+      administrators, members = users.partition(&:administrator?)
+      view = build_view(administrators: administrators, members: members, next_page: users.size > 500 ? 2 : nil,
+        last_room_visited: last_room_visited)
+      footer = %(<div class="txt-align-center center margin-block-double txt-subtle">Campfire&trade; version <span class="version-badge">#{HTML.h(runtime.app_version)}</span></div>)
+      render_layout(view, page_title: "Account settings", nav: view.tpl_accounts_edit_nav, main: view.tpl_accounts_edit, footer: footer)
+    end
+
+    [ :patch, :put ].each do |verb|
+      send(verb, %r{/account(?:\.\d+)?}) { update_account }
+    end
+
+    helpers do
+      def update_account
+      verify_same_origin!
+      require_authentication!
+      halt 403, "" unless current_user.can_administer?
+      Accounts.update(self, params["account"] || {})
+      redirect_with_notice("/account/edit", "✓")
+      end
+    end
+
+    get %r{/account/users(?:\.turbo_stream)?} do
+      require_authentication!
+      page = [ params["page"].to_i, 1 ].max
+      users = db.rows("SELECT #{User.columns} FROM users WHERE status = 0 AND role != 2 ORDER BY LOWER(name) LIMIT 500 OFFSET ?", (page - 1) * 500).map { User.new(*it) }
+      more = db.value("SELECT COUNT(*) FROM users WHERE status = 0 AND role != 2") > page * 500
+      view = build_view
+      html = %(<turbo-stream action="replace" target="next_page_container"><template>#{users.map { view.render_account_user(it) }.join}</template></turbo-stream>)
+      html << %(<turbo-stream action="append" target="account_users"><template><turbo-frame loading="lazy" src="/account/users.turbo_stream?page=#{page + 1}" class="flex center" id="next_page_container">\n  <div class="spinner center"></div>\n</turbo-frame></template></turbo-stream>) if more
+      html_headers("text/vnd.turbo-stream.html")
+      html
+    end
+
+    patch %r{/account/users/(\d+)} do |id|
+      verify_same_origin!
+      require_authentication!
+      halt 403, "" unless current_user.can_administer?
+      user = repo.user(id.to_i)
+      halt 404 unless user&.active?
+      role = %w[ member administrator ].include?((params["user"] || {})["role"]) ? params["user"]["role"] : "member"
+      db.transaction { |w| w.run("UPDATE users SET role = ?, updated_at = ? WHERE id = ?", role == "administrator" ? 1 : 0, TimeFormat.now_text, user.id) }
+      redirect url_for("/account/edit")
+    end
+
+    delete %r{/account/users/(\d+)} do |id|
+      verify_same_origin!
+      require_authentication!
+      halt 403, "" unless current_user.can_administer?
+      user = repo.user(id.to_i)
+      halt 404 unless user&.active?
+      Accounts.deactivate(self, user)
+      redirect url_for("/account/edit")
+    end
+
+    post "/account/join_code" do
+      verify_same_origin!
+      require_authentication!
+      halt 403, "" unless current_user.can_administer?
+      code = SecureRandom.alphanumeric(12).scan(/.{4}/).join("-")
+      db.transaction { |w| w.run("UPDATE accounts SET join_code = ?, updated_at = ?", code, TimeFormat.now_text) }
+      redirect url_for("/account/edit")
+    end
+
+    get "/account/custom_styles/edit" do
+      require_authentication!
+      halt 403, "" unless current_user.can_administer?
+      view = build_view
+      render_layout(view, page_title: "Custom styles", nav: view.tpl_accounts_custom_styles_nav, main: view.tpl_accounts_custom_styles)
+    end
+
+    patch "/account/custom_styles" do
+      verify_same_origin!
+      require_authentication!
+      halt 403, "" unless current_user.can_administer?
+      db.transaction { |w| w.run("UPDATE accounts SET custom_styles = ?, updated_at = ?", (params["account"] || {})["custom_styles"], TimeFormat.now_text) }
+      redirect_with_notice("/account/custom_styles/edit", "✓")
+    end
+
+    delete "/account/logo" do
+      verify_same_origin!
+      require_authentication!
+      halt 403, "" unless current_user.can_administer?
+      db.transaction do |w|
+        w.run("DELETE FROM active_storage_attachments WHERE record_type = 'Account' AND name = 'logo'")
+        w.run("UPDATE accounts SET updated_at = ?", TimeFormat.now_text)
+      end
+      redirect url_for("/account/edit")
+    end
+
     # ---- Users, profiles, bans
 
     get %r{/users/(\d+)} do |id|
@@ -958,6 +1053,101 @@ module Campfire
       halt 403, "" unless room.direct? || current_user.can_administer?(room)
       Rooms.destroy(self, room)
       redirect url_for("/")
+    end
+
+    # ---- Account
+
+    get "/account/edit" do
+      require_authentication!
+      statuses = current_user.can_administer? ? "0, 2" : "0"
+      users = db.rows("SELECT #{User.columns} FROM users WHERE status IN (#{statuses}) AND role != 2 ORDER BY LOWER(name)").map { User.new(*it) }
+      administrators, members = users.partition(&:administrator?)
+      view = build_view(administrators: administrators, members: members, next_page: users.size > 500 ? 2 : nil,
+        last_room_visited: last_room_visited)
+      footer = %(<div class="txt-align-center center margin-block-double txt-subtle">Campfire&trade; version <span class="version-badge">#{HTML.h(runtime.app_version)}</span></div>)
+      render_layout(view, page_title: "Account settings", nav: view.tpl_accounts_edit_nav, main: view.tpl_accounts_edit, footer: footer)
+    end
+
+    [ :patch, :put ].each do |verb|
+      send(verb, %r{/account(?:\.\d+)?}) { update_account }
+    end
+
+    helpers do
+      def update_account
+      verify_same_origin!
+      require_authentication!
+      halt 403, "" unless current_user.can_administer?
+      Accounts.update(self, params["account"] || {})
+      redirect_with_notice("/account/edit", "✓")
+      end
+    end
+
+    get %r{/account/users(?:\.turbo_stream)?} do
+      require_authentication!
+      page = [ params["page"].to_i, 1 ].max
+      users = db.rows("SELECT #{User.columns} FROM users WHERE status = 0 AND role != 2 ORDER BY LOWER(name) LIMIT 500 OFFSET ?", (page - 1) * 500).map { User.new(*it) }
+      more = db.value("SELECT COUNT(*) FROM users WHERE status = 0 AND role != 2") > page * 500
+      view = build_view
+      html = %(<turbo-stream action="replace" target="next_page_container"><template>#{users.map { view.render_account_user(it) }.join}</template></turbo-stream>)
+      html << %(<turbo-stream action="append" target="account_users"><template><turbo-frame loading="lazy" src="/account/users.turbo_stream?page=#{page + 1}" class="flex center" id="next_page_container">\n  <div class="spinner center"></div>\n</turbo-frame></template></turbo-stream>) if more
+      html_headers("text/vnd.turbo-stream.html")
+      html
+    end
+
+    patch %r{/account/users/(\d+)} do |id|
+      verify_same_origin!
+      require_authentication!
+      halt 403, "" unless current_user.can_administer?
+      user = repo.user(id.to_i)
+      halt 404 unless user&.active?
+      role = %w[ member administrator ].include?((params["user"] || {})["role"]) ? params["user"]["role"] : "member"
+      db.transaction { |w| w.run("UPDATE users SET role = ?, updated_at = ? WHERE id = ?", role == "administrator" ? 1 : 0, TimeFormat.now_text, user.id) }
+      redirect url_for("/account/edit")
+    end
+
+    delete %r{/account/users/(\d+)} do |id|
+      verify_same_origin!
+      require_authentication!
+      halt 403, "" unless current_user.can_administer?
+      user = repo.user(id.to_i)
+      halt 404 unless user&.active?
+      Accounts.deactivate(self, user)
+      redirect url_for("/account/edit")
+    end
+
+    post "/account/join_code" do
+      verify_same_origin!
+      require_authentication!
+      halt 403, "" unless current_user.can_administer?
+      code = SecureRandom.alphanumeric(12).scan(/.{4}/).join("-")
+      db.transaction { |w| w.run("UPDATE accounts SET join_code = ?, updated_at = ?", code, TimeFormat.now_text) }
+      redirect url_for("/account/edit")
+    end
+
+    get "/account/custom_styles/edit" do
+      require_authentication!
+      halt 403, "" unless current_user.can_administer?
+      view = build_view
+      render_layout(view, page_title: "Custom styles", nav: view.tpl_accounts_custom_styles_nav, main: view.tpl_accounts_custom_styles)
+    end
+
+    patch "/account/custom_styles" do
+      verify_same_origin!
+      require_authentication!
+      halt 403, "" unless current_user.can_administer?
+      db.transaction { |w| w.run("UPDATE accounts SET custom_styles = ?, updated_at = ?", (params["account"] || {})["custom_styles"], TimeFormat.now_text) }
+      redirect_with_notice("/account/custom_styles/edit", "✓")
+    end
+
+    delete "/account/logo" do
+      verify_same_origin!
+      require_authentication!
+      halt 403, "" unless current_user.can_administer?
+      db.transaction do |w|
+        w.run("DELETE FROM active_storage_attachments WHERE record_type = 'Account' AND name = 'logo'")
+        w.run("UPDATE accounts SET updated_at = ?", TimeFormat.now_text)
+      end
+      redirect url_for("/account/edit")
     end
 
     # ---- Users, profiles, bans

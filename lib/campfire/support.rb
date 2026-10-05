@@ -638,3 +638,44 @@ module Campfire
     end
   end
 end
+
+module Campfire
+  module Accounts
+    module_function
+
+    def update(ctx, attributes)
+      now = TimeFormat.now_text
+      account = ctx.runtime.account
+      ctx.db.transaction do |w|
+        w.run("UPDATE accounts SET name = ?, updated_at = ? WHERE id = ?", attributes["name"], now, account.id) if attributes["name"]
+        if (settings = attributes["settings"]).is_a?(Hash)
+          current = (JSON.parse(account.settings.to_s) rescue {}) || {}
+          value = settings["restrict_room_creation_to_administrators"]
+          current["restrict_room_creation_to_administrators"] = value == "true" if value
+          w.run("UPDATE accounts SET settings = ?, updated_at = ? WHERE id = ?", JSON.generate(current), now, account.id)
+        end
+      end
+      if attributes["logo"].is_a?(Hash) && attributes["logo"][:tempfile]
+        blob = Uploads.store(ctx, attributes["logo"])
+        ctx.db.transaction do |w|
+          w.run("DELETE FROM active_storage_attachments WHERE record_type = 'Account' AND name = 'logo'")
+          Uploads.attach(w, blob, "Account", account.id, "logo", now)
+          w.run("UPDATE accounts SET updated_at = ? WHERE id = ?", TimeFormat.now_text, account.id)
+        end
+        Uploads.analyze(ctx, blob)
+      end
+    end
+
+    # User#deactivate
+    def deactivate(ctx, user)
+      ctx.db.transaction do |w|
+        w.run("DELETE FROM memberships WHERE user_id = ? AND room_id IN (SELECT id FROM rooms WHERE type != 'Rooms::Direct')", user.id)
+        w.run("DELETE FROM push_subscriptions WHERE user_id = ?", user.id)
+        w.run("DELETE FROM searches WHERE user_id = ?", user.id)
+        w.run("DELETE FROM sessions WHERE user_id = ?", user.id)
+        email = user.email_address&.sub("@", "-deactivated-#{SecureRandom.uuid}@")
+        w.run("UPDATE users SET status = 1, email_address = ?, updated_at = ? WHERE id = ?", email, TimeFormat.now_text, user.id)
+      end
+    end
+  end
+end
