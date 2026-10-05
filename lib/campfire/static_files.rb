@@ -6,7 +6,6 @@ module Campfire
   # public/ served from memory: each file read and gzipped once per process, with Propshaft's
   # long-lived cache headers. Digested assets never change, so nothing needs invalidating.
   class StaticFiles
-    COMPRESSIBLE = %r{\A(text/|application/(javascript|json)|image/svg\+xml)}
     Entry = Data.define(:body, :gzip, :type, :last_modified)
 
     def initialize(root, cache_control: "public, max-age=2592000")
@@ -37,7 +36,8 @@ module Campfire
         return nil unless file.start_with?("#{@root}/") && File.file?(file)
         body = File.binread(file).freeze
         type = Rack::Mime.mime_type(File.extname(file), "application/octet-stream")
-        gzip = type.match?(COMPRESSIBLE) && body.bytesize > 860 ? Zlib::Deflate.new(Zlib::BEST_COMPRESSION, Zlib::MAX_WBITS + 16).deflate(body, Zlib::FINISH).freeze : nil
+        # Thruster compresses everything, so every file gets a gzip copy (made once).
+        gzip = Zlib::Deflate.new(Zlib::BEST_COMPRESSION, Zlib::MAX_WBITS + 16).deflate(body, Zlib::FINISH).freeze
         Entry.new(body, gzip, type, File.mtime(file).httpdate)
       end
   end

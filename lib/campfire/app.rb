@@ -105,9 +105,14 @@ module Campfire
     def db = runtime.db
     def secrets = runtime.secrets
 
+    SECURITY_HEADERS = { "X-Frame-Options" => "SAMEORIGIN", "X-XSS-Protection" => "0", "X-Content-Type-Options" => "nosniff",
+      "X-Permitted-Cross-Domain-Policies" => "none", "Referrer-Policy" => "strict-origin-when-cross-origin" }.freeze
+
+    # ActionDispatch's default headers on every controller response, and ApplicationController's
+    # VersionHeaders (a before_action after authentication: see require_authentication!).
     before do
-      headers "X-Frame-Options" => "SAMEORIGIN", "X-XSS-Protection" => "0", "X-Content-Type-Options" => "nosniff",
-        "X-Permitted-Cross-Domain-Policies" => "none", "Referrer-Policy" => "strict-origin-when-cross-origin"
+      headers SECURITY_HEADERS
+      headers "X-Version" => runtime.app_version, "X-Rev" => runtime.git_revision.to_s
     end
 
     # ApplicationController's AllowBrowser and BlockBannedRequests, ahead of authentication.
@@ -119,18 +124,22 @@ module Campfire
 
     # ---- Health
 
+    # Rails::HealthController: not an ApplicationController, so no version headers.
     get "/up" do
-      headers "Cache-Control" => "max-age=0, private, must-revalidate"
-      headers "Content-Type" => "text/html; charset=utf-8"
-      ""
+      without_version_headers
+      headers "Cache-Control" => "max-age=0, private, must-revalidate", "Content-Type" => "text/html; charset=utf-8"
+      %(<!DOCTYPE html><html><body style="background-color: green"></body></html>)
     end
 
     # ---- Static pages from public/ (Rails' public file server)
 
     get %r{/(404|422|500|502)\.html|/robots\.txt} do
       path = File.join(ROOT, "public", request.path_info)
-      headers "Cache-Control" => "public, max-age=2592000"
-      send_file path, type: request.path_info.end_with?(".txt") ? "text/plain" : "text/html"
+      without_security_headers
+      without_version_headers
+      headers "Cache-Control" => "public, max-age=2592000", "Last-Modified" => File.mtime(path).httpdate,
+        "Content-Type" => request.path_info.end_with?(".txt") ? "text/plain" : "text/html"
+      File.read(path)
     end
 
     # ---- Sessions
@@ -169,16 +178,16 @@ module Campfire
     end
 
     get "/join/:join_code" do
-      halt 404, "" unless runtime.account.join_code == params["join_code"]
       return redirect(url_for("/")) if restore_authentication
+      halt 404, "" unless runtime.account.join_code == params["join_code"]
       view = build_view(join_code: params["join_code"])
       render_layout(view, page_title: "Sign up", body_class: "signup", nav: view.tpl_users_new_nav, main: view.tpl_users_new)
     end
 
     post "/join/:join_code" do
       verify_same_origin!
-      halt 404, "" unless runtime.account.join_code == params["join_code"]
       return redirect(url_for("/")) if restore_authentication
+      halt 404, "" unless runtime.account.join_code == params["join_code"]
       attributes = params["user"] || {}
       if (user = Users.create(self, attributes))
         start_new_session_for(user)
@@ -250,11 +259,14 @@ module Campfire
         end
 
       if messages.empty?
+        headers "Cache-Control" => "no-cache"
         status 204
         return ""
       end
 
       etag_for_messages(messages)
+      # fresh_when @messages: the newest updated_at is the Last-Modified.
+      headers "Last-Modified" => messages.map { TimeFormat.parse(it.updated_at) }.max.httpdate
       html_headers
       messages_html(messages)
     end
@@ -762,6 +774,8 @@ module Campfire
 
     get %r{/rooms/(\d+)/refresh} do |room_id|
       require_authentication!
+      # respond_to turbo_stream only
+      halt 406, { "Content-Type" => "text/html; charset=utf-8" }, "" unless request.env["HTTP_ACCEPT"].to_s.include?("text/vnd.turbo-stream.html")
       room = room_scoped!(room_id)
       since = TimeFormat.dump(Time.at(0, params["since"].to_i, :millisecond))
       created = repo.messages_created_since(room.id, since)
@@ -846,6 +860,7 @@ module Campfire
     # ---- Avatars and account logo
 
     get "/users/:token/avatar" do
+      require_authentication!
       Avatars.show(self, params["token"])
     end
 
@@ -894,6 +909,7 @@ module Campfire
       def redirect(uri, *args)
         status 302
         response["Location"] = uri
+        headers "Content-Type" => "text/html; charset=utf-8", "Cache-Control" => "no-cache"
         halt(*args)
       end
 
@@ -912,9 +928,33 @@ module Campfire
       end
 
       def html_headers(type = "text/html")
-        headers "Cache-Control" => "max-age=0, private, must-revalidate", "Vary" => "Accept",
-          "X-Version" => runtime.app_version, "X-Rev" => runtime.git_revision.to_s,
-          "Content-Type" => "#{type}; charset=utf-8"
+        headers "Cache-Control" => "max-age=0, private, must-revalidate", "Content-Type" => "#{type}; charset=utf-8"
+        headers "Vary" => "Accept" if vary_by_accept?
+      end
+
+      # ActionDispatch::Request#should_apply_vary_header?: only when the format came from a
+      # non-browser Accept header.
+      def vary_by_accept?
+        accept = request.env["HTTP_ACCEPT"].to_s
+        params["format"].to_s.empty? && !accept.empty? && !accept.match?(/,\s*\*\/\*|\*\/\*\s*,/)
+      end
+
+      def without_version_headers
+        response.headers.delete("X-Version")
+        response.headers.delete("X-Rev")
+      end
+
+      # Avatars and the account logo go out without ActionDispatch's default headers, as Rails sends them.
+      def without_security_headers
+        SECURITY_HEADERS.each_key { response.headers.delete(it) }
+      end
+
+      # send_file as ActionController::DataStreaming writes it.
+      def send_inline_file(path, type)
+        without_security_headers
+        headers "Content-Type" => type, "Content-Transfer-Encoding" => "binary",
+          "Content-Disposition" => Storage.content_disposition("inline", File.basename(path))
+        File.binread(path)
       end
 
       # The ETag of a page built from cached message fragments: everything it's rendered from.
@@ -989,6 +1029,7 @@ module Campfire
         if request.get? || request.head?
           write_session("return_to_after_authenticating" => request.url)
         end
+        without_version_headers # the before_action that sets them comes after require_authentication
         halt redirect(url_for("/session/new"))
       end
 
@@ -1263,7 +1304,11 @@ module Campfire
     # Unmatched paths get the static 404 page; a route that answers 404 itself (head :not_found) keeps its empty body.
     not_found do
       next body if env["sinatra.route"]
-      headers "Content-Type" => "text/html; charset=utf-8"
+      # ActionDispatch::PublicExceptions: no controller ran, so none of its headers.
+      without_security_headers
+      without_version_headers
+      response.headers.delete("X-Cascade")
+      headers "Content-Type" => "text/html; charset=UTF-8"
       File.read(File.join(ROOT, "public/404.html"))
     end
 

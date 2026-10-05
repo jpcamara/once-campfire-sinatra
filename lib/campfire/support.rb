@@ -37,13 +37,15 @@ module Campfire
       app.halt 404, "" unless user
 
       app.etag Digest::MD5.hexdigest("users/#{user.id}-#{user.updated_at}"), kind: :weak
-      app.headers "Cache-Control" => "max-age=1800, public, stale-while-revalidate=604800", "Vary" => "Accept"
+      app.headers "Cache-Control" => "max-age=1800, public, stale-while-revalidate=604800"
+      app.headers "Vary" => "Accept" if app.vary_by_accept?
 
       if (variant = avatar_variant(runtime, user))
-        app.send_file Storage.path_for(variant.key), type: "image/webp", disposition: "inline"
+        app.send_inline_file Storage.path_for(variant.key), "image/webp"
       elsif user.bot?
-        app.send_file File.join(ROOT, "public/default-bot-avatar.svg"), type: "image/svg+xml", disposition: "inline"
+        app.send_inline_file File.join(ROOT, "public/default-bot-avatar.svg"), "image/svg+xml"
       else
+        app.without_security_headers
         app.headers "Content-Type" => "image/svg+xml; charset=utf-8"
         initials_svg(user)
       end
@@ -70,15 +72,16 @@ module Campfire
       runtime = app.runtime
       account = runtime.account
       app.etag Digest::MD5.hexdigest("accounts/#{account.id}-#{account.updated_at}"), kind: :weak
-      app.headers "Cache-Control" => "max-age=300, public, stale-while-revalidate=604800", "Vary" => "Accept"
+      app.headers "Cache-Control" => "max-age=300, public, stale-while-revalidate=604800"
+      app.headers "Vary" => "Accept" if app.vary_by_accept?
       small = app.params["size"] == "small"
       blob = runtime.repo.attachment_blob("Account", account.id, "logo")
       if blob && Attachments.variable?(blob)
         size = small ? 192 : 512
         variant = Uploads.variant_blob(Context.new(runtime), blob, { "format" => :png, "resize_to_limit" => [ size, size ] })
-        app.send_file Storage.path_for(variant.key), type: "image/png", disposition: "inline"
+        app.send_inline_file Storage.path_for(variant.key), "image/png"
       else
-        app.send_file File.join(ROOT, "public/logos", small ? "app-icon-192.png" : "app-icon.png"), type: "image/png", disposition: "inline"
+        app.send_inline_file File.join(ROOT, "public/logos", small ? "app-icon-192.png" : "app-icon.png"), "image/png"
       end
     end
   end
@@ -114,7 +117,7 @@ module Campfire
 
     def show(app, id)
       url = Base64.urlsafe_decode64(id)
-      app.headers "Cache-Control" => "max-age=31536000, public"
+      app.headers "Cache-Control" => "max-age=31556952, public" # 1.year
       app.headers "Content-Type" => "image/svg+xml; charset=utf-8"
       RQRCode::QRCode.new(url).as_svg(viewbox: true, fill: :white, color: :black)
     end

@@ -1,10 +1,11 @@
 require "zlib"
 
 module Campfire
-  # gzip for text responses, at zlib's default level (what Rack::Deflater and Thruster use).
+  # What Thruster does in front of the Rails app: gzip every response that has a body (any status,
+  # type or size) for clients that accept it, add Vary: Accept-Encoding, and an X-Cache header
+  # (bypass for writes; this app keeps no shared response cache, so reads are always a miss).
   class Compression
-    TYPES = %r{\A(text/|application/(json|javascript|manifest\+json)|image/svg\+xml)}
-    MINIMUM_SIZE = 860
+    NO_BODY = [ 101, 204, 304 ].freeze
 
     def initialize(app)
       @app = app
@@ -12,7 +13,13 @@ module Campfire
 
     def call(env)
       status, headers, body = @app.call(env)
-      return [ status, headers, body ] unless compressible?(env, status, headers)
+      return [ status, headers, body ] if status == 101
+
+      headers["x-cache"] = %w[ GET HEAD ].include?(env["REQUEST_METHOD"]) ? "miss" : "bypass"
+      return [ status, headers, body ] if NO_BODY.include?(status) || env["REQUEST_METHOD"] == "HEAD" || headers.key?("content-range")
+
+      headers["vary"] = [ headers["vary"], "Accept-Encoding" ].compact.join(",")
+      return [ status, headers, body ] if headers["content-encoding"] || !env["HTTP_ACCEPT_ENCODING"].to_s.include?("gzip")
 
       if body.is_a?(FragmentBody)
         compressed = body.gzip
@@ -20,20 +27,11 @@ module Campfire
         content = +""
         body.each { content << it }
         body.close if body.respond_to?(:close)
-        return [ status, headers, [ content ] ] if content.bytesize < MINIMUM_SIZE
-
         compressed = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, Zlib::MAX_WBITS + 16).deflate(content, Zlib::FINISH)
       end
       headers["content-encoding"] = "gzip"
       headers["content-length"] = compressed.bytesize.to_s
-      headers["vary"] = [ headers["vary"], "Accept-Encoding" ].compact.join(",")
       [ status, headers, [ compressed ] ]
     end
-
-    private
-      def compressible?(env, status, headers)
-        status == 200 && env["HTTP_ACCEPT_ENCODING"].to_s.include?("gzip") && !headers["content-encoding"] &&
-          headers["content-type"].to_s.match?(TYPES) && !headers.key?("content-range")
-      end
   end
 end
