@@ -75,7 +75,7 @@ module Campfire
     end
 
     def generate_key
-      SecureRandom.base36(28)
+      Tokens.base36(28)
     end
   end
 end

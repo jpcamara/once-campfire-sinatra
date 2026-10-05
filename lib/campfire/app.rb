@@ -45,9 +45,16 @@ module Campfire
   module Tokens
     BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".chars.freeze
 
+    BASE36 = [ *"0".."9", *"a".."z" ].freeze
+
     # ActiveSupport's SecureRandom.base58, as has_secure_token uses it.
     def self.base58(length)
-      SecureRandom.random_bytes(length).bytes.map { BASE58[it % 58] }.join
+      Array.new(length) { BASE58[SecureRandom.random_number(58)] }.join
+    end
+
+    # SecureRandom.base36, as Active Storage generates blob keys.
+    def self.base36(length)
+      Array.new(length) { BASE36[SecureRandom.random_number(36)] }.join
     end
   end
 
@@ -106,14 +113,13 @@ module Campfire
 
     get "/up" do
       headers "Cache-Control" => "max-age=0, private, must-revalidate"
-      content_type "text/html", charset: "utf-8"
+      headers "Content-Type" => "text/html; charset=utf-8"
       ""
     end
 
     # ---- Sessions
 
     get "/session/new" do
-      restore_authentication
       render_page(:sessions_new, page_title: "Sign in", head: %(<meta name="turbo-visit-control" content="reload">), email_address: params["email_address"])
     end
 
@@ -275,6 +281,13 @@ module Campfire
     # ---- Helpers
 
     helpers do
+      # Rails' redirect_to: always 302 (Sinatra answers non-GET HTTP/1.1 requests with 303).
+      def redirect(uri, *args)
+        status 302
+        response["Location"] = uri
+        halt(*args)
+      end
+
       def current_user = @current_user
       def base_url = (@base_url ||= "#{request.scheme}://#{request.host_with_port}")
       def url_for(path) = "#{base_url}#{path}"
@@ -285,8 +298,13 @@ module Campfire
 
       def html_headers(type = "text/html")
         headers "Cache-Control" => "max-age=0, private, must-revalidate", "Vary" => "Accept",
-          "X-Version" => runtime.app_version, "X-Rev" => runtime.git_revision.to_s
-        content_type type, charset: "utf-8"
+          "X-Version" => runtime.app_version, "X-Rev" => runtime.git_revision.to_s,
+          "Content-Type" => "#{type}; charset=utf-8"
+      end
+
+      # The ETag of a page built from cached message fragments: everything it's rendered from.
+      def page_etag(*parts)
+        headers "ETag" => %(W/"#{Digest::MD5.hexdigest([ base_url, request.user_agent, current_user&.id, current_user&.updated_at, current_user&.role, *parts ].join("|"))}")
       end
 
       def render_layout(view, main:, page_title: nil, body_class: nil, head: nil, nav: nil, footer: nil, sidebar: nil)
@@ -452,6 +470,9 @@ module Campfire
       def render_room(room, messages)
         views = message_views(messages)
         invitation = room.id == repo.original_room_id && repo.room_message_count(room.id) <= Repo::PAGE_SIZE
+        account = runtime.account
+        page_etag("room", room, account.updated_at, account.name, invitation, messages.map { "#{it.id}-#{it.updated_at}" },
+          (repo.direct_room_member_names(room.id, current_user.id) if room.direct?), flash_now)
         view = build_view(room: room, messages: views, invitation: invitation)
         render_layout(view,
           page_title: view.room_display_name(room), body_class: "sidebar",
@@ -490,8 +511,7 @@ module Campfire
 
       # ActionController::ConditionalGet#fresh_when(@messages): the collection's cache key.
       def etag_for_messages(messages)
-        key = messages.map { "#{it.id}-#{it.updated_at}" }.join("/")
-        etag Digest::MD5.hexdigest("#{key}/#{current_user.id}"), kind: :weak
+        page_etag("messages", messages.map { "#{it.id}-#{it.updated_at}" })
       end
 
       # The data each message partial needs, loaded only for messages not already in the fragment
@@ -523,8 +543,11 @@ module Campfire
       def render_search(query, raw_query, messages)
         views = message_views(messages)
         recent = repo.recent_search_queries(current_user.id)
+        return_to_room = last_room_visited
+        account = runtime.account
+        page_etag("search", raw_query, account.updated_at, recent, return_to_room.id, messages.map { "#{it.id}-#{it.updated_at}" })
         view = build_view(query: query, raw_query: raw_query, count: messages.size, messages: views, recent_searches: recent,
-          return_to_room: last_room_visited)
+          return_to_room: return_to_room)
         view.with(recents: view.tpl_searches_recents)
         render_layout(view, page_title: "Search", body_class: "sidebar searches",
           nav: view.tpl_searches_nav, main: view.tpl_searches_index, footer: view.tpl_searches_footer, sidebar: view.tpl_searches_sidebar)
@@ -532,13 +555,13 @@ module Campfire
     end
 
     not_found do
-      content_type "text/html", charset: "utf-8"
+      headers "Content-Type" => "text/html; charset=utf-8"
       File.read(File.join(ROOT, "public/404.html"))
     end
 
     error do
       env["sinatra.error"]&.then { warn "#{it.class}: #{it.message}\n#{it.backtrace&.first(10)&.join("\n")}" }
-      content_type "text/html", charset: "utf-8"
+      headers "Content-Type" => "text/html; charset=utf-8"
       status 500
       File.read(File.join(ROOT, "public/500.html"))
     end

@@ -6,6 +6,8 @@ Campfire.boot
 assets = Rack::Files.new(File.join(__dir__, "public"), { "Cache-Control" => "public, max-age=2592000" })
 
 app = Rack::Builder.new do
+  use Campfire::Compression
+  use Campfire::ETag
   map("/assets") { run ->(env) { env["PATH_INFO"] = "/assets#{env["PATH_INFO"]}"; assets.call(env) } }
   map("/cable") { run Campfire::Cable }
   run Campfire::App

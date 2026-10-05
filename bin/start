@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Container entrypoint: Redis for cross-process broadcasts (unless REDIS_URL points elsewhere),
+# then Falcon with one process per CPU on HTTP_PORT.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+export STORAGE_PATH=${STORAGE_PATH:-/rails/storage}
+mkdir -p "$STORAGE_PATH/db" "$STORAGE_PATH/files"
+redis_port=$(ruby -ruri -e 'u = URI(ENV.fetch("REDIS_URL", "redis://127.0.0.1:6379/0")); print u.port if %w[127.0.0.1 localhost].include?(u.host)')
+if [ -n "$redis_port" ]; then
+  if [ -f config/redis.conf ]; then redis-server config/redis.conf --daemonize yes >/dev/null
+  else redis-server --port "$redis_port" --bind 127.0.0.1 --save "" --appendonly no --daemonize yes >/dev/null; fi
+fi
+
+bundle exec ruby -Ilib -e 'require "campfire"; Campfire::Maintenance.boot'
+
+exec bundle exec falcon serve --bind "http://0.0.0.0:${HTTP_PORT:-80}" --forked --count "${WEB_CONCURRENCY:-$(nproc)}"

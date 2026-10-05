@@ -44,7 +44,7 @@ module Campfire
       elsif user.bot?
         app.send_file File.join(ROOT, "public/default-bot-avatar.svg"), type: "image/svg+xml", disposition: "inline"
       else
-        app.content_type "image/svg+xml", charset: "utf-8"
+        app.headers "Content-Type" => "image/svg+xml; charset=utf-8"
         initials = user.initials
         length = initials.size >= 3 ? 'textLength="85%" lengthAdjust="spacingAndGlyphs"' : ""
         format(SVG, View::AVATAR_COLORS[Zlib.crc32(user.to_param) % View::AVATAR_COLORS.size], length, HTML.h(initials))
@@ -107,7 +107,7 @@ module Campfire
     def show(app, id)
       url = Base64.urlsafe_decode64(id)
       app.headers "Cache-Control" => "max-age=31536000, public"
-      app.content_type "image/svg+xml", charset: "utf-8"
+      app.headers "Content-Type" => "image/svg+xml; charset=utf-8"
       RQRCode::QRCode.new(url).as_svg(viewbox: true, fill: :white, color: :black)
     end
   end
@@ -298,6 +298,22 @@ module Campfire
         user: { id: user.id, name: user.name },
         room: { id: room.id, name: room.name, path: "/rooms/#{room.id}/bot/messages" },
         message: { id: message.id, body: { html: body, plain: PlainText.convert(body) }, path: "/rooms/#{room.id}/@#{message.id}" })
+    end
+  end
+end
+
+module Campfire
+  module Maintenance
+    module_function
+
+    # What the Rails app does at boot: the database exists (db:prepare) and no membership still
+    # counts connections from before the restart (Membership.disconnect_all in config/puma.rb).
+    def boot
+      db = DB.new
+      cutoff = (Time.now.utc - Cable::CONNECTION_TTL).strftime("%Y-%m-%d %H:%M:%S.%6N")
+      db.transaction do |w|
+        w.run("UPDATE memberships SET connected_at = NULL, connections = 0, updated_at = ? WHERE connected_at >= ?", TimeFormat.now_text, cutoff)
+      end
     end
   end
 end
