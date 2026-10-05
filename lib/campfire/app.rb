@@ -14,7 +14,7 @@ module Campfire
       @db = DB.new
       @repo = Repo.new(@db)
       @secrets = RailsCompat::Secrets.new(ENV.fetch("SECRET_KEY_BASE"))
-      @fragment_cache = FragmentCache.new(ENV.fetch("FRAGMENT_CACHE_SIZE", 20_000).to_i)
+      @fragment_cache = FragmentCache.new(ENV.fetch("FRAGMENT_CACHE_SIZE", 5_000).to_i)
       @vapid_public_key = ENV["VAPID_PUBLIC_KEY"]
       @app_version = ENV["APP_VERSION"].to_s.empty? ? (ENV["GIT_REVISION"].to_s.empty? ? "0" : ENV["GIT_REVISION"]) : ENV["APP_VERSION"]
       @git_revision = ENV["GIT_REVISION"]
