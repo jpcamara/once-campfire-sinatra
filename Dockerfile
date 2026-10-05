@@ -27,8 +27,9 @@ COPY --from=reference /rails/public/assets /rails/public/assets
 
 FROM base
 RUN groupadd --system --gid 1000 rails && useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash
-USER 1000:1000
 COPY --from=build --chown=rails:rails /usr/local/bundle /usr/local/bundle
 COPY --from=build --chown=rails:rails /rails /rails
+RUN mkdir -p /rails/storage/db /rails/storage/files && chown -R rails:rails /rails/storage
+USER 1000:1000
 EXPOSE 80
 CMD ["bin/start"]
