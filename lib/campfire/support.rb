@@ -271,8 +271,8 @@ module Campfire
 end
 
 module Campfire
-  # Bot::WebhookJob: posts the message to the bot's webhook. Replies are posted back to the room
-  # by the bot (see Bots.reply), as Webhook#deliver does.
+  # Bot::WebhookJob over Webhook#deliver: posts the message to the bot's webhook and posts the
+  # reply (text, or an attachment) back to the room as the bot.
   module Bots
     ENDPOINT_TIMEOUT = 7
 
@@ -280,28 +280,70 @@ module Campfire
 
     def deliver(bot_id, message_id)
       runtime = Jobs.runtime
+      ctx = JobContext.new(runtime)
+      bot = runtime.repo.user(bot_id) or return
       url = runtime.db.value("SELECT url FROM webhooks WHERE user_id = ? LIMIT 1", bot_id) or return
-      uri = URI.parse(url)
+      message = Message.new(*runtime.db.row("SELECT #{Message.columns} FROM messages WHERE id = ?", message_id))
+      room = runtime.repo.room(message.room_id)
+      ctx.current_user = bot
+
+      uri = URI(url)
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = uri.scheme == "https"
       http.open_timeout = http.read_timeout = ENDPOINT_TIMEOUT
       request = Net::HTTP::Post.new(uri, "Content-Type" => "application/json")
-      request.body = payload(runtime, message_id)
-      http.request(request)
+      request.body = payload(ctx, bot, room, message)
+      response = http.request(request)
+
+      if response.code == "200" && %w[ text/html text/plain ].include?(response.content_type)
+        reply(ctx, room, bot, "body" => String.new(response.body).force_encoding("UTF-8"))
+      elsif response.content_type && (extension = MIME_EXTENSIONS[response.content_type])
+        file = Tempfile.new([ "attachment", ".#{extension}" ]).tap { it.binmode; it.write(response.body); it.rewind }
+        reply(ctx, room, bot, "attachment" => { tempfile: file, filename: "attachment.#{extension}", type: response.content_type })
+      end
+    rescue Net::OpenTimeout, Net::ReadTimeout
+      reply(ctx, room, bot, "body" => "Failed to respond within #{ENDPOINT_TIMEOUT} seconds") if room
     rescue => error
       warn "webhook failed: #{error.class}: #{error.message}"
     end
 
-    def payload(runtime, message_id)
-      row = runtime.db.row("SELECT #{Message.columns} FROM messages WHERE id = ?", message_id)
-      message = Message.new(*row)
-      user = runtime.repo.user(message.creator_id)
-      room = runtime.repo.room(message.room_id)
-      body = runtime.repo.bodies([ message.id ])[message.id].to_s
+    MIME_EXTENSIONS = { "image/png" => "png", "image/jpeg" => "jpeg", "image/gif" => "gif", "image/webp" => "webp", "application/pdf" => "pdf",
+      "application/json" => "json", "text/csv" => "csv", "application/zip" => "zip" }.freeze
+
+    def reply(ctx, room, bot, params)
+      message = Messages.create(ctx, room: room, creator: bot, params: params)
+      Messages.after_create(ctx, room, message, Messages.views(ctx, [ message ]).first, webhooks: false)
+    end
+
+    def payload(ctx, bot, room, message)
+      body = ctx.repo.bodies([ message.id ])[message.id]
+      attachment = ctx.repo.message_attachments([ message.id ])[message.id]
+      creator = ctx.repo.user(message.creator_id)
+      plain = Messages.plain_text_body(ctx, body, attachment).gsub("@#{bot.name}", "").gsub(/\A\p{Space}+|\p{Space}+\z/, "")
       JSON.generate(
-        user: { id: user.id, name: user.name },
-        room: { id: room.id, name: room.name, path: "/rooms/#{room.id}/bot/messages" },
-        message: { id: message.id, body: { html: body, plain: PlainText.convert(body) }, path: "/rooms/#{room.id}/@#{message.id}" })
+        user: { id: creator.id, name: creator.name },
+        room: { id: room.id, name: room.name, path: "/rooms/#{room.id}/#{bot.id}-#{bot.bot_token}/messages" },
+        message: { id: message.id, body: { html: body.to_s, plain: plain }, path: "/rooms/#{room.id}/@#{message.id}" })
+    end
+  end
+
+  # What message creation needs outside a request: like a broadcast rendered by
+  # ApplicationController.renderer, links use its default host.
+  class JobContext
+    attr_reader :runtime
+    attr_accessor :current_user
+
+    def initialize(runtime)
+      @runtime = runtime
+    end
+
+    def db = runtime.db
+    def repo = runtime.repo
+    def base_url = "http://example.org"
+    def url_for(path) = "#{base_url}#{path}"
+
+    def build_view(**locals)
+      View.new(app: runtime, current_user: current_user, base_url: base_url).with(**locals)
     end
   end
 end

@@ -155,7 +155,7 @@ module Campfire
     end
 
     # After commit: the room broadcast, unread notifications, push notifications and bot webhooks.
-    def after_create(ctx, room, message, view)
+    def after_create(ctx, room, message, view, webhooks: true)
       html = ctx.build_view.render_message_cached(view)
       stream = "#{RailsCompat.gid_param(room.type, room.id)}:messages"
       Broadcasts.turbo_stream(stream, %(<turbo-stream action="append" target="messages_#{room.param_key}_#{room.id}"><template>#{html}</template></turbo-stream>))
@@ -164,8 +164,8 @@ module Campfire
       payload = %({"roomId":#{room.id}})
       member_ids.each { Broadcasts.raw("user_#{it}_unreads", payload) }
 
-      Jobs.later { Push.deliver_for_message(ctx.runtime, room.id, message.id) }
-      Webhooks.deliver_later(ctx.runtime, room, message)
+      Jobs.later { Push.deliver_for_message(nil, room.id, message.id) }
+      Webhooks.deliver_later(ctx.runtime, room, message) if webhooks
     end
   end
 end

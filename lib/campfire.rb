@@ -3,6 +3,7 @@ require "uri"
 require "digest"
 require "delegate"
 require "net/http"
+require "tempfile"
 
 require_relative "campfire/rails_compat"
 require_relative "campfire/time_format"
