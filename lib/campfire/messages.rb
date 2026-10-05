@@ -57,7 +57,8 @@ module Campfire
       elsif (sound = sound_for(plain))
         Sounds.presentation(sound)
       else
-        RichText.presentation(body.to_s, attachment_renderer: ->(node) { Attachments.render(ctx, node) })
+        RichText.presentation(body.to_s, attachment_renderer: ->(node) { Attachments.render(ctx, node) },
+          attachment_text: ->(node) { Attachments.plain_text(ctx, node) })
       end
     rescue => error
       warn "presentation failed: #{error.class}: #{error.message}"

@@ -10,6 +10,15 @@ module Campfire
 
     module_function
 
+    # config/initializers/vips.rb: only fuzzed loaders, and no OpenSlide.
+    def load_vips
+      return if defined?(@vips_loaded)
+      require "vips"
+      Vips.block_untrusted(true)
+      Vips.block("VipsForeignLoadOpenslide", true)
+      @vips_loaded = true
+    end
+
     def store(ctx, upload)
       tempfile = upload[:tempfile]
       filename = File.basename(upload[:filename].to_s)
@@ -41,7 +50,7 @@ module Campfire
     end
 
     def analyze(ctx, blob)
-      require "vips"
+      load_vips
       metadata = { "identified" => true }
       if blob.image?
         if (image = (Vips::Image.new_from_file(Storage.path_for(blob.key)) rescue nil))
@@ -94,7 +103,7 @@ module Campfire
     end
 
     def transform(source, destination, transformations)
-      require "vips"
+      load_vips
       width, height = transformations["resize_to_limit"]
       image = Vips::Image.new_from_file(source).autorot
       image = image.thumbnail_image(width, height: height, size: :down, no_rotate: true)

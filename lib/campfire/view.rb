@@ -138,8 +138,22 @@ module Campfire
       app.fragment_cache.fetch([ view.message.id, view.message.updated_at, base_url ]) { render_message(view) }
     end
 
+    UNRENDERABLE = <<~HTML.freeze
+      <div class="message message--formatted message--failed center">
+        <div class="message__body">
+          <div class="message__body-content txt-align-center">
+            Failed to load message content
+          </div>
+        </div>
+      </div>
+    HTML
+
+    # MessagesHelper#message_tag rescues any failure into the unrenderable placeholder.
     def render_message(view)
       scoped(view: view, message: view.message, creator: view.creator, room: view.room) { tpl_messages_message }
+    rescue Exception => error
+      warn "Exception while rendering message Message##{view.message.id}, failed with: #{error.class} `#{error.message}`"
+      UNRENDERABLE
     end
 
     def render_message_actions(view) = tpl_messages_actions

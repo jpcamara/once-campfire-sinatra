@@ -27,8 +27,8 @@ module Campfire
     ACTION_TEXT_ATTRIBUTES = %w[ abbr alt caption cite class content content-type controls data-language datetime filename filesize height
       href lang name poster presentation previewable sgid src start style title url value width xml:lang ].freeze
 
-    # ContentFilters::SanitizeAttributes: Action Text's standard attributes plus class
-    FILTER_ATTRIBUTES = (SAFE_LIST_ATTRIBUTES + ATTACHMENT_ATTRIBUTES + %w[ class ]).uniq.freeze
+    # ContentFilters::SanitizeAttributes: Action Text's allowed attributes plus class
+    FILTER_ATTRIBUTES = (ACTION_TEXT_ATTRIBUTES + %w[ class ]).uniq.freeze
 
     # MessagesHelper::AUTO_LINK_ALLOWED_TAGS / _ATTRIBUTES
     AUTO_LINK_TAGS = (SAFE_LIST_TAGS + EDITOR_FORMATTING_TAGS).freeze
@@ -57,10 +57,10 @@ module Campfire
 
     # The whole presentation for a text message body (stored Action Text HTML). `attachment_renderer`
     # receives each <action-text-attachment> node and returns its inner HTML (or nil to leave it).
-    def presentation(body, attachment_renderer: nil)
+    def presentation(body, attachment_renderer: nil, attachment_text: nil)
       return "" if body.nil?
 
-      html = apply_filters(body)
+      html = apply_filters(body, attachment_text)
       rendered = render_attachments(html, attachment_renderer)
       sanitized = sanitizer.sanitize(rendered, tags: ACTION_TEXT_TAGS, attributes: ACTION_TEXT_ATTRIBUTES)
       auto_link(%(<div class="lexxy-content">\n  #{sanitized}\n</div>\n))
@@ -68,9 +68,9 @@ module Campfire
 
     # ContentFilters::TextMessagePresentationFilters: RemoveSoloUnfurledLinkText, SanitizeTags,
     # SanitizeAttributes. Returns HTML.
-    def apply_filters(body)
+    def apply_filters(body, attachment_text = nil)
       frag = fragment(body)
-      frag = remove_solo_unfurled_link_text(frag)
+      frag = remove_solo_unfurled_link_text(frag, attachment_text)
       frag.css(FILTER_TAGS_SELECTOR).each(&:remove)
       sanitizer.sanitize(to_html(frag), tags: FILTER_TAGS, attributes: FILTER_ATTRIBUTES)
     end
@@ -93,12 +93,13 @@ module Campfire
 
     # ContentFilters::RemoveSoloUnfurledLinkText: when a message is just one unfurled link, drop the
     # link text and keep the embed.
-    def remove_solo_unfurled_link_text(frag)
+    def remove_solo_unfurled_link_text(frag, attachment_text)
       embeds = frag.css("#{ATTACHMENT_TAG}[content-type='#{OPENGRAPH_CONTENT_TYPE}']")
       return frag unless embeds.size == 1
 
       href = opengraph_href(embeds.first)
-      return frag unless href && normalize_tweet_url(href) == normalize_tweet_url(plain_text(frag))
+      plain = PlainText.convert(to_html(frag), attachment_text: attachment_text)
+      return frag unless href && normalize_tweet_url(href) == normalize_tweet_url(plain)
 
       if frag.css("div").any?
         frag.css("div").each { |div| div.inner_html = embeds.first.to_s }
@@ -125,12 +126,6 @@ module Campfire
       uri.to_s
     rescue URI::InvalidURIError
       url
-    end
-
-    # Action Text's plain-text conversion is only needed here to compare against a URL; the
-    # filter's own comparison treats any non-URL text as not matching.
-    def plain_text(frag)
-      frag.text.strip
     end
 
     # rails_autolink's auto_link(text, html: { target: "_blank" }, sanitize_options: ...)

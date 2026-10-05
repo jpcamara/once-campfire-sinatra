@@ -6,7 +6,10 @@ module Campfire
   # Message attachments (Messages::AttachmentPresentation) and the attachments embedded in rich
   # text bodies (mentions, unfurled links).
   module Attachments
-    VARIABLE_TYPES = %w[ image/png image/gif image/jpeg image/tiff image/bmp image/vnd.adobe.photoshop image/vnd.microsoft.icon image/webp image/avif image/heic image/heif ].freeze
+    # ActiveStorage.variable_content_types after config/initializers/vips.rb removes bmp, ico and psd
+    VARIABLE_TYPES = %w[ image/png image/gif image/jpeg image/tiff image/webp image/avif image/heic image/heif ].freeze
+    OPENGRAPH_CONTENT_TYPE = "application/vnd.actiontext.opengraph-embed"
+    TWITTER_AVATAR_URL_PREFIX = "https://pbs.twimg.com/profile_images"
 
     module_function
 
@@ -65,17 +68,98 @@ module Campfire
       end
     end
 
-    # ---- Attachments inside rich text
+    # ---- Attachments inside rich text (lib/rails_ext/action_text_attachables.rb's lookup order)
 
+    def attachable(ctx, node)
+      if (embed = opengraph_embed(ctx, node))
+        [ :opengraph, embed ]
+      elsif (user_id = GlobalIds.user_id_from_sgid(node["sgid"])) && (user = ctx.repo.user(user_id))
+        [ :mention, user ]
+      elsif node["content-type"].to_s.match?(%r{\Atext/html}) && node["content"].to_s.strip != ""
+        [ :content, node["content"] ]
+      else
+        [ :missing, nil ]
+      end
+    end
+
+    # The partial each attachment renders into the node.
     def render(ctx, node)
-      nil
+      kind, value = attachable(ctx, node)
+      case kind
+      when :opengraph then render_opengraph(value)
+      when :mention then %(<span class="mention" sgid="#{HTML.h(node["sgid"])}">#{ctx.build_view.avatar_tag(value)} #{HTML.h(value.name)}</span>)
+      when :content then %(<figure class="attachment attachment--content">\n  #{value}\n</figure>)
+      else "☒"
+      end
     end
 
     def plain_text(ctx, node)
-      node["caption"].to_s
+      kind, value = attachable(ctx, node)
+      case kind
+      when :opengraph then ""
+      when :mention then "@#{value.name}"
+      when :content then PlainText.convert(value)
+      else "☒"
+      end
     end
 
+    # ActionText::Attachment::OpengraphEmbed.from_node
+    def opengraph_embed(ctx, node)
+      return nil unless node["content-type"].to_s.include?(OPENGRAPH_CONTENT_TYPE)
+      host = ctx.respond_to?(:request) ? ctx.request.host : nil
+      if node["filename"].to_s.strip != ""
+        { href: web_url(node["href"], host), url: web_url(node["url"], host), filename: node["filename"], description: node["caption"] }
+      else
+        fragment = Nokogiri::HTML.fragment(node["content"].to_s)
+        title = fragment.at_css(".og-embed__title")
+        link = title&.at_css("a")
+        { href: web_url(link&.[]("href"), host), url: web_url(fragment.at_css(".og-embed__image img")&.[]("src"), host),
+          filename: (link || title)&.text&.strip, description: fragment.at_css(".og-embed__description")&.text&.strip }
+      end
+    end
+
+    def web_url(value, request_host)
+      return nil if value.to_s.strip.empty?
+      parsed = URI.parse(value)
+      value if parsed.is_a?(URI::HTTP) && elsewhere?(parsed.host, request_host)
+    rescue URI::InvalidURIError
+      nil
+    end
+
+    def elsewhere?(host, request_host)
+      return false unless host && !host.include?("%") && host.include?(".") && host.split(".").last.then { it.match?(/[a-z]/i) && !it.match?(/\A0x/i) }
+      host.downcase.delete_suffix(".") != request_host.to_s.downcase.delete_suffix(".")
+    end
+
+    def render_opengraph(embed)
+      title = truncate(embed[:filename].to_s, 280)
+      title_html = embed[:href].to_s.strip.empty? ? HTML.h(title) : %(<a rel="noreferrer" target="_blank" href="#{HTML.h(embed[:href])}">#{HTML.h(title)}</a>)
+      image = embed[:url] ? %(\n        <div class="og-embed__image">\n          <img src="#{HTML.h(embed[:url])}" class="image center" alt="" />\n        </div>) : ""
+      avatar = embed[:url].to_s.start_with?(TWITTER_AVATAR_URL_PREFIX) ? "og-embed--twitter-avatar" : ""
+      <<~HTML.chomp
+        <figure class="attachment attachment--content attachment--og">
+          <actiontext-opengraph-embed>
+            <div class="og-embed gap #{avatar}">
+              <div class="og-embed__content">
+                <div class="og-embed__title">
+                  #{title_html}
+                </div>
+                <div class="og-embed__description">#{HTML.h(truncate(embed[:description].to_s, 560))}</div>
+              </div>#{image}
+            </div>
+          </actiontext-opengraph-embed>
+        </figure>
+      HTML
+    end
+
+    # String#truncate(length, omission: "…")
+    def truncate(text, length)
+      text.size > length ? "#{text[0, length - 1]}…" : text
+    end
+
+    # ActionText::Attachment.fragment_by_canonicalizing_attachments: attachments are stored empty.
     def canonicalize(fragment)
+      fragment.css(RichText::ATTACHMENT_TAG).each { it.inner_html = "" }
       fragment
     end
   end
