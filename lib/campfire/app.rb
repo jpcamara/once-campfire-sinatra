@@ -93,6 +93,7 @@ module Campfire
     set :raise_errors, false
     set :logging, nil
     set :protection, false
+    set :method_override, true
     disable :sessions
 
     def self.runtime
@@ -109,12 +110,27 @@ module Campfire
         "X-Permitted-Cross-Domain-Policies" => "none", "Referrer-Policy" => "strict-origin-when-cross-origin"
     end
 
+    # ApplicationController's AllowBrowser and BlockBannedRequests, ahead of authentication.
+    before do
+      next if request.path_info.start_with?("/rails/active_storage", "/up")
+      halt render_incompatible_browser if Browsers.blocked?(request.user_agent)
+      halt 429, "" if !(request.get? || request.head?) && db.value("SELECT 1 FROM bans WHERE ip_address = ? LIMIT 1", request.ip)
+    end
+
     # ---- Health
 
     get "/up" do
       headers "Cache-Control" => "max-age=0, private, must-revalidate"
       headers "Content-Type" => "text/html; charset=utf-8"
       ""
+    end
+
+    # ---- Static pages from public/ (Rails' public file server)
+
+    get %r{/(404|422|500|502)\.html|/robots\.txt} do
+      path = File.join(ROOT, "public", request.path_info)
+      headers "Cache-Control" => "public, max-age=2592000"
+      send_file path, type: request.path_info.end_with?(".txt") ? "text/plain" : "text/html"
     end
 
     # ---- Sessions
@@ -125,16 +141,63 @@ module Campfire
 
     post "/session" do
       verify_same_origin!
+      return render_sign_in_rejection(429) if RateLimit.exceeded?("sessions:#{request.ip}", limit: 10, within: 180)
       user = repo.active_user_by_email(params["email_address"].to_s)
       if user && user.password_digest && BCrypt::Password.new(user.password_digest) == params["password"].to_s
         start_new_session_for(user)
         redirect_after_authentication
       else
-        BCrypt::Password.create("x", cost: 4) unless user # same cost profile for unknown emails
-        flash_now["alert"] = "Too many requests or unauthorized."
-        status 401
-        render_page(:sessions_new, page_title: "Sign in", head: %(<meta name="turbo-visit-control" content="reload">), email_address: params["email_address"])
+        render_sign_in_rejection(401)
       end
+    end
+
+    # ---- First run, joining, transfers
+
+    get "/first_run" do
+      return redirect(url_for("/")) if runtime.account
+      render_page(:first_runs_show, page_title: "Set up Campfire", body_class: "signup")
+    end
+
+    post "/first_run" do
+      verify_same_origin!
+      return redirect(url_for("/")) if runtime.account
+      user = Users.first_run(self, params["user"] || {})
+      start_new_session_for(user)
+      redirect url_for("/")
+    end
+
+    get "/join/:join_code" do
+      halt 404, "" unless runtime.account.join_code == params["join_code"]
+      return redirect(url_for("/")) if restore_authentication
+      view = build_view(join_code: params["join_code"])
+      render_layout(view, page_title: "Sign up", body_class: "signup", nav: view.tpl_users_new_nav, main: view.tpl_users_new)
+    end
+
+    post "/join/:join_code" do
+      verify_same_origin!
+      halt 404, "" unless runtime.account.join_code == params["join_code"]
+      return redirect(url_for("/")) if restore_authentication
+      attributes = params["user"] || {}
+      if (user = Users.create(self, attributes))
+        start_new_session_for(user)
+        redirect url_for("/")
+      else
+        redirect url_for("/session/new?#{URI.encode_www_form(email_address: attributes["email_address"])}")
+      end
+    end
+
+    get "/session/transfers/:id" do
+      view = build_view(request_path: request.path)
+      render_layout(view, main: view.tpl_sessions_transfer)
+    end
+
+    put "/session/transfers/:id" do
+      verify_same_origin!
+      user_id = secrets.find_signed_id(params["id"], "user/transfer")
+      user = user_id && repo.user(user_id)
+      halt 400, "" unless user&.active?
+      start_new_session_for(user)
+      redirect_after_authentication
     end
 
     delete "/session" do
@@ -315,13 +378,25 @@ module Campfire
         view.tpl_layouts_application
       end
 
-      def render_page(template, page_title: nil, head: nil, **locals)
+      def render_page(template, page_title: nil, head: nil, body_class: nil, **locals)
         view = build_view(**locals)
-        render_layout(view, main: view.public_send(:"tpl_#{template}"), page_title: page_title, head: head)
+        render_layout(view, main: view.public_send(:"tpl_#{template}"), page_title: page_title, head: head, body_class: body_class)
       end
 
       def flash_now
         @flash ||= read_flash
+      end
+
+      def render_sign_in_rejection(code)
+        flash_now["alert"] = "Too many requests or unauthorized."
+        status code
+        render_page(:sessions_new, page_title: "Sign in", head: %(<meta name="turbo-visit-control" content="reload">), email_address: params["email_address"])
+      end
+
+      def render_incompatible_browser
+        view = build_view
+        render_layout(view, main: view.tpl_sessions_incompatible_browser,
+          page_title: Platform.new(request.user_agent).apple_messages? ? "Campfire" : "Unsupported browser")
       end
 
       def signed_blob!(signed_id)
@@ -554,7 +629,9 @@ module Campfire
       end
     end
 
+    # Unmatched paths get the static 404 page; a route that answers 404 itself (head :not_found) keeps its empty body.
     not_found do
+      next body if env["sinatra.route"]
       headers "Content-Type" => "text/html; charset=utf-8"
       File.read(File.join(ROOT, "public/404.html"))
     end

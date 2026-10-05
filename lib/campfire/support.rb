@@ -317,3 +317,83 @@ module Campfire
     end
   end
 end
+
+module Campfire
+  # AllowBrowser::VERSIONS through ActionController::AllowBrowser::BrowserBlocker
+  module Browsers
+    VERSIONS = { safari: 17.2, chrome: 120, firefox: 121, opera: 104, ie: false }.freeze
+
+    module_function
+
+    def blocked?(user_agent_string)
+      return false if user_agent_string.to_s.empty?
+      user_agent = UserAgent.parse(user_agent_string)
+      return false if user_agent.version.to_s.empty? || user_agent.bot?
+      name = user_agent.browser.to_s.downcase
+      name = "ie" if name == "internet explorer"
+      return false unless VERSIONS.key?(name.to_sym)
+      minimum = VERSIONS[name.to_sym]
+      minimum ? user_agent.version < UserAgent::Version.new(minimum.to_s) : true
+    end
+  end
+
+  # ActionController::RateLimiting over the cache store: a counter per key and window, in Redis
+  # so every process shares it.
+  module RateLimit
+    module_function
+
+    def exceeded?(key, limit:, within:)
+      redis_key = "rate-limit:#{key}"
+      count = Broadcasts.redis_call("INCR", redis_key)
+      Broadcasts.redis_call("EXPIRE", redis_key, within, "NX") if count == 1
+      count > limit
+    rescue RedisClient::Error
+      false
+    end
+  end
+
+  # User creation: joining with the account's code, and the first run's administrator.
+  module Users
+    module_function
+
+    def create(ctx, attributes, role: 0)
+      now = TimeFormat.now_text
+      digest = BCrypt::Password.create(attributes["password"].to_s, cost: BCrypt::Engine::DEFAULT_COST)
+      email = attributes["email_address"].to_s.strip.downcase
+      user_id = ctx.db.transaction do |w|
+        next nil if w.value("SELECT 1 FROM users WHERE email_address = ?", email)
+        w.run("INSERT INTO users (created_at, email_address, name, password_digest, role, status, updated_at) VALUES (?, ?, ?, ?, ?, 0, ?)",
+          now, email, attributes["name"].to_s, digest, role, now)
+        id = w.last_insert_row_id
+        yield w, id if block_given?
+        # User#grant_membership_to_open_rooms
+        w.rows("SELECT id FROM rooms WHERE type = 'Rooms::Open'").each do |(room_id)|
+          w.run("INSERT OR IGNORE INTO memberships (created_at, room_id, updated_at, user_id) VALUES (?, ?, ?, ?)", now, room_id, now, id)
+        end
+        id
+      end
+      return nil unless user_id
+      attach_avatar(ctx, user_id, attributes["avatar"])
+      ctx.repo.user(user_id)
+    end
+
+    # FirstRun.create!: the account, the first open room and its administrator.
+    def first_run(ctx, attributes)
+      create(ctx, attributes, role: 1) do |w, user_id|
+        now = TimeFormat.now_text
+        join_code = SecureRandom.alphanumeric(12).scan(/.{4}/).join("-")
+        w.run("INSERT INTO accounts (created_at, join_code, name, singleton_guard, updated_at) VALUES (?, ?, 'Campfire', 0, ?)", now, join_code, now)
+        w.run("INSERT INTO rooms (created_at, creator_id, name, type, updated_at) VALUES (?, ?, 'All Talk', 'Rooms::Open', ?)", now, user_id, now)
+        room_id = w.last_insert_row_id
+        w.run("INSERT OR IGNORE INTO memberships (created_at, involvement, room_id, updated_at, user_id) VALUES (?, 'mentions', ?, ?, ?)", now, room_id, now, user_id)
+      end
+    end
+
+    def attach_avatar(ctx, user_id, upload)
+      return unless upload.is_a?(Hash) && upload[:tempfile]
+      blob = Uploads.store(ctx, upload)
+      ctx.db.transaction { |w| Uploads.attach(w, blob, "User", user_id, "avatar", TimeFormat.now_text) }
+      Uploads.analyze(ctx, blob)
+    end
+  end
+end

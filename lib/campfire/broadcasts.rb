@@ -22,6 +22,10 @@ module Campfire
         publisher.call("PUBLISH", CHANNEL, "#{stream}\0#{payload}")
       end
 
+      def redis_call(*command)
+        publisher.call(*command)
+      end
+
       def json(stream, object)
         raw(stream, JSON.generate(object))
       end

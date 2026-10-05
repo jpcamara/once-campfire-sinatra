@@ -11,11 +11,7 @@ module Campfire
       "❤️" => "Red heart", "😂" => "Face with tears of joy", "🎉" => "Party popper", "🔥" => "Fire"
     }.freeze
 
-    TRANSLATIONS = {
-      email_address: { "🇺🇸": "Enter your email address", "🇪🇸": "Introduce tu correo electrónico", "🇫🇷": "Entrez votre adresse courriel", "🇮🇳": "अपना ईमेल पता दर्ज करें", "🇩🇪": "Geben Sie Ihre E-Mail-Adresse ein", "🇧🇷": "Insira seu endereço de email", "🇯🇵": "メールアドレスを入力してください" },
-      password: { "🇺🇸": "Enter your password", "🇪🇸": "Introduce tu contraseña", "🇫🇷": "Saisissez votre mot de passe", "🇮🇳": "अपना पासवर्ड दर्ज करें", "🇩🇪": "Geben Sie Ihr Passwort ein", "🇧🇷": "Insira sua senha", "🇯🇵": "パスワードを入力してください" },
-      invite_message: { "🇺🇸": "Welcome to Campfire. To invite some people to chat with you, share the join link below.", "🇪🇸": "Bienvenido a Campfire. Para invitar a algunas personas a chatear contigo, comparte el enlace de unión que se encuentra a continuación.", "🇫🇷": "Bienvenue sur Campfire. Pour inviter des personnes à discuter avec vous, partagez le lien pour rejoindre ci-dessous.", "🇮🇳": "Campfire में आपका स्वागत है। अधिक लोगों को चैट के लिए आमंत्रित करने के लिए, नीचे जुड़ने का लिंक साझा करें।", "🇩🇪": "Willkommen bei Campfire. Um einige Personen zum Chatten einzuladen, teilen Sie den unten stehenden Beitrittslink.", "🇧🇷": "Boas vindas ao Campfire. Para convidar pessoas para conversarem com você, compartilhe o link de convite abaixo.", "🇯🇵": "Campfireへようこそ。他の人をチャットに招待するには、下記の参加リンクを共有してください。" }
-    }.freeze
+    TRANSLATIONS = Translations::ALL
 
     AVATAR_COLORS = %w[ #AF2E1B #CC6324 #3B4B59 #BFA07A #ED8008 #ED3F1C #BF1B1B #736B1E #D07B53
       #736356 #AD1D1D #BF7C2A #C09C6F #698F9C #7C956B #5D618F #3B3633 #67695E ].freeze
@@ -179,6 +175,7 @@ module Campfire
     def render_invitation = tpl_rooms_invitation
     def render_invite = tpl_rooms_invite
     def render_help_contact = tpl_sessions_help_contact
+    def render_user_fields = tpl_users_fields
 
     # Sets locals for one partial and restores the caller's afterwards.
     def scoped(**locals)
@@ -192,6 +189,6 @@ module Campfire
     # Locals the templates use.
     attr_reader :message, :creator, :room, :view, :boost, :booster, :membership, :members, :messages, :invitation,
       :direct_memberships, :other_memberships, :placeholder_users, :query, :raw_query, :count, :recents, :recent_searches,
-      :return_to_room, :email_address
+      :return_to_room, :email_address, :join_code, :request_path
   end
 end
