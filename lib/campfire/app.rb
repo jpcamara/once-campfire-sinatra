@@ -136,6 +136,8 @@ module Campfire
     # ---- Sessions
 
     get "/session/new" do
+      # SessionsController#ensure_user_exists
+      return redirect(url_for("/first_run")) unless db.value("SELECT 1 FROM users LIMIT 1")
       render_page(:sessions_new, page_title: "Sign in", head: %(<meta name="turbo-visit-control" content="reload">), email_address: params["email_address"])
     end
 
@@ -574,6 +576,19 @@ module Campfire
       badge = db.value("SELECT COUNT(*) FROM memberships WHERE user_id = ? AND unread_at IS NOT NULL", current_user.id)
       Push.deliver(runtime, id.to_i, *row, payload, badge) if Push.permitted?(row[0])
       redirect url_for("/users/me/push_subscriptions")
+    end
+
+    post "/unfurl_link" do
+      verify_same_origin!
+      require_authentication!
+      halt 400, "" if params["url"].to_s.empty?
+      if (metadata = Unfurl.metadata(params["url"].to_s))
+        headers "Content-Type" => "application/json; charset=utf-8"
+        JSON.generate(metadata)
+      else
+        status 204
+        ""
+      end
     end
 
     # ---- Bot API: /rooms/:room_id/:bot_key/messages
@@ -1478,6 +1493,19 @@ module Campfire
       badge = db.value("SELECT COUNT(*) FROM memberships WHERE user_id = ? AND unread_at IS NOT NULL", current_user.id)
       Push.deliver(runtime, id.to_i, *row, payload, badge) if Push.permitted?(row[0])
       redirect url_for("/users/me/push_subscriptions")
+    end
+
+    post "/unfurl_link" do
+      verify_same_origin!
+      require_authentication!
+      halt 400, "" if params["url"].to_s.empty?
+      if (metadata = Unfurl.metadata(params["url"].to_s))
+        headers "Content-Type" => "application/json; charset=utf-8"
+        JSON.generate(metadata)
+      else
+        status 204
+        ""
+      end
     end
 
     # ---- Bot API: /rooms/:room_id/:bot_key/messages

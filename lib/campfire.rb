@@ -25,6 +25,7 @@ require_relative "campfire/app"
 require_relative "campfire/cable"
 require_relative "campfire/compression"
 require_relative "campfire/etag"
+require_relative "campfire/unfurl"
 
 module Campfire
   def self.boot
