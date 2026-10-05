@@ -45,9 +45,16 @@ module Campfire
         app.send_file File.join(ROOT, "public/default-bot-avatar.svg"), type: "image/svg+xml", disposition: "inline"
       else
         app.headers "Content-Type" => "image/svg+xml; charset=utf-8"
+        initials_svg(user)
+      end
+    end
+
+    # Users::AvatarsController#render_initials, kept per user version.
+    def initials_svg(user)
+      (@initials ||= {})[[ user.id, user.name ]] ||= begin
         initials = user.initials
         length = initials.size >= 3 ? 'textLength="85%" lengthAdjust="spacingAndGlyphs"' : ""
-        format(SVG, View::AVATAR_COLORS[Zlib.crc32(user.to_param) % View::AVATAR_COLORS.size], length, HTML.h(initials))
+        format(SVG, View::AVATAR_COLORS[Zlib.crc32(user.to_param) % View::AVATAR_COLORS.size], length, HTML.h(initials)).freeze
       end
     end
 

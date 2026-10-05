@@ -28,6 +28,7 @@ require_relative "campfire/fragment_body"
 require_relative "campfire/compression"
 require_relative "campfire/etag"
 require_relative "campfire/unfurl"
+require_relative "campfire/static_files"
 
 module Campfire
   def self.boot
