@@ -8,12 +8,27 @@ module Campfire
   # lets other fibers run, on the reader connection).
   class DB
     BUSY_TIMEOUT_MS = 5_000
+    BUSY_RETRY_SECONDS = Float(ENV.fetch("CAMPFIRE_BUSY_RETRY", 0.0001))
 
     class Connection
       def initialize(path, yielding_busy_handler:)
         @db = SQLite3::Database.new(path)
         if yielding_busy_handler
-          @db.busy_handler_timeout = BUSY_TIMEOUT_MS
+          # busy_handler_timeout= with a shorter sleep between retries: another worker's write takes
+          # a few hundred microseconds, and the lock sits unused for whatever is left of the sleep.
+          # The sleep lets this process's other fibers run.
+          deadline = nil
+          @db.busy_handler do |count|
+            now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+            if count.zero?
+              deadline = now + BUSY_TIMEOUT_MS / 1000.0
+            elsif now > deadline
+              next false
+            else
+              sleep(BUSY_RETRY_SECONDS)
+            end
+            true
+          end
         else
           @db.busy_timeout = BUSY_TIMEOUT_MS
         end
