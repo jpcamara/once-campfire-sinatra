@@ -288,9 +288,8 @@ module Campfire
       return render_room_not_found unless membership
 
       room = repo.room(membership.room_id)
-      message = Messages.create(self, room: room, creator: current_user, params: params["message"] || {})
-      view = message_views([ message ]).first
-      Messages.after_create(self, room, message, view)
+      created, view = Messages.post(self, room: room, creator: current_user, params: params["message"] || {})
+      Messages.after_create(self, room, created.message, view, created: created)
 
       html_headers("text/vnd.turbo-stream.html")
       %(<turbo-stream action="append" target="messages_#{room.param_key}_#{room.id}"><template>#{build_view.render_message_cached(view)}</template></turbo-stream>)
