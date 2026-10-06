@@ -85,9 +85,19 @@ module Campfire
         @outbox.enqueue(frame)
       end
 
+      # ActionCable::Connection::Base#close(reason: "remote", reconnect:)
+      def disconnect(reconnect:)
+        enqueue(%({"type":"disconnect","reason":"remote","reconnect":#{reconnect}}))
+        enqueue(:close)
+      end
+
       private
         def drain
           while (frame = @outbox.dequeue)
+            if frame == :close
+              @websocket.flush
+              break @websocket.close
+            end
             @websocket.write(Protocol::WebSocket::TextMessage.new(frame))
             @websocket.flush if @outbox.empty?
           end

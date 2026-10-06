@@ -224,6 +224,7 @@ module Campfire
       verify_same_origin!
       require_authentication!
       db.transaction { |w| w.run("DELETE FROM sessions WHERE id = ?", @session.id) }
+      Broadcasts.disconnect_user(current_user.id, reconnect: true) # Authentication#disconnect_remote_connections
       response.delete_cookie("session_token", path: "/")
       response.delete_cookie("_campfire_session", path: "/")
       redirect url_for("/")
@@ -651,7 +652,9 @@ module Campfire
         @current_user = bot
         message = repo.room_message(room.id, id.to_i) or record_not_found!
         head_response(403) unless bot.can_administer?(message)
-        message = Messages.update(self, room, message, (params["message"] || {})["body"])
+        # Messages::ByBotsController#message_params: the raw request body is the message
+        request.body.rewind
+        message = Messages.update(self, room, message, request.body.read.to_s.force_encoding("UTF-8"))
         headers "Content-Type" => "application/json; charset=utf-8"
         RailsJSON.generate(BotApi.message_json(self, message))
       end
@@ -663,6 +666,29 @@ module Campfire
       head_response(403) unless bot.can_administer?(message)
       MessageRemoval.destroy(runtime, message)
       Broadcasts.turbo_stream("#{RailsCompat.gid_param(room.type, room.id)}:messages", %(<turbo-stream action="remove" target="message_#{message.client_message_id}"></turbo-stream>))
+      status 204
+      ""
+    end
+
+    # Messages::Boosts::ByBotsController: the raw request body is the boost's content
+    post %r{/rooms/(\d+)/(\d+-[A-Za-z0-9]+)/messages/(\d+)/boosts(?:\.json)?} do |room_id, bot_key, message_id|
+      bot, room = bot_room!(bot_key, room_id)
+      @current_user = bot
+      message = repo.room_message(room.id, message_id.to_i) or head_response(404)
+      request.body.rewind
+      content = request.body.read.to_s.force_encoding("UTF-8")
+      head_response(422) if content.strip.empty?
+      boost = Boosts.create(self, message, content)
+      status 201
+      headers "Content-Type" => "application/json; charset=utf-8"
+      RailsJSON.generate(BotApi.boost_json(self, boost, message))
+    end
+
+    delete %r{/rooms/(\d+)/(\d+-[A-Za-z0-9]+)/messages/(\d+)/boosts/(\d+)(?:\.json)?} do |room_id, bot_key, message_id, id|
+      bot, room = bot_room!(bot_key, room_id)
+      @current_user = bot
+      message = repo.room_message(room.id, message_id.to_i) or head_response(404)
+      Boosts.destroy(self, message, id.to_i) or head_response(404)
       status 204
       ""
     end
@@ -1301,9 +1327,11 @@ module Campfire
         %(<turbo-frame data-turbo-permanent="true" data-controller="rooms-list read-rooms turbo-frame" data-rooms-list-unread-class="unread" data-action="presence:present@window->rooms-list#read read-rooms:read->rooms-list#read turbo:frame-load->rooms-list#loaded refresh-room:visible@window->turbo-frame#reload" id="user_sidebar" src="/users/me/sidebar" target="_top"></turbo-frame>)
       end
 
+      # MessagesController#create's `render action: :room_not_found`: the HTML template in the
+      # application layout, whose composer frame the submitting frame takes.
       def render_room_not_found
-        html_headers("text/vnd.turbo-stream.html")
-        %(<turbo-stream action="update" target="message-area"><template><div class="message-area--empty min-width center txt-medium">This room has been deleted.</div></template></turbo-stream>)
+        view = build_view
+        render_layout(view, main: view.tpl_messages_room_not_found, frame_layout: false)
       end
 
       def messages_html(messages)

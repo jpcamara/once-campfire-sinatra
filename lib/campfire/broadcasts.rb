@@ -7,6 +7,7 @@ module Campfire
   # process, subscriptions are registered per stream name.
   module Broadcasts
     CHANNEL = "campfire:broadcasts"
+    DISCONNECTS = "action_cable/"
 
     @streams = Hash.new { |hash, key| hash[key] = [] }
     @mutex = Mutex.new
@@ -28,6 +29,12 @@ module Campfire
 
       def json(stream, object)
         raw(stream, JSON.generate(object))
+      end
+
+      # ActionCable.server.remote_connections.where(current_user: user).disconnect(reconnect:): every
+      # process closes that user's connections.
+      def disconnect_user(user_id, reconnect: false)
+        raw("#{DISCONNECTS}#{user_id}", reconnect ? "true" : "false")
       end
 
       def subscribe(stream, subscription)
@@ -65,6 +72,11 @@ module Campfire
       end
 
       def deliver(stream, payload)
+        if stream.start_with?(DISCONNECTS)
+          user_id = stream.delete_prefix(DISCONNECTS).to_i
+          return Cable.connections.each_key { it.disconnect(reconnect: payload == "true") if it.user.id == user_id }
+        end
+
         subscribers = @streams[stream]
         return @streams.delete(stream) if subscribers.empty?
 
