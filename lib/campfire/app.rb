@@ -549,7 +549,7 @@ module Campfire
       else
         view = build_view
         html_headers
-        users.map { Autocomplete.prompt_item(view, it) }.join
+        users.map { Autocomplete.prompt_item(view, it) }.join << "\n"
       end
     end
 
@@ -743,7 +743,7 @@ module Campfire
       room = room_scoped!(room_id)
       message = repo.room_message(room.id, id.to_i) or record_not_found!
       view = build_view
-      render_layout(view, main: view.render_message_cached(message_views([ message ]).first))
+      render_layout(view, main: view.render_message_cached(message_views([ message ]).first), frame_layout: false)
     end
 
     get %r{/rooms/(\d+)/messages/(\d+)/edit} do |room_id, id|
@@ -754,7 +754,7 @@ module Campfire
       message_view = Messages.views(self, [ message ], cached: false).first
       body = repo.bodies([ message.id ])[message.id]
       view = build_view(view: message_view, message: message, room: room, editor_value: Messages.editor_value(self, body))
-      render_layout(view, main: view.tpl_messages_edit)
+      render_layout(view, main: view.tpl_messages_edit, frame_layout: false)
     end
 
     patch %r{/rooms/(\d+)/messages/(\d+)} do |room_id, id|
@@ -997,10 +997,12 @@ module Campfire
         headers "ETag" => %(W/"#{Digest::MD5.hexdigest([ base_url, request.user_agent, current_user&.id, current_user&.updated_at, current_user&.role, *parts ].join("|"))}")
       end
 
-      def render_layout(view, main:, page_title: nil, body_class: nil, head: nil, nav: nil, footer: nil, sidebar: nil)
+      # frame_layout: false for MessagesController, whose `layout false, only: :index` replaces
+      # turbo-rails' frame layout, so its other actions render the application layout for frames too.
+      def render_layout(view, main:, page_title: nil, body_class: nil, head: nil, nav: nil, footer: nil, sidebar: nil, frame_layout: true)
         html_headers
         # Turbo::Frames::FrameRequest: frame requests get turbo-rails' bare frame layout.
-        if request.env["HTTP_TURBO_FRAME"].to_s != ""
+        if frame_layout && request.env["HTTP_TURBO_FRAME"].to_s != ""
           return "<html>\n  <head>\n    \n    #{head}\n  </head>\n  <body>\n    #{main}\n  </body>\n</html>\n"
         end
 
