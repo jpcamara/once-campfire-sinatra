@@ -111,18 +111,15 @@ module Campfire
     SECURITY_HEADERS = { "X-Frame-Options" => "SAMEORIGIN", "X-XSS-Protection" => "0", "X-Content-Type-Options" => "nosniff",
       "X-Permitted-Cross-Domain-Policies" => "none", "Referrer-Policy" => "strict-origin-when-cross-origin" }.freeze
 
-    # Reads cached from an earlier request are dropped if the database has changed since.
-    before { db.check_for_changes }
-
-    # ActionDispatch's default headers on every controller response, and ApplicationController's
-    # VersionHeaders (a before_action after authentication: see require_authentication!).
+    # One filter (Sinatra matches a pattern for each): reads cached from an earlier request are
+    # dropped if the database has changed since; ActionDispatch's default headers on every
+    # controller response and ApplicationController's VersionHeaders (a before_action after
+    # authentication: see require_authentication!); then ApplicationController's AllowBrowser and
+    # BlockBannedRequests, ahead of authentication.
     before do
+      db.check_for_changes
       headers SECURITY_HEADERS
       headers "X-Version" => runtime.app_version, "X-Rev" => runtime.git_revision.to_s
-    end
-
-    # ApplicationController's AllowBrowser and BlockBannedRequests, ahead of authentication.
-    before do
       next if request.path_info.start_with?("/rails/active_storage", "/up")
       halt render_incompatible_browser if Browsers.blocked?(request.user_agent)
       head_response(429) if !(request.get? || request.head?) && db.value("SELECT 1 FROM bans WHERE ip_address = ? LIMIT 1", remote_ip)

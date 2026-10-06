@@ -13,9 +13,14 @@ app = Rack::Builder.app do
   use Campfire::ResponseCache
   use Campfire::Compression
   use Campfire::ETag
-  map("/assets") { run ->(env) { env["PATH_INFO"] = "/assets#{env["PATH_INFO"]}"; assets.call(env) } }
-  map("/cable") { run Campfire::Cable }
-  run Campfire::App
+  # Assets and the cable endpoint by prefix (Rack::URLMap matched a regexp per mapping per request).
+  run(lambda do |env|
+    path = env["PATH_INFO"]
+    if path.start_with?("/assets/") then assets.call(env)
+    elsif path == "/cable" then Campfire::Cable.call(env)
+    else Campfire::App.call(env)
+    end
+  end)
 end
 
 run app
