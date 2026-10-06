@@ -933,7 +933,7 @@ module Campfire
       # proxy, when the request came through one.
       def remote_ip
         @remote_ip ||= begin
-          normalize = ->(ip) { ip.to_s.strip.delete_prefix("::ffff:") }
+          normalize = ->(ip) { header_text(ip).strip.delete_prefix("::ffff:") }
           trusted = ->(ip) { (addr = IPAddr.new(ip) rescue nil) && TRUSTED_PROXIES.any? { it.include?(addr) } }
           remote = normalize.(request.env["REMOTE_ADDR"])
           forwarded = request.env["HTTP_X_FORWARDED_FOR"].to_s.split(",").map(&normalize).reject(&:empty?).reverse
@@ -946,6 +946,9 @@ module Campfire
       end
 
       def current_user = @current_user
+
+      # Header values arrive as binary strings, which sqlite3 binds as BLOBs that never equal TEXT.
+      def header_text(value) = value.to_s.dup.force_encoding(Encoding::UTF_8)
       def base_url = (@base_url ||= "#{request.scheme}://#{request.host_with_port}")
       def url_for(path) = "#{base_url}#{path}"
 
@@ -1091,7 +1094,7 @@ module Campfire
           now = TimeFormat.now_text
           db.transaction do |w|
             w.run("UPDATE sessions SET user_agent = ?, ip_address = ?, last_active_at = ?, updated_at = ? WHERE id = ?",
-              request.user_agent, remote_ip, now, now, session.id)
+              header_text(request.user_agent), remote_ip, now, now, session.id)
           end
           set_session_cookie(session.token)
         end
@@ -1102,7 +1105,7 @@ module Campfire
         now = TimeFormat.now_text
         db.transaction do |w|
           w.run("INSERT INTO sessions (created_at, ip_address, last_active_at, token, updated_at, user_agent, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            now, remote_ip, now, token, now, request.user_agent, user.id)
+            now, remote_ip, now, token, now, header_text(request.user_agent), user.id)
         end
         set_session_cookie(token)
         @current_user = user

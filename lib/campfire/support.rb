@@ -896,7 +896,7 @@ module Campfire
           w.run("UPDATE push_subscriptions SET updated_at = ? WHERE id = ?", now, id)
         else
           w.run("INSERT INTO push_subscriptions (auth_key, created_at, endpoint, p256dh_key, updated_at, user_agent, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            auth, now, endpoint, p256dh, now, ctx.request.user_agent, ctx.current_user.id)
+            auth, now, endpoint, p256dh, now, ctx.header_text(ctx.request.user_agent), ctx.current_user.id)
         end
       end
       true
