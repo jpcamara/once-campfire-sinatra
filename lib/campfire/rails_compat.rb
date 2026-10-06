@@ -24,8 +24,11 @@ module Campfire
     #   :envelope_data     signed ids: {"_rails":{"data":value,"pur":..}}, URL-safe Base64 without padding, SHA256
     #   :bare              Turbo stream names: base64(json), strict Base64, SHA256
     class MessageVerifier
+      VERIFIED_LIMIT = 4096
+
       def initialize(secret, digest:, format:, url_safe: format == :envelope_data, padding: false)
         @secret, @digest, @format, @url_safe, @padding = secret, digest, format, url_safe, padding
+        @verified = {} # signed string => its parsed payload, for signatures already checked
       end
 
       def generate(value, purpose: nil, expires_at: nil)
@@ -33,19 +36,37 @@ module Campfire
         "#{data}--#{sign(data)}"
       end
 
+      # A signature that checked out once is remembered with its parsed payload (the same session
+      # cookie arrives with every request); the purpose and expiry are checked every time.
       def verify(signed, purpose: nil, now: Time.now)
         return nil unless signed.is_a?(String)
-        data, digest = signed.split("--", 2)
-        return nil if data.nil? || digest.nil? || digest.include?("--")
-        expected = sign(data)
-        return nil unless digest.bytesize == expected.bytesize && OpenSSL.fixed_length_secure_compare(digest, expected)
+        if (parsed = @verified.delete(signed))
+          @verified[signed] = parsed
+        else
+          data, digest = signed.split("--", 2)
+          return nil if data.nil? || digest.nil? || digest.include?("--")
+          expected = sign(data)
+          return nil unless digest.bytesize == expected.bytesize && OpenSSL.fixed_length_secure_compare(digest, expected)
 
-        unwrap(JSON.parse(decode(data)), purpose, now)
+          parsed = @verified[signed.dup.freeze] = deep_freeze(JSON.parse(decode(data)))
+          while @verified.size > VERIFIED_LIMIT && (oldest = @verified.first)
+            @verified.delete(oldest[0])
+          end
+        end
+        unwrap(parsed, purpose, now)
       rescue JSON::ParserError, ArgumentError
         nil
       end
 
       private
+        def deep_freeze(value)
+          case value
+          when Hash then value.each_value { deep_freeze(it) }
+          when Array then value.each { deep_freeze(it) }
+          end
+          value.freeze
+        end
+
         def payload_for(value, purpose, expires_at)
           case @format
           when :bare then value
