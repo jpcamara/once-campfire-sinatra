@@ -830,6 +830,8 @@ module Campfire
   module Pwa
     module_function
 
+    # pwa/manifest.json.erb as Rails renders it: the small logo's URL is HTML-escaped (`&amp;`) inside
+    # the JSON, as ERB escapes it.
     def manifest(view, account, base_url)
       logo = view.account_logo_path
       <<~JSON
@@ -837,7 +839,7 @@ module Campfire
           "name": #{JSON.generate(account&.name || "Campfire")},
           "icons": [
             {
-              "src": "#{logo.sub("?", "?size=small&")}",
+              "src": "#{logo.sub("?", "?size=small&amp;")}",
               "type": "image/png",
               "sizes": "192x192"
             },
