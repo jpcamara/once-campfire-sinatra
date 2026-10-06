@@ -7,7 +7,9 @@ warn "campfire worker #{Process.pid}: YJIT #{defined?(RubyVM::YJIT) && RubyVM::Y
 # Digested assets, from memory with Propshaft's long-lived cache headers.
 assets = Campfire::StaticFiles.new(File.join(__dir__, "public"))
 
-app = Rack::Builder.new do
+# Built once: a Rack::Builder used as the app would build the whole stack again on every request
+# (and the middlewares' kept state with it).
+app = Rack::Builder.app do
   use Campfire::Compression
   use Campfire::ETag
   map("/assets") { run ->(env) { env["PATH_INFO"] = "/assets#{env["PATH_INFO"]}"; assets.call(env) } }
