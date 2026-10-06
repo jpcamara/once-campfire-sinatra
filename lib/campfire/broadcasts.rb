@@ -7,6 +7,9 @@ module Campfire
   # process, subscriptions are registered per stream name.
   module Broadcasts
     CHANNEL = "campfire:broadcasts"
+    # Separates the broadcasts of one batch in a single Redis message. JSON escapes control
+    # characters, so no payload contains it.
+    RECORD_SEPARATOR = "\x1e"
     DISCONNECTS = "action_cable/"
 
     @streams = Hash.new { |hash, key| hash[key] = [] }
@@ -21,6 +24,13 @@ module Campfire
       # `payload` is the message's JSON, as ActionCable.server.broadcast(..., coder: nil) sends it.
       def raw(stream, payload)
         publisher.call("PUBLISH", CHANNEL, "#{stream}\0#{payload}")
+      end
+
+      # Several broadcasts in one PUBLISH (one round trip, one message for each process to decode),
+      # delivered in order.
+      def batch(entries)
+        return if entries.empty?
+        publisher.call("PUBLISH", CHANNEL, entries.map { |stream, payload| "#{stream}\0#{payload}" }.join(RECORD_SEPARATOR))
       end
 
       def redis_call(*command)
@@ -56,8 +66,8 @@ module Campfire
           loop do
             event = connection.next_event or next # nil when a read times out
             next unless event[0] == "message"
-            stream, payload = event[2].dup.force_encoding(Encoding::UTF_8).split("\0", 2)
-            begin
+            event[2].dup.force_encoding(Encoding::UTF_8).split(RECORD_SEPARATOR).each do |record|
+              stream, payload = record.split("\0", 2)
               deliver(stream, payload)
             rescue => error
               warn "broadcast delivery failed: #{error.class}: #{error.message}"

@@ -217,11 +217,11 @@ module Campfire
     def after_create(ctx, room, message, view, webhooks: true, created: nil)
       html = ctx.build_view.render_message_cached(view)
       stream = "#{RailsCompat.gid_param(room.type, room.id)}:messages"
-      Broadcasts.turbo_stream(stream, %(<turbo-stream action="append" target="messages_#{room.param_key}_#{room.id}"><template>#{html}</template></turbo-stream>))
+      append = JSON.generate(%(<turbo-stream action="append" target="messages_#{room.param_key}_#{room.id}"><template>#{html}</template></turbo-stream>))
 
       member_ids = ctx.db.rows("SELECT memberships.user_id FROM memberships WHERE memberships.room_id = ?", room.id).map(&:first)
       payload = %({"roomId":#{room.id}})
-      member_ids.each { Broadcasts.raw("user_#{it}_unreads", payload) }
+      Broadcasts.batch([ [ stream, append ], *member_ids.map { [ "user_#{it}_unreads", payload ] } ])
 
       if created && !created.blob
         plain = created.plain.strip.empty? ? "" : created.plain
