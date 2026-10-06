@@ -635,7 +635,9 @@ module Campfire
       now = TimeFormat.now_text
       revoked = []
       ctx.db.transaction do |w|
-        w.run("UPDATE rooms SET name = COALESCE(?, name), type = ?, updated_at = ? WHERE id = ?", name, type, now, room.id)
+        # update! touches updated_at only when the name or type changes
+        w.run("UPDATE rooms SET name = COALESCE(?, name), type = ?, updated_at = ? WHERE id = ? AND (name IS NOT COALESCE(?, name) OR type != ?)",
+          name, type, now, room.id, name, type)
         if type == "Rooms::Closed"
           grantees = user_ids.map(&:to_i)
           current = w.rows("SELECT user_id FROM memberships WHERE room_id = ?", room.id).map(&:first)
