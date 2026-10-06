@@ -108,6 +108,9 @@ module Campfire
     SECURITY_HEADERS = { "X-Frame-Options" => "SAMEORIGIN", "X-XSS-Protection" => "0", "X-Content-Type-Options" => "nosniff",
       "X-Permitted-Cross-Domain-Policies" => "none", "Referrer-Policy" => "strict-origin-when-cross-origin" }.freeze
 
+    # Reads cached from an earlier request are dropped if the database has changed since.
+    before { db.check_for_changes }
+
     # ActionDispatch's default headers on every controller response, and ApplicationController's
     # VersionHeaders (a before_action after authentication: see require_authentication!).
     before do

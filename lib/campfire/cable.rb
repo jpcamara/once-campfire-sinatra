@@ -33,6 +33,7 @@ module Campfire
       end
 
       def authenticate(env)
+        runtime.db.check_for_changes
         cookies = Rack::Utils.parse_cookies(env)
         token = cookies["session_token"] && runtime.secrets.verify_cookie("session_token", cookies["session_token"])
         session = token && runtime.repo.session_by_token(token)
@@ -106,6 +107,7 @@ module Campfire
         end
 
         def receive(text)
+          Cable.runtime.db.check_for_changes
           data = JSON.parse(text)
           identifier = data["identifier"]
           case data["command"]

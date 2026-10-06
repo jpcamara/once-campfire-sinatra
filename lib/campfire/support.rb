@@ -148,6 +148,7 @@ module Campfire
               loop do
                 job = @queue.pop
                 begin
+                  runtime.db.check_for_changes
                   job.call
                 rescue Exception => error
                   warn "job failed: #{error.class}: #{error.message}"
