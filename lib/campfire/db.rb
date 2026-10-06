@@ -113,6 +113,9 @@ module Campfire
     def row(sql, *binds) = @cache.fetch([ :row, sql, *binds ]) { @reader.row(sql, *binds)&.freeze }
     def value(sql, *binds) = row(sql, *binds)&.first
 
+    # A value derived from reads (records built from rows), kept with them until the database changes.
+    def memo(key) = @cache.fetch([ :memo, *key ]) { yield }
+
     def check_for_changes = @cache.check_for_changes
     def generation = @cache.generation
 
