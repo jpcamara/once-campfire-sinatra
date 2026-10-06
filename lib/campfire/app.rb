@@ -867,10 +867,30 @@ module Campfire
 
     # ---- Sidebar
 
+    # Finished sidebars by everything they're rendered from: the database (the read cache's
+    # generation), the user, and the request's host, user agent, frame and Accept. A sidebar with a
+    # flash isn't kept. With CAMPFIRE_CHECK_CACHES=1 a hit is rendered again and compared.
+    KEPT_SIDEBARS = {}
+    KEPT_SIDEBARS_LIMIT = 1024
+    KeptSidebar = Data.define(:body, :digest)
+
     get %r{/users/(me|\d+)/sidebar} do
       require_authentication!
       html_headers
-      render_sidebar
+      key = [ db.generation, current_user, base_url, request.user_agent, env["HTTP_TURBO_FRAME"], env["HTTP_ACCEPT"] ]
+      if flash_now.empty? && (kept = KEPT_SIDEBARS.delete(key))
+        KEPT_SIDEBARS[key] = kept
+        check_kept("sidebar", kept.body) { render_sidebar } if CHECK_CACHES
+      else
+        body = render_sidebar
+        return body unless flash_now.empty?
+        kept = KEPT_SIDEBARS[key] = KeptSidebar.new(body.freeze, Digest::MD5.hexdigest(body))
+        KEPT_SIDEBARS.delete(KEPT_SIDEBARS.first[0]) while KEPT_SIDEBARS.size > KEPT_SIDEBARS_LIMIT
+      end
+      # What the ETag middleware would set, so it doesn't hash the body again.
+      headers "ETag" => %(W/"#{kept.digest}")
+      env[ETag::BODY_DIGEST] = kept.digest
+      kept.body
     end
 
     # ---- Searches
@@ -957,7 +977,16 @@ module Campfire
 
     # ---- Helpers
 
+    CHECK_CACHES = ENV["CAMPFIRE_CHECK_CACHES"]
+
     helpers do
+      # CAMPFIRE_CHECK_CACHES=1: a kept response is rendered again and compared, and a mismatch logged.
+      def check_kept(name, kept)
+        fresh = yield
+        fresh = fresh.to_s if fresh.is_a?(FragmentBody)
+        warn "CACHE MISMATCH #{name} #{request.path_info} (#{kept.bytesize} kept vs #{fresh.bytesize} fresh bytes)" unless fresh.b == kept.b
+      end
+
       # Rails' redirect_to: always 302 (Sinatra answers non-GET HTTP/1.1 requests with 303).
       def redirect(uri, *args)
         status 302
