@@ -16,4 +16,4 @@ fi
 
 bundle exec ruby -Ilib -e 'require "campfire"; Campfire::Maintenance.boot'
 
-exec bundle exec falcon serve --bind "http://0.0.0.0:${HTTP_PORT:-80}" --forked --count "${WEB_CONCURRENCY:-$(nproc)}"
+exec bundle exec falcon host falcon.rb
