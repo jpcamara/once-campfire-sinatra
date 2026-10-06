@@ -128,6 +128,7 @@ module Campfire
       if response.headers["Cache-Control"] == "max-age=0, private, must-revalidate" && status != 200
         response.headers["Cache-Control"] = "no-cache"
       end
+      response.headers["Cache-Control"] ||= "no-cache" if status == 204 # head :no_content
     end
 
     # ---- Health
