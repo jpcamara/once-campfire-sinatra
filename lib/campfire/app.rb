@@ -1332,7 +1332,7 @@ module Campfire
       def render_room(room, messages)
         invitation = room.id == repo.original_room_id && repo.room_message_count(room.id) <= Repo::PAGE_SIZE
         account = runtime.account
-        page_etag("room", room, account.updated_at, account.name, invitation, messages.map { "#{it.id}-#{it.updated_at}" },
+        page_etag("room", room, account.updated_at, account.name, invitation, message_versions(messages),
           (repo.direct_room_member_names(room.id, current_user.id) if room.direct?), flash_now)
         kept_response { fragment_page { render_room_page(room, messages, invitation) } }
       end
@@ -1420,9 +1420,15 @@ module Campfire
         end
       end
 
+      # Each message's id and version, as the page ETags list them; kept with the cached page of
+      # messages they're taken from.
+      def message_versions(messages)
+        db.memo_for(messages) { messages.map { "#{it.id}-#{it.updated_at}" }.join("|").freeze }
+      end
+
       # ActionController::ConditionalGet#fresh_when(@messages): the collection's cache key.
       def etag_for_messages(messages)
-        page_etag("messages", messages.map { "#{it.id}-#{it.updated_at}" })
+        page_etag("messages", message_versions(messages))
       end
 
       # The data each message partial needs, loaded only for messages not already in the fragment
@@ -1468,7 +1474,7 @@ module Campfire
         recent = repo.recent_search_queries(current_user.id)
         return_to_room = last_room_visited
         account = runtime.account
-        page_etag("search", raw_query, account.updated_at, recent, return_to_room.id, messages.map { "#{it.id}-#{it.updated_at}" })
+        page_etag("search", raw_query, account.updated_at, recent, return_to_room.id, message_versions(messages))
         kept_response { fragment_page { render_search_page(query, raw_query, messages, recent, return_to_room) } }
       end
 
