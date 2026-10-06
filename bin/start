@@ -15,5 +15,6 @@ if [ -n "$redis_port" ]; then
 fi
 
 bundle exec ruby -Ilib -e 'require "campfire"; Campfire::Maintenance.boot'
+bundle exec ruby bin/checkpoint &
 
 exec bundle exec falcon host falcon.rb

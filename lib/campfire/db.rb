@@ -21,6 +21,10 @@ module Campfire
         @db.execute("PRAGMA synchronous = NORMAL")
         @db.execute("PRAGMA foreign_keys = ON")
         @db.execute("PRAGMA mmap_size = 0")
+        # Rails' journal_size_limit and cache_size; checkpoints are bin/checkpoint's.
+        @db.execute("PRAGMA journal_size_limit = 67108864")
+        @db.execute("PRAGMA cache_size = 2000")
+        @db.execute("PRAGMA wal_autocheckpoint = 0")
         @statements = {}
       end
 
