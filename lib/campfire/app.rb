@@ -214,7 +214,7 @@ module Campfire
       verify_same_origin!
       user_id = secrets.find_signed_id(params["id"], "user/transfer")
       user = user_id && repo.user(user_id)
-      head_response(400) unless user&.active?
+      head_response(400, in_action: true) unless user&.active?
       start_new_session_for(user)
       redirect_after_authentication
     end
@@ -1037,13 +1037,15 @@ module Campfire
         Blob.new(*row)
       end
 
+      # ActionController::Head#head: no body, no-cache. Rails sets the controller's formats only after
+      # the before-actions, so a head from one is text/html; inside an action it's the request's format.
+      def head_response(code, in_action: false)
+        turbo = in_action && request.env["HTTP_ACCEPT"].to_s.start_with?("text/vnd.turbo-stream.html")
+        halt code, { "Content-Type" => turbo ? "text/vnd.turbo-stream.html" : "text/html", "Cache-Control" => "no-cache" }, ""
+      end
+
       # ActiveRecord::RecordNotFound from a find: the public 404 page, as ActionDispatch::ShowExceptions
       # serves it (none of the controller's headers).
-      # ActionController::Head#head: no body, no-cache, the request's format as the content type.
-      def head_response(code)
-        type = request.env["HTTP_ACCEPT"].to_s.start_with?("text/vnd.turbo-stream.html") ? "text/vnd.turbo-stream.html" : "text/html"
-        halt code, { "Content-Type" => type, "Cache-Control" => "no-cache" }, ""
-      end
 
       def record_not_found!
         without_security_headers
@@ -1324,17 +1326,30 @@ module Campfire
       def render_sidebar
         memberships = repo.sidebar_memberships(current_user.id)
         directs, others = memberships.partition { |_, room| room.direct? }
-        directs = directs.sort_by { |_, room| room.updated_at }.reverse.map do |membership, room|
-          members = repo.room_users_except(room.id, current_user.id)
-          members = [ current_user ] if members.empty?
-          [ membership, room, members ]
-        end
+        directs = directs.sort_by { |_, room| room.updated_at }.reverse
 
         exclude = repo.member_ids_of_rooms(repo.direct_room_ids(current_user.id)).uniq + [ current_user.id ]
         placeholders = repo.active_users_excluding(exclude, [ 20 - exclude.size, 0 ].max)
 
-        view = build_view(direct_memberships: directs, other_memberships: others, placeholder_users: placeholders)
+        view = build_view(other_memberships: others, placeholder_users: placeholders)
+        view = view.with(direct_memberships: cached_sidebar_directs(view, directs))
         render_layout(view, main: view.tpl_users_sidebar)
+      end
+
+      # `render partial: "users/sidebars/rooms/direct", collection: ..., cached: true`: the Redis cache
+      # store, keyed by the membership's id and updated_at. PresenceChannel marks a room read with
+      # update_all, which leaves updated_at alone, so a room read since its fragment was cached still
+      # shows unread here until a broadcast updates it.
+      def cached_sidebar_directs(view, directs)
+        return [] if directs.empty?
+        keys = directs.map { |membership, _| "views/users/sidebars/rooms/_direct/memberships/#{membership.id}-#{membership.updated_at}" }
+        cached = Broadcasts.redis_call("MGET", *keys)
+        directs.each_with_index.map do |(membership, room), index|
+          next cached[index].force_encoding(Encoding::UTF_8) if cached[index]
+          members = repo.room_users_except(room.id, current_user.id)
+          members = [ current_user ] if members.empty?
+          view.render_sidebar_direct(membership, room, members).tap { Broadcasts.redis_call("SET", keys[index], it) }
+        end
       end
 
       # ---- Searches

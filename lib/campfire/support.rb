@@ -34,7 +34,7 @@ module Campfire
       runtime = app.runtime
       user_id = runtime.secrets.find_signed_id(token, "user/avatar")
       user = user_id && runtime.repo.user(user_id)
-      app.head_response(404) unless user
+      app.head_response(404, in_action: true) unless user
 
       app.etag Digest::MD5.hexdigest("users/#{user.id}-#{user.updated_at}"), kind: :weak
       app.headers "Cache-Control" => "max-age=1800, public, stale-while-revalidate=604800"
