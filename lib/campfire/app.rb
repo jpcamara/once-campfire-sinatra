@@ -942,6 +942,17 @@ module Campfire
       send_file path, type: key["content_type"] || "application/octet-stream", disposition: nil
     end
 
+    # rooms#show takes any segment as the id, cast as Active Record casts it ("abc" is 0, "12abc" is
+    # 12). Last, so the named room routes match first.
+    get %r{/rooms/([^/]+)} do |id|
+      require_authentication!
+      room = repo.user_room(current_user.id, id.to_i)
+      return redirect_with_alert("/", "Room not found or inaccessible") unless room
+
+      remember_last_room_visited(room)
+      render_room(room, find_room_messages(room, nil))
+    end
+
     # ---- Helpers
 
     helpers do
