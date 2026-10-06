@@ -163,11 +163,18 @@ module Campfire
       render_page(:sessions_new, page_title: "Sign in", head: %(<meta name="turbo-visit-control" content="reload">), email_address: params["email_address"])
     end
 
+    # Compared against when the email has no active user (or no password): a digest of a random
+    # password, precomputed at the cost the users' digests have (12, Rails' default).
+    UNKNOWN_USER_DIGEST = BCrypt::Password.new("$2a$12$CCILrNFgKCoDKYCgpR.QauoPb2m01RTf0JQv.L9TVMAx3A9INQc9a")
+
     post "/session" do
       verify_same_origin!
       return render_sign_in_rejection(429) if RateLimit.exceeded?("sessions:#{remote_ip}", limit: 10, within: 180)
       user = repo.active_user_by_email(params["email_address"].to_s)
-      if user && user.password_digest && BCrypt::Password.new(user.password_digest) == params["password"].to_s
+      # User.active.authenticate_by runs one bcrypt check even when no user has the email, so a
+      # failed sign-in takes as long whether or not the address has an account.
+      digest = user&.password_digest ? BCrypt::Password.new(user.password_digest) : UNKNOWN_USER_DIGEST
+      if digest == params["password"].to_s && user&.password_digest
         start_new_session_for(user)
         redirect_after_authentication
       else
