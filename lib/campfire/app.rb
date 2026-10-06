@@ -93,6 +93,9 @@ module Campfire
     set :raise_errors, false
     set :logging, nil
     set :protection, false
+    # Rails in production accepts any Host (config.hosts is empty). Sinatra's development default
+    # admits only localhost names, and builds a debug string of its whole allow list per request.
+    set :host_authorization, { permitted_hosts: [] }
     set :method_override, true
     disable :sessions
 
