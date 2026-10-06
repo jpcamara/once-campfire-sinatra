@@ -4,23 +4,40 @@
 # WAL checkpoints off the request path, as the Rust port runs them: the app's connections turn
 # SQLite's auto-checkpoint off (it ran inside whichever commit crossed 1,000 WAL pages, fsyncing
 # while that process held the write lock), and this process copies the WAL back into the database
-# with PASSIVE checkpoints, which never block writers. If the WAL still grows past 10,000 pages, a
-# RESTART checkpoint waits for the writers and rewinds it.
+# with a PASSIVE checkpoint, which never blocks writers, once 1,000 frames are waiting, as the
+# auto-checkpoint would have. It reads that count from the WAL index (the -shm file's header) every
+# 50 ms; checkpointing on a timer instead fsynced the WAL so often that commits stalled behind it.
+# If the WAL still grows past 10,000 frames, a RESTART checkpoint waits for the writers and rewinds it.
 require "sqlite3"
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
 require "campfire/db"
 
 INTERVAL = 0.05
-RESTART_PAGES = 10_000
+CHECKPOINT_FRAMES = 1_000
+RESTART_FRAMES = 10_000
 
-db = SQLite3::Database.new(Campfire::DB.path)
+path = Campfire::DB.path
+db = SQLite3::Database.new(path)
 db.busy_timeout = Campfire::DB::BUSY_TIMEOUT_MS
 db.execute("PRAGMA journal_size_limit = 67108864")
 
+# WalIndexHdr.mxFrame (offset 16) and WalCkptInfo.nBackfill (offset 96), in native byte order.
+def wal_frames(shm)
+  header = File.binread(shm, 100)
+  return [ 0, 0 ] if header.nil? || header.bytesize < 100
+  [ header.byteslice(16, 4).unpack1("L"), header.byteslice(96, 4).unpack1("L") ]
+rescue Errno::ENOENT # no connection has opened the database in WAL mode yet
+  [ 0, 0 ]
+end
+
 loop do
   sleep INTERVAL
-  _busy, frames, _done = db.execute("PRAGMA wal_checkpoint(PASSIVE)").first
-  db.execute("PRAGMA wal_checkpoint(RESTART)") if frames.to_i > RESTART_PAGES
-rescue SQLite3::Exception => error
+  frames, backfilled = wal_frames("#{path}-shm")
+  if frames > RESTART_FRAMES
+    db.execute("PRAGMA wal_checkpoint(RESTART)")
+  elsif frames - backfilled >= CHECKPOINT_FRAMES
+    db.execute("PRAGMA wal_checkpoint(PASSIVE)")
+  end
+rescue SQLite3::Exception, SystemCallError => error
   warn "checkpoint: #{error.class}: #{error.message}"
 end
