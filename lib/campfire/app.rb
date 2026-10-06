@@ -143,6 +143,7 @@ module Campfire
     get "/up" do
       without_version_headers
       headers "Cache-Control" => "max-age=0, private, must-revalidate", "Content-Type" => "text/html; charset=utf-8"
+      headers "Vary" => "Accept" if vary_by_accept?
       %(<!DOCTYPE html><html><body style="background-color: green"></body></html>)
     end
 
@@ -877,7 +878,7 @@ module Campfire
     # flash isn't kept. With CAMPFIRE_CHECK_CACHES=1 a hit is rendered again and compared.
     KEPT_SIDEBARS = {}
     KEPT_SIDEBARS_LIMIT = 1024
-    KeptSidebar = Data.define(:body, :digest)
+    KeptSidebar = Data.define(:body, :digest, :headers)
 
     get %r{/users/(me|\d+)/sidebar} do
       require_authentication!
@@ -885,11 +886,13 @@ module Campfire
       key = [ db.generation, current_user, base_url, request.user_agent, env["HTTP_TURBO_FRAME"], env["HTTP_ACCEPT"] ]
       if flash_now.empty? && (kept = KEPT_SIDEBARS.delete(key))
         KEPT_SIDEBARS[key] = kept
+        headers kept.headers
         check_kept("sidebar", kept.body) { render_sidebar } if CHECK_CACHES
       else
         body = render_sidebar
         return body unless flash_now.empty?
-        kept = KEPT_SIDEBARS[key] = KeptSidebar.new(body.freeze, Digest::MD5.hexdigest(body))
+        kept_headers = KEPT_HEADERS.filter_map { |name| (value = response.headers[name]) && [ name, value ] }.to_h
+        kept = KEPT_SIDEBARS[key] = KeptSidebar.new(body.freeze, Digest::MD5.hexdigest(body), kept_headers)
         KEPT_SIDEBARS.delete(KEPT_SIDEBARS.first[0]) while KEPT_SIDEBARS.size > KEPT_SIDEBARS_LIMIT
       end
       # What the ETag middleware would set, so it doesn't hash the body again.
@@ -925,7 +928,10 @@ module Campfire
 
     # ---- Avatars and account logo
 
+    # Users::AvatarsController includes ActiveStorage::Streaming (ActionController::Live), whose
+    # responses don't get the default security headers: its sign-in redirect neither.
     get "/users/:token/avatar" do
+      without_security_headers
       require_authentication!
       Avatars.show(self, params["token"])
     end

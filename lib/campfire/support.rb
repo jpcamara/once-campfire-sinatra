@@ -38,7 +38,6 @@ module Campfire
 
       app.etag Digest::MD5.hexdigest("users/#{user.id}-#{user.updated_at}"), kind: :weak
       app.headers "Cache-Control" => "max-age=1800, public, stale-while-revalidate=604800"
-      app.headers "Vary" => "Accept" if app.vary_by_accept?
 
       if (variant = avatar_variant(runtime, user))
         app.send_inline_file Storage.path_for(variant.key), "image/webp"
@@ -46,6 +45,8 @@ module Campfire
         app.send_inline_file File.join(ROOT, "public/default-bot-avatar.svg"), "image/svg+xml"
       else
         app.without_security_headers
+        # render varies on Accept; send_file doesn't
+        app.headers "Vary" => "Accept" if app.vary_by_accept?
         app.headers "Content-Type" => "image/svg+xml; charset=utf-8"
         initials_svg(user)
       end
@@ -73,7 +74,6 @@ module Campfire
       account = runtime.account
       app.etag Digest::MD5.hexdigest("accounts/#{account.id}-#{account.updated_at}"), kind: :weak
       app.headers "Cache-Control" => "max-age=300, public, stale-while-revalidate=604800"
-      app.headers "Vary" => "Accept" if app.vary_by_accept?
       small = app.params["size"] == "small"
       blob = runtime.repo.attachment_blob("Account", account.id, "logo")
       if blob && Attachments.variable?(blob)
