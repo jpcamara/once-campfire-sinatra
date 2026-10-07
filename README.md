@@ -33,16 +33,21 @@ The harness is DHH's `bench/run`. YJIT and jemalloc are on.
 
 | HTTP workload (requests/sec) | Rails (stock) | Sinatra |
 |---|---:|---:|
-| Room page | 223 | *being re-measured* |
-| Messages page | 371 | *being re-measured* |
-| Sidebar | 475 | *being re-measured* |
-| Search | 377 | *being re-measured* |
-| Post a message | 199 | *being re-measured* |
+| Room page | 223 | 13,634 |
+| Messages page | 371 | 21,037 |
+| Sidebar | 475 | 25,245 |
+| Search | 377 | 16,571 |
+| Post a message | 199 | 3,398 |
 
-The last full numbers were room 23,608, messages 26,042, sidebar 25,245, search 23,867 and post
-3,398. Those included whole-page caching of the room, messages and search pages. Neither the Rust
-nor the Elixir port does that, so it's being replaced with Elixir-style per-request assembly. That
-change was worth about 2.5× on room in this app. Updated numbers will replace this table.
+Room, messages and search come from an A/B on the page-assembly change (bbddf04): a fresh seed per
+measurement, 4 alternating reps, medians. Sidebar and post are from the last full `bench/run`
+(75f85be); that change didn't touch them. A full run of the current code is still to come.
+
+Room, search and messages pages are assembled on every request, the way the Elixir port does it: a
+kept shell around the messages, plus each message's cached fragment and compressed block. They used
+to be kept whole until the database changed, which neither the Rust nor the Elixir port does. That
+was worth −43% on room, −30% on search and −19% on messages (23,724 → 13,634, 23,566 → 16,571 and
+25,902 → 21,037). The sidebar keeps its finished HTML until its data changes, as Elixir's does.
 
 **Where the gains come from.** Each change was measured with an A/B against the commit before it.
 
@@ -74,18 +79,34 @@ Only the ones the Rust port documents in its README under "Known differences":
 - `Sec-Fetch-Site` replaces CSRF tokens.
 - Jobs run in-process.
 - Cookies are written only when they change.
-- ETags are built from cached page parts.
+- Page ETags are built from what the page is made of, not by hashing the body. The Rust port
+  hashes the cached page parts; here it's the page's inputs and message versions. Both change
+  exactly when the page does.
 
 The full list is in the
 [benchmarks notes](https://github.com/jpcamara/once-campfire-sinatra/blob/benchmarks/notes/sinatra.md).
 
 ## Status
 
-- **Parity:** all 874 default-seed Playwright cells pass. All other seeds are being rerun after the
-  audit fixes.
-- **Security:** an independent audit found stored XSS through uploads, a missing Origin check on
-  `/cable`, a missing forgery check on the bot API, and fragment-marker injection. Fixes are in
-  progress here; the Rage app, which shares much of this code, already has them.
+- **Parity:** the Playwright harness passes every cell on the current code. That's 874 of 874 on the
+  default seed, with no allowed differences, and 82 of 82 on the other seeds: first_run 16, crowd 25,
+  custom_styles 33, restricted 8.
+- **Security:** an independent audit found four problems, and all are fixed:
+  - stored XSS through uploads
+  - no Origin check on `/cable`
+  - no forgery check on cookie-authenticated bot API writes
+  - fragment-marker injection
+- **Other differences from Rails** the audit found are fixed too:
+  - sign-out keeps the device's push subscription
+  - email case at sign-in
+  - bans on private IPs
+  - boost length
+  - no HTTPS mode
+  - `X-Request-Id`, `X-Runtime` and `Date` headers
+  - the CSRF meta tag, replaced by the Rust port's `file_uploader.js` override
+- **One known difference:** the public-response cache is per worker process (Thruster's is one per
+  container), so a repeat request that reaches another worker says `X-Cache: miss` where the
+  reference says `hit`.
 
 ## Running it
 
