@@ -2,7 +2,7 @@ require "digest"
 
 module Campfire
   # Rack::ETag as Rails runs it: a weak ETag on 200 responses that don't set one (whatever the
-  # method), from the body's MD5, and a 304 when a GET's client already has it. Pages with large bodies set their own ETag
+  # method), from the body's MD5, and a 304 (Rack::ConditionalGet) when a GET or HEAD's client already has it. Pages with large bodies set their own ETag
   # from what they're rendered from instead (as the Rust port does), which saves hashing the body.
   class ETag
     BODY_DIGEST = "campfire.body_digest"
@@ -27,7 +27,7 @@ module Campfire
         end
       end
 
-      if headers["etag"] && env["REQUEST_METHOD"] == "GET" && env["HTTP_IF_NONE_MATCH"] == headers["etag"]
+      if headers["etag"] && %w[ GET HEAD ].include?(env["REQUEST_METHOD"]) && env["HTTP_IF_NONE_MATCH"] == headers["etag"]
         body.close if body.respond_to?(:close)
         headers.delete("content-length")
         return [ 304, headers, [] ]

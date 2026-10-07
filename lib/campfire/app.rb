@@ -150,6 +150,7 @@ module Campfire
       path = File.join(ROOT, "public", request.path_info)
       without_security_headers
       without_version_headers
+      halt 304, {}, [] if request.env["HTTP_IF_MODIFIED_SINCE"] == File.mtime(path).httpdate # Rack::Files
       headers "Cache-Control" => "public, max-age=2592000", "Last-Modified" => File.mtime(path).httpdate,
         "Content-Type" => request.path_info.end_with?(".txt") ? "text/plain" : "text/html"
       File.read(path)

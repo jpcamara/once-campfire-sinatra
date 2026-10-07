@@ -17,6 +17,8 @@ module Campfire
       path = Rack::Utils.unescape_path(env["PATH_INFO"])
       entry = @entries[path] || lookup(path)
       return [ 404, { "content-type" => "text/plain" }, [ "Not found" ] ] unless entry
+      # Rack::Files, under ActionDispatch::Static: a 304 when the client has this exact version.
+      return [ 304, {}, [] ] if env["HTTP_IF_MODIFIED_SINCE"] == entry.last_modified
 
       headers = { "cache-control" => @cache_control, "content-type" => entry.type, "last-modified" => entry.last_modified }
       return partial(env, headers, entry.body) if env["HTTP_RANGE"]

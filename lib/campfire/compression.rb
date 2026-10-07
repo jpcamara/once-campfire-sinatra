@@ -18,7 +18,7 @@ module Campfire
       status, headers, body = @app.call(env)
       return [ status, headers, body ] if status == 101
 
-      headers["x-cache"] = %w[ GET HEAD ].include?(env["REQUEST_METHOD"]) ? "miss" : "bypass"
+      headers["x-cache"] = %w[ GET HEAD ].include?(env["REQUEST_METHOD"]) && env["HTTP_RANGE"].to_s.empty? ? "miss" : "bypass"
       # Writes pass through both the Rails app's Rack::Deflater and Thruster's gzip handler, which each
       # add Accept-Encoding (Rack::Deflater not to bodiless statuses); reads are answered past
       # Rack::Deflater's addition, so get one.
