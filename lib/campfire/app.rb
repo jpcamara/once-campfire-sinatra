@@ -31,6 +31,7 @@ module Campfire
     end
 
     def avatar_token(user_id)
+      return @secrets.signed_id(user_id, "user/avatar").freeze if Campfire.rust_caching_only?
       @avatar_tokens[user_id] ||= @secrets.signed_id(user_id, "user/avatar").freeze
     end
 
@@ -898,6 +899,7 @@ module Campfire
     get %r{/users/(me|\d+)/sidebar} do
       require_authentication!
       html_headers
+      return render_sidebar if Campfire.rust_caching_only?
       key = [ db.generation, current_user, base_url, request.user_agent, env["HTTP_TURBO_FRAME"], env["HTTP_ACCEPT"] ]
       if flash_now.empty? && (kept = KEPT_SIDEBARS.delete(key))
         KEPT_SIDEBARS[key] = kept
@@ -1407,7 +1409,10 @@ module Campfire
       def shell_page(inputs, messages, &render)
         key = [ *inputs, current_user, runtime.account, runtime.account_logo_attached?, base_url, request.user_agent,
           flash_now, env["HTTP_TURBO_FRAME"], env["HTTP_ACCEPT"], messages.size ]
-        if (shell = SHELLS.delete(key))
+        if Campfire.rust_caching_only?
+          body = fragment_page(&render)
+          body = FragmentBody.new(body) unless body.is_a?(FragmentBody)
+        elsif (shell = SHELLS.delete(key))
           SHELLS[key] = shell
           headers shell.headers
           fragments = message_fragments(messages)
@@ -1439,7 +1444,10 @@ module Campfire
 
       def messages_page(messages)
         key = [ response.headers["etag"], base_url ]
-        if (page = MESSAGES_PAGES.delete(key))
+        if Campfire.rust_caching_only?
+          page = messages_html(messages)
+          page = FragmentBody.new(page) unless page.is_a?(FragmentBody)
+        elsif (page = MESSAGES_PAGES.delete(key))
           MESSAGES_PAGES[key] = page
           check_kept("messages", page.to_s) { messages_html(messages) } if CHECK_CACHES
         else

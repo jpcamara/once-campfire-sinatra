@@ -97,6 +97,7 @@ module Campfire
       end
 
       def fetch(key)
+        return yield if Campfire.rust_caching_only?
         if (rows = @entries.delete(key))
           @entries[key] = rows
         else
@@ -108,6 +109,7 @@ module Campfire
 
       # A value derived from a cached result itself (which stays the same object while it's cached).
       def fetch_for(object)
+        return yield if Campfire.rust_caching_only?
         @by_object.fetch(object) do
           @by_object.clear if @by_object.size >= LIMIT
           @by_object[object] = yield
