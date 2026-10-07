@@ -577,6 +577,9 @@ module Campfire
 end
 
 module Campfire
+  # Boost `belongs_to :message, touch: true`, and Message `belongs_to :room, touch: true`: creating
+  # or destroying a boost touches the message and its room. The content is stored whole (SQLite
+  # ignores the column's limit: 16).
   module Boosts
     module_function
 
@@ -584,10 +587,10 @@ module Campfire
       now = TimeFormat.now_text
       boost = ctx.db.transaction do |w|
         w.run("INSERT INTO boosts (booster_id, content, created_at, message_id, updated_at) VALUES (?, ?, ?, ?, ?)",
-          ctx.current_user.id, content[0, 16], now, message.id, now)
+          ctx.current_user.id, content, now, message.id, now)
         id = w.last_insert_row_id
-        w.run("UPDATE messages SET updated_at = ? WHERE id = ?", now, message.id)
-        Boost.new(id, ctx.current_user.id, content[0, 16], now, message.id, now)
+        touch_message(w, message, now)
+        Boost.new(id, ctx.current_user.id, content, now, message.id, now)
       end
       room = ctx.repo.room(message.room_id)
       html = ctx.build_view.render_boost(boost, ctx.current_user)
@@ -600,13 +603,18 @@ module Campfire
       deleted = ctx.db.transaction do |w|
         next false unless w.value("SELECT 1 FROM boosts WHERE id = ? AND message_id = ? AND booster_id = ?", id, message.id, ctx.current_user.id)
         w.run("DELETE FROM boosts WHERE id = ?", id)
-        w.run("UPDATE messages SET updated_at = ? WHERE id = ?", TimeFormat.now_text, message.id)
+        touch_message(w, message, TimeFormat.now_text)
         true
       end
       return false unless deleted
       room = ctx.repo.room(message.room_id)
       Broadcasts.turbo_stream("#{RailsCompat.gid_param(room.type, room.id)}:messages", %(<turbo-stream action="remove" target="boost_#{id}"></turbo-stream>))
       true
+    end
+
+    def touch_message(w, message, now)
+      w.run("UPDATE messages SET updated_at = ? WHERE id = ?", now, message.id)
+      w.run("UPDATE rooms SET updated_at = ? WHERE id = ?", now, message.room_id)
     end
   end
 end
