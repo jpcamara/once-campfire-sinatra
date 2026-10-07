@@ -28,26 +28,40 @@ per-change measurements and raw results are on the
 
 ## Performance
 
-Requests/sec with 16 clients, four hardware threads per app, on a Hetzner Ryzen 7 PRO 8700GE.
-The harness is DHH's `bench/run`. YJIT and jemalloc are on.
+Final run, Oct 7 2026: DHH's `bench/run` on a Hetzner Ryzen 7 PRO 8700GE. Each app gets four
+hardware threads and the load generator four others. YJIT and jemalloc are on. The numbers are
+medians of 3 runs in rotating order, measured alongside the other implementations and stock
+Rails, with 0 errors.
 
-| HTTP workload (requests/sec) | Rails (stock) | Sinatra |
+| Workload | Rails (stock) | Sinatra |
 |---|---:|---:|
-| Room page | 223 | 13,634 |
-| Messages page | 371 | 21,037 |
-| Sidebar | 475 | 25,245 |
-| Search | 377 | 16,571 |
-| Post a message | 199 | 3,398 |
+| Room page (req/s, 16 clients) | 225 | 12,849 |
+| Messages page | 364 | 19,729 |
+| Sidebar | 482 | 23,016 |
+| Search | 378 | 15,503 |
+| Post a message | 198 | 3,302 |
+| Avatar | 62,491 | 73,935 |
+| Action Cable, 1,000 clients: p50 delivery | 42.8 ms | 9.3 ms |
+| Action Cable, 1,000 clients: saturated | 13 msg/s | 103 msg/s |
+| Upload + thumbnail (505 KB) | 67 ms | 135 ms |
+| Idle memory (anon) | 284 MB | 200 MB |
+| Cold start | 3.6 s | 1.5 s |
 
-Room, messages and search come from an A/B on the page-assembly change (bbddf04): a fresh seed per
-measurement, 4 alternating reps, medians. Sidebar and post are from the last full `bench/run`
-(75f85be); that change didn't touch them. A full run of the current code is still to come.
+Uploads are about 2× slower than in Rails (135 ms vs 67 ms). An earlier run of this app measured 42 ms; the cause of the change hasn't been found.
 
-Room, search and messages pages are assembled on every request, the way the Elixir port does it: a
-kept shell around the messages, plus each message's cached fragment and compressed block. They used
-to be kept whole until the database changed, which neither the Rust nor the Elixir port does. That
-was worth −43% on room, −30% on search and −19% on messages (23,724 → 13,634, 23,566 → 16,571 and
-25,902 → 21,037). The sidebar keeps its finished HTML until its data changes, as Elixir's does.
+Room, search and messages pages are assembled on every request, the way the Elixir port does it. They used to be kept whole until the database changed, which neither the Rust nor the Elixir port does. Removing that cost 43% on room, 30% on search and 19% on messages in an A/B (23,724 → 13,634, 23,566 → 16,571, 25,902 → 21,037). The sidebar keeps its finished HTML until its data changes, as Elixir's does.
+
+**Room-page reads while posts arrive** (reads/sec at 16 clients, the median of 3 reps, each on a
+fresh seed). The read routes above never see a write, so this shows what the caches do under real
+traffic:
+
+| Posts/sec in the background | 0 | 20 | 100 |
+|---|---:|---:|---:|
+| Rails (stock) | 228 | 214 | 194 |
+| Sinatra | 12,648 | 12,096 | 8,909 |
+
+The per-change table below comes from the A/B run for each step. Each step was measured against
+the commit just before it, so the percentages don't multiply exactly into the totals.
 
 **Where the gains come from.** Each change was measured with an A/B against the commit before it.
 
@@ -58,6 +72,7 @@ was worth −43% on room, −30% on search and −19% on messages (23,724 → 13
 | Read cache cleared on `PRAGMA data_version` | Elixir | +16% | +21% | +16% | +25% | — |
 | Keep the finished sidebar until its data changes | Elixir | | | +61% | | |
 | Fix: `config.ru` rebuilt the Rack stack per request | Bug fix | | | +114% | | |
+| ~~Keep finished room / search / messages pages whole~~ | **Removed**: no precedent | (−43% when removed) | (−19%) | | (−30%) | |
 | Fix: the image ran in development mode | Bug fix | +18% | | +25% | | |
 | Falcon without its gzip middleware | Ours | +14% | | | | |
 | Keep records built from cached rows | Ours | +14% | +15% | | | |
