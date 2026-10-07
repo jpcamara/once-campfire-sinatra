@@ -16,9 +16,13 @@ module Campfire
     class << self
       attr_reader :connections
 
-      # A Rack endpoint for /cable.
+      PAGE_NOT_FOUND = [ 404, { "content-type" => "text/plain; charset=utf-8" }, [ "Page not found" ] ].freeze
+
+      # A Rack endpoint for /cable. ActionCable::Connection::Base#process: anything that isn't a
+      # WebSocket upgrade from this host's own origin gets 404 "Page not found".
       def call(env)
         start_process_tasks
+        return PAGE_NOT_FOUND.dup unless Async::WebSocket::Adapters::Rack.websocket?(env) && allow_request_origin?(env)
         user = authenticate(env)
 
         Async::WebSocket::Adapters::Rack.open(env, protocols: PROTOCOLS) do |websocket|
@@ -29,7 +33,16 @@ module Campfire
             websocket.flush
             websocket.close
           end
-        end || [ 404, {}, [] ]
+        end || PAGE_NOT_FOUND.dup
+      end
+
+      # ActionCable::Connection::Base#allow_request_origin? with allow_same_origin_as_host and no
+      # allowed_request_origins, as the reference runs it.
+      def allow_request_origin?(env)
+        proto = Rack::Request.new(env).ssl? ? "https" : "http"
+        (env["HTTP_ORIGIN"] == "#{proto}://#{env["HTTP_HOST"]}").tap do |allowed|
+          warn "Request origin not allowed: #{env["HTTP_ORIGIN"]}" unless allowed
+        end
       end
 
       def authenticate(env)
