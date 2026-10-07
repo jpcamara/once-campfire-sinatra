@@ -115,14 +115,13 @@ module Campfire
     # One filter (Sinatra matches a pattern for each): reads cached from an earlier request are
     # dropped if the database has changed since; ActionDispatch's default headers on every
     # controller response and ApplicationController's VersionHeaders (a before_action after
-    # authentication: see require_authentication!); then ApplicationController's AllowBrowser and
-    # BlockBannedRequests, ahead of authentication.
+    # authentication: see require_authentication!); then BlockBannedRequests, the first of
+    # ApplicationController's checks. AllowBrowser is the last of them: see browser_gate!.
     before do
       db.check_for_changes
       headers SECURITY_HEADERS
       headers "X-Version" => runtime.app_version, "X-Rev" => runtime.git_revision.to_s
       next if request.path_info.start_with?("/rails/active_storage", "/up")
-      halt render_incompatible_browser if Browsers.blocked?(request.user_agent)
       head_response(429) if !(request.get? || request.head?) && db.value("SELECT 1 FROM bans WHERE ip_address = ? LIMIT 1", remote_ip)
     end
 
@@ -159,6 +158,7 @@ module Campfire
     # ---- Sessions
 
     get "/session/new" do
+      browser_gate! # an unauthenticated ApplicationController action
       # SessionsController#ensure_user_exists
       return redirect(url_for("/first_run")) unless db.value("SELECT 1 FROM users LIMIT 1")
       render_page(:sessions_new, page_title: "Sign in", head: %(<meta name="turbo-visit-control" content="reload">), email_address: params["email_address"])
@@ -186,6 +186,7 @@ module Campfire
     # ---- First run, joining, transfers
 
     get "/first_run" do
+      browser_gate! # an unauthenticated ApplicationController action
       return redirect(url_for("/")) if runtime.account
       render_page(:first_runs_show, page_title: "Set up Campfire", body_class: "signup")
     end
@@ -199,6 +200,7 @@ module Campfire
     end
 
     get "/join/:join_code" do
+      browser_gate! # an unauthenticated ApplicationController action
       return redirect(url_for("/")) if restore_authentication
       head_response(404) unless runtime.account.join_code == params["join_code"]
       view = build_view(join_code: params["join_code"])
@@ -219,6 +221,7 @@ module Campfire
     end
 
     get "/session/transfers/:id" do
+      browser_gate! # an unauthenticated ApplicationController action
       view = build_view(request_path: request.path)
       render_layout(view, main: view.tpl_sessions_transfer)
     end
@@ -571,6 +574,7 @@ module Campfire
     end
 
     get %r{/webmanifest(\.json)?} do
+      browser_gate! # an unauthenticated ApplicationController action
       account = runtime.account
       view = build_view
       headers "Content-Type" => "application/json; charset=utf-8", "Cache-Control" => "max-age=0, private, must-revalidate"
@@ -578,6 +582,7 @@ module Campfire
     end
 
     get %r{/service-worker(\.js)?} do
+      browser_gate! # an unauthenticated ApplicationController action
       headers "Content-Type" => "text/javascript; charset=utf-8", "Cache-Control" => "max-age=0, private, must-revalidate"
       File.read(File.join(ROOT, "public/service-worker.js"))
     end
@@ -946,12 +951,14 @@ module Campfire
     end
 
     get "/account/logo" do
+      browser_gate! # an unauthenticated ApplicationController action
       Avatars.account_logo(self)
     end
 
     # ---- QR codes and Active Storage
 
     get "/qr_code/:id" do
+      browser_gate! # an unauthenticated ApplicationController action
       QrCodes.show(self, params["id"])
     end
 
@@ -1176,7 +1183,10 @@ module Campfire
       end
 
       def require_authentication!
-        return if restore_authentication
+        if restore_authentication
+          browser_gate! if request.get? || request.head? # writes pass the gate after the forgery check
+          return
+        end
 
         write_session("return_to_after_authenticating" => request.url)
         halt redirect(url_for("/session/new"))
@@ -1275,6 +1285,14 @@ module Campfire
           else false
           end
         unprocessable_entity! unless valid_origin && allowed
+        browser_gate!
+      end
+
+      # AllowBrowser's allow_browser: the last of ApplicationController's before-actions, after the
+      # ban check, authentication and forgery protection, so a signed-out old browser is still sent
+      # to sign in first.
+      def browser_gate!
+        halt render_incompatible_browser if Browsers.blocked?(request.user_agent)
       end
 
       # InvalidAuthenticityToken or RecordInvalid: the public 422 page, as ActionDispatch::ShowExceptions
@@ -1303,6 +1321,7 @@ module Campfire
           end
           bot = User.new(*row)
         end
+        browser_gate!
         room = repo.user_room(bot.id, room_id.to_i) or head_response(404)
         [ bot, room ]
       end
