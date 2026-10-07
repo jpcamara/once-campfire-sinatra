@@ -287,11 +287,9 @@ module Campfire
 
       etag_for_messages(messages)
       html_headers
-      kept_response do
-        # fresh_when @messages: the newest updated_at is the Last-Modified.
-        headers "Last-Modified" => messages.map { TimeFormat.parse(it.updated_at) }.max.httpdate
-        messages_html(messages)
-      end
+      # fresh_when @messages: the newest updated_at is the Last-Modified.
+      headers "Last-Modified" => messages.map { TimeFormat.parse(it.updated_at) }.max.httpdate
+      messages_page(messages)
     end
 
     post %r{/rooms/(\d+)/messages} do |room_id|
@@ -878,8 +876,10 @@ module Campfire
     # ---- Sidebar
 
     # Finished sidebars by everything they're rendered from: the database (the read cache's
-    # generation), the user, and the request's host, user agent, frame and Accept. A sidebar with a
-    # flash isn't kept. With CAMPFIRE_CHECK_CACHES=1 a hit is rendered again and compared.
+    # generation), the user, and the request's host, user agent, frame and Accept. The Elixir port
+    # keeps its sidebar the same way (lib/campfire/sidebar.ex: the HTML until a table it reads
+    # changes, skipping the queries too). A sidebar with a flash isn't kept. With
+    # CAMPFIRE_CHECK_CACHES=1 a hit is rendered again and compared.
     KEPT_SIDEBARS = {}
     KEPT_SIDEBARS_LIMIT = 1024
     KeptSidebar = Data.define(:body, :digest, :headers)
@@ -1339,38 +1339,68 @@ module Campfire
       def render_room(room, messages)
         invitation = room.id == repo.original_room_id && repo.room_message_count(room.id) <= Repo::PAGE_SIZE
         account = runtime.account
-        page_etag("room", room, account.updated_at, account.name, invitation, message_versions(messages),
-          (repo.direct_room_member_names(room.id, current_user.id) if room.direct?), flash_now)
-        kept_response { fragment_page { render_room_page(room, messages, invitation) } }
+        direct_names = (repo.direct_room_member_names(room.id, current_user.id) if room.direct?)
+        page_etag("room", room, account.updated_at, account.name, invitation, message_versions(messages), direct_names, flash_now)
+        shell_page([ "room", room, direct_names, invitation ], messages) { render_room_page(room, messages, invitation) }
       end
 
-      # Finished pages (body, gzipped or not, and the headers rendering sets) by the read cache's
-      # generation, which changes with anything the page reads from the database, and the page's
-      # ETag, which covers the request's inputs (user, host, user agent, flash); with the frame
-      # header, Accept and the encoding. With CAMPFIRE_CHECK_CACHES=1 a hit is rendered again and
-      # compared.
-      KEPT_RESPONSES = {}
-      KEPT_RESPONSES_LIMIT = 512
+      # Room and search pages, assembled on every request as the Elixir port's room_page.ex and
+      # searches.ex do: the shell around the messages is kept by everything its templates read
+      # except the messages (the user, the account, the request's host, user agent, frame and flash,
+      # and the page's own inputs), and each request splices in the messages' cached fragments,
+      # whose compressed blocks are kept too. With CAMPFIRE_CHECK_CACHES=1 a page built from a kept
+      # shell is rendered in full as well and compared.
+      SHELLS = {}
+      SHELLS_LIMIT = 512
       KEPT_HEADERS = %w[ cache-control content-type vary link last-modified ].freeze
-      KeptResponse = Data.define(:body, :headers)
+      Shell = Data.define(:parts, :headers)
 
-      def kept_response(&render)
-        gzip = env["HTTP_ACCEPT_ENCODING"].to_s.include?("gzip") && request.get?
-        key = [ db.generation, response.headers["etag"], flash_now, env["HTTP_TURBO_FRAME"], env["HTTP_ACCEPT"], gzip ]
-        if (kept = KEPT_RESPONSES.delete(key))
-          KEPT_RESPONSES[key] = kept
-          headers kept.headers
-          check_kept("page", gzip ? Zlib.gunzip(kept.body) : kept.body) { yield } if CHECK_CACHES
+      def shell_page(inputs, messages, &render)
+        key = [ *inputs, current_user, runtime.account, runtime.account_logo_attached?, base_url, request.user_agent,
+          flash_now, env["HTTP_TURBO_FRAME"], env["HTTP_ACCEPT"], messages.size ]
+        if (shell = SHELLS.delete(key))
+          SHELLS[key] = shell
+          headers shell.headers
+          fragments = message_fragments(messages)
+          body = FragmentBody.new(shell.parts.map { it.is_a?(Integer) ? fragments[it] : it })
+          check_kept("page", body.to_s) { fragment_page(&render) } if CHECK_CACHES
         else
-          page = yield
-          page = FragmentBody.new(page) unless page.is_a?(FragmentBody)
+          body = fragment_page(&render)
+          body = FragmentBody.new(body) unless body.is_a?(FragmentBody)
+          slot = -1
+          parts = body.parts.map { it.is_a?(Fragment) ? (slot += 1) : it.freeze }
           kept_headers = KEPT_HEADERS.filter_map { |name| (value = response.headers[name]) && [ name, value ] }.to_h
-          kept = KEPT_RESPONSES[key] = KeptResponse.new((gzip ? page.gzip : page.to_s).freeze, kept_headers)
-          KEPT_RESPONSES.delete(KEPT_RESPONSES.first[0]) while KEPT_RESPONSES.size > KEPT_RESPONSES_LIMIT
+          SHELLS[key] = Shell.new(parts.freeze, kept_headers.freeze)
+          SHELLS.delete(SHELLS.first[0]) while SHELLS.size > SHELLS_LIMIT
         end
-        headers "Content-Length" => kept.body.bytesize.to_s
-        headers "Content-Encoding" => "gzip" if gzip
-        kept.body
+        headers "Content-Length" => body.bytesize.to_s
+        body
+      end
+
+      # The cached fragment of each message, in order, rendering the ones not cached yet.
+      def message_fragments(messages)
+        view = build_view
+        message_views(messages).map { view.message_fragment(it) }
+      end
+
+      # MessagesController#index: the page's parts, and so their gzip, kept by its ETag (which covers
+      # every message's version) and host, as the Elixir port's messages.ex does.
+      MESSAGES_PAGES = {}
+      MESSAGES_PAGES_LIMIT = 512
+
+      def messages_page(messages)
+        key = [ response.headers["etag"], base_url ]
+        if (page = MESSAGES_PAGES.delete(key))
+          MESSAGES_PAGES[key] = page
+          check_kept("messages", page.to_s) { messages_html(messages) } if CHECK_CACHES
+        else
+          page = messages_html(messages)
+          page = FragmentBody.new(page) unless page.is_a?(FragmentBody)
+          MESSAGES_PAGES[key] = page
+          MESSAGES_PAGES.delete(MESSAGES_PAGES.first[0]) while MESSAGES_PAGES.size > MESSAGES_PAGES_LIMIT
+        end
+        headers "Content-Length" => page.bytesize.to_s
+        page
       end
 
       # A page whose message fragments go out as a FragmentBody (cached gzip blocks).
@@ -1482,7 +1512,9 @@ module Campfire
         return_to_room = last_room_visited
         account = runtime.account
         page_etag("search", raw_query, account.updated_at, recent, return_to_room.id, message_versions(messages))
-        kept_response { fragment_page { render_search_page(query, raw_query, messages, recent, return_to_room) } }
+        shell_page([ "search", query, raw_query, recent, return_to_room ], messages) do
+          render_search_page(query, raw_query, messages, recent, return_to_room)
+        end
       end
 
       def render_search_page(query, raw_query, messages, recent, return_to_room)

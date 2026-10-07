@@ -97,6 +97,8 @@ module Campfire
       @parts = parts
     end
 
+    attr_reader :parts
+
     # Groups each maximal sequence of fragments separated only by whitespace into a Run.
     def runs
       grouped = []
@@ -133,7 +135,9 @@ module Campfire
     end
 
     # gzip member: header, the concatenated deflate blocks, an empty final block, CRC32 and size.
-    def gzip
+    def gzip = (@gzip ||= build_gzip)
+
+    private def build_gzip
       out = +"\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\x03".b
       crc = 0
       size = 0

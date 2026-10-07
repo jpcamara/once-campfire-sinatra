@@ -156,14 +156,18 @@ module Campfire
     # The message partial, cached per message version and host like Rails' fragment cache. In a page
     # that collects fragments (see FragmentBody) it leaves a marker in place of the HTML.
     def render_message_cached(view)
-      key = [ view.message.id, view.message.updated_at, base_url ]
-      fragment = app.fragment_cache.fetch(key) { Fragment.new(render_message(view), key) }
+      fragment = message_fragment(view)
       if @fragments
         @fragments << fragment
         "\u0001#{@fragments.size - 1}\u0002"
       else
         fragment.html
       end
+    end
+
+    def message_fragment(view)
+      key = [ view.message.id, view.message.updated_at, base_url ]
+      app.fragment_cache.fetch(key) { Fragment.new(render_message(view), key) }
     end
 
     # Renders with message fragments collected, for a FragmentBody.
