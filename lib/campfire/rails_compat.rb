@@ -26,9 +26,12 @@ module Campfire
     class MessageVerifier
       VERIFIED_LIMIT = 4096
 
-      def initialize(secret, digest:, format:, url_safe: format == :envelope_data, padding: false)
+      # remember: keeps signatures that checked out, with their parsed payloads, for #verify calls
+      # that ask for it. Only the session_token cookie does: it arrives with every request, and the
+      # Elixir port keeps a verified session_token the same way (session_token/1, lib/campfire/auth.ex).
+      def initialize(secret, digest:, format:, url_safe: format == :envelope_data, padding: false, remember: false)
         @secret, @digest, @format, @url_safe, @padding = secret, digest, format, url_safe, padding
-        @verified = {} # signed string => its parsed payload, for signatures already checked
+        @verified = {} if remember # signed string => its parsed payload, for signatures already checked
       end
 
       def generate(value, purpose: nil, expires_at: nil)
@@ -36,12 +39,13 @@ module Campfire
         "#{data}--#{sign(data)}"
       end
 
-      # A signature that checked out once is remembered with its parsed payload (the same session
-      # cookie arrives with every request); the purpose and expiry are checked every time.
-      def verify(signed, purpose: nil, now: Time.now)
+      # With remember: a signature that checked out once is remembered with its parsed payload; the
+      # purpose and expiry are checked every time.
+      def verify(signed, purpose: nil, now: Time.now, remember: false)
         return nil unless signed.is_a?(String)
-        @verified.clear if Campfire.rust_caching_only?
-        if (parsed = @verified.delete(signed))
+        @verified&.clear if Campfire.rust_caching_only?
+        remembered = remember && @verified
+        if remembered && (parsed = @verified.delete(signed))
           @verified[signed] = parsed
         else
           data, digest = signed.split("--", 2)
@@ -49,9 +53,10 @@ module Campfire
           expected = sign(data)
           return nil unless digest.bytesize == expected.bytesize && OpenSSL.fixed_length_secure_compare(digest, expected)
 
-          parsed = @verified[signed.dup.freeze] = deep_freeze(JSON.parse(decode(data)))
-          while @verified.size > VERIFIED_LIMIT && (oldest = @verified.first)
-            @verified.delete(oldest[0])
+          parsed = deep_freeze(JSON.parse(decode(data)))
+          if remembered
+            @verified[signed.dup.freeze] = parsed
+            @verified.delete(@verified.first[0]) while @verified.size > VERIFIED_LIMIT
           end
         end
         unwrap(parsed, purpose, now)
@@ -155,7 +160,7 @@ module Campfire
 
       def initialize(secret_key_base)
         keys = KeyGenerator.new(secret_key_base)
-        @signed_cookies = MessageVerifier.new(keys.generate_key("signed cookie"), digest: "SHA1", format: :envelope_message)
+        @signed_cookies = MessageVerifier.new(keys.generate_key("signed cookie"), digest: "SHA1", format: :envelope_message, remember: true)
         @encrypted_cookies = MessageEncryptor.new(keys.generate_key("authenticated encrypted cookie", 32))
         @signed_ids = MessageVerifier.new(keys.generate_key("active_record/signed_id"), digest: "SHA256", format: :envelope_data)
         @turbo_streams = MessageVerifier.new(keys.generate_key("turbo/signed_stream_verifier_key"), digest: "SHA256", format: :bare)
@@ -169,7 +174,7 @@ module Campfire
       end
 
       def verify_cookie(name, raw)
-        dumped = @signed_cookies.verify(raw, purpose: "cookie.#{name}")
+        dumped = @signed_cookies.verify(raw, purpose: "cookie.#{name}", remember: name == "session_token")
         value = dumped && JSON.parse(dumped)
         value.is_a?(String) ? value : nil
       rescue JSON::ParserError
