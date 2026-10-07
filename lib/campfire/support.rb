@@ -498,10 +498,21 @@ module Campfire
   module Bans
     module_function
 
+    # Ban#ip_address_is_public
+    def public_ip?(ip_address)
+      ip = IPAddr.new(ip_address)
+      !(ip.loopback? || ip.private? || ip.link_local?)
+    rescue IPAddr::InvalidAddressError
+      false
+    end
+
+    # `bans.create!` raises for a private, internal or invalid address, which rolls the whole ban
+    # back; the request then answers 422.
     def ban(ctx, user)
       now = TimeFormat.now_text
       ctx.db.transaction do |w|
         ips = w.rows("SELECT DISTINCT ip_address FROM sessions WHERE user_id = ? AND ip_address IS NOT NULL AND ip_address != ''", user.id).map(&:first)
+        raise RecordInvalid, "Ip address cannot be a private or internal IP address" unless ips.all? { public_ip?(it) }
         ips.each { w.run("INSERT INTO bans (created_at, ip_address, updated_at, user_id) VALUES (?, ?, ?, ?)", now, it, now, user.id) }
         w.run("DELETE FROM sessions WHERE user_id = ?", user.id)
         w.run("UPDATE users SET status = 2, updated_at = ? WHERE id = ?", now, user.id)

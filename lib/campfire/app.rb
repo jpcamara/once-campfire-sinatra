@@ -1274,7 +1274,12 @@ module Campfire
           when nil then !request.ssl? && !Campfire.ssl?
           else false
           end
-        return if valid_origin && allowed
+        unprocessable_entity! unless valid_origin && allowed
+      end
+
+      # InvalidAuthenticityToken or RecordInvalid: the public 422 page, as ActionDispatch::ShowExceptions
+      # serves it (none of the controller's headers).
+      def unprocessable_entity!
         without_security_headers
         without_version_headers
         halt 422, { "Content-Type" => "text/html; charset=utf-8" }, File.read(File.join(ROOT, "public/422.html"))
@@ -1560,6 +1565,14 @@ module Campfire
       response.headers.delete("X-Cascade")
       headers "Content-Type" => "text/html; charset=UTF-8"
       File.read(File.join(ROOT, "public/404.html"))
+    end
+
+    error RecordInvalid do
+      without_security_headers
+      without_version_headers
+      status 422
+      headers "Content-Type" => "text/html; charset=utf-8"
+      File.read(File.join(ROOT, "public/422.html"))
     end
 
     error do
