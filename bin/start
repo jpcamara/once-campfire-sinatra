@@ -15,6 +15,8 @@ if [ -n "$redis_port" ]; then
 fi
 
 bundle exec ruby -Ilib -e 'require "campfire"; Campfire::Maintenance.boot'
-bundle exec ruby bin/checkpoint &
+# The checkpointer restarts if it ever exits: the app's connections leave checkpoints to it, so
+# without it the WAL would grow without bound.
+(while true; do bundle exec ruby bin/checkpoint || true; sleep 1; done) &
 
 exec bundle exec falcon host falcon.rb
