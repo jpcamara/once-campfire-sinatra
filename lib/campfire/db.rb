@@ -76,7 +76,6 @@ module Campfire
       def initialize(reader)
         @reader = reader
         @entries = {}
-        @by_object = {}.compare_by_identity
         @version = nil
         @generation = 0
       end
@@ -92,15 +91,6 @@ module Campfire
         end
       end
 
-      # A value derived from a cached result itself (which stays the same object while it's cached).
-      def fetch_for(object)
-        return yield if Campfire.rust_caching_only?
-        @by_object.fetch(object) do
-          @by_object.clear if @by_object.size >= LIMIT
-          @by_object[object] = yield
-        end
-      end
-
       def check_for_changes
         version = @reader.value("PRAGMA data_version")
         clear unless version == @version
@@ -109,7 +99,6 @@ module Campfire
 
       def clear
         @entries.clear
-        @by_object.clear
         @generation += 1
       end
     end
@@ -128,8 +117,6 @@ module Campfire
     def rows(sql, *binds) = @cache.fetch([ :rows, sql, *binds ]) { @reader.rows(sql, *binds).each(&:freeze).freeze }
     def row(sql, *binds) = @cache.fetch([ :row, sql, *binds ]) { @reader.row(sql, *binds)&.freeze }
     def value(sql, *binds) = row(sql, *binds)&.first
-
-    def memo_for(object, &) = @cache.fetch_for(object, &)
 
     def check_for_changes = @cache.check_for_changes
     def generation = @cache.generation

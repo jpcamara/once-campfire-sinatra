@@ -1514,10 +1514,9 @@ module Campfire
         end
       end
 
-      # Each message's id and version, as the page ETags list them; kept with the cached page of
-      # messages they're taken from.
+      # Each message's id and version, as the page ETags list them.
       def message_versions(messages)
-        db.memo_for(messages) { messages.map { "#{it.id}-#{it.updated_at}" }.join("|").freeze }
+        messages.map { "#{it.id}-#{it.updated_at}" }.join("|")
       end
 
       # ActionController::ConditionalGet#fresh_when(@messages): the collection's cache key.
