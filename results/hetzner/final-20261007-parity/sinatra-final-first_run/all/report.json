@@ -1,0 +1,167 @@
+{
+  "info": {
+    "title": "Parity report",
+    "expected": "reference http://127.0.0.1:4111",
+    "actual": "candidate http://127.0.0.1:4112",
+    "startedAt": "2026-10-07T01:52:58.358Z",
+    "durationMs": 162047,
+    "unusedAllowlist": [
+      {
+        "state": "pwa/manifest",
+        "layers": [
+          "server"
+        ],
+        "reason": "The manifest is JSON-escaped, not HTML-escaped, so the small logo's URL reads `&v=` where Rails wrote `&amp;v=` (README, \"The web app manifest is valid JSON\")",
+        "owner": "views"
+      }
+    ],
+    "counts": {
+      "pass": 0,
+      "fail": 0,
+      "allowed": 0,
+      "error": 16
+    },
+    "flaky": 0,
+    "masks": {
+      "auth/first_run/completed": [
+        "«join_code»: #invite_url [value] ~ //join/([^/?#]+)$/",
+        "pixels: #invite_url",
+        "pixels: a[href^='/qr_code/']"
+      ]
+    }
+  },
+  "results": [
+    {
+      "state": "auth/first_run",
+      "cell": "chromium-phone-light",
+      "status": "error",
+      "layers": [],
+      "error": "candidate: expected HTTP 200, got 500"
+    },
+    {
+      "state": "auth/first_run",
+      "cell": "chromium-desktop-dark",
+      "status": "error",
+      "layers": [],
+      "error": "candidate: expected HTTP 200, got 500"
+    },
+    {
+      "state": "auth/first_run",
+      "cell": "chromium-desktop-light",
+      "status": "error",
+      "layers": [],
+      "error": "candidate: expected HTTP 200, got 500"
+    },
+    {
+      "state": "auth/first_run",
+      "cell": "chromium-phone-dark",
+      "status": "error",
+      "layers": [],
+      "error": "candidate: expected HTTP 200, got 500"
+    },
+    {
+      "state": "auth/first_run/from_sign_in",
+      "cell": "chromium-desktop-light",
+      "status": "error",
+      "layers": [],
+      "error": "candidate: expected HTTP 200, got 500"
+    },
+    {
+      "state": "auth/first_run/from_sign_in",
+      "cell": "chromium-desktop-dark",
+      "status": "error",
+      "layers": [],
+      "error": "candidate: expected HTTP 200, got 500"
+    },
+    {
+      "state": "auth/first_run/from_sign_in",
+      "cell": "chromium-phone-light",
+      "status": "error",
+      "layers": [],
+      "error": "candidate: expected HTTP 200, got 500"
+    },
+    {
+      "state": "auth/first_run/from_sign_in",
+      "cell": "chromium-phone-dark",
+      "status": "error",
+      "layers": [],
+      "error": "candidate: expected HTTP 200, got 500"
+    },
+    {
+      "state": "auth/first_run/completed",
+      "cell": "chromium-phone-light",
+      "status": "error",
+      "layers": [],
+      "masks": [
+        "«join_code»: #invite_url [value] ~ //join/([^/?#]+)$/",
+        "pixels: #invite_url",
+        "pixels: a[href^='/qr_code/']"
+      ],
+      "error": "candidate: step: #user_name not visible: not ready after 30000ms at http://localhost:3999/first_run: waiting for the step's element; settling"
+    },
+    {
+      "state": "auth/first_run/completed",
+      "cell": "chromium-desktop-light",
+      "status": "error",
+      "layers": [],
+      "masks": [
+        "«join_code»: #invite_url [value] ~ //join/([^/?#]+)$/",
+        "pixels: #invite_url",
+        "pixels: a[href^='/qr_code/']"
+      ],
+      "error": "candidate: step: #user_name not visible: not ready after 30000ms at http://localhost:3999/first_run: waiting for the step's element; settling"
+    },
+    {
+      "state": "auth/first_run/completed",
+      "cell": "chromium-desktop-dark",
+      "status": "error",
+      "layers": [],
+      "masks": [
+        "«join_code»: #invite_url [value] ~ //join/([^/?#]+)$/",
+        "pixels: #invite_url",
+        "pixels: a[href^='/qr_code/']"
+      ],
+      "error": "candidate: step: #user_name not visible: not ready after 30000ms at http://localhost:3999/first_run: waiting for the step's element; settling"
+    },
+    {
+      "state": "auth/first_run/filled",
+      "cell": "chromium-desktop-light",
+      "status": "error",
+      "layers": [],
+      "error": "candidate: step: #user_name not visible: not ready after 30000ms at http://localhost:3999/first_run: waiting for the step's element; settling"
+    },
+    {
+      "state": "auth/first_run/filled",
+      "cell": "chromium-desktop-dark",
+      "status": "error",
+      "layers": [],
+      "error": "candidate: step: #user_name not visible: not ready after 30000ms at http://localhost:3999/first_run: waiting for the step's element; settling"
+    },
+    {
+      "state": "auth/first_run/filled",
+      "cell": "chromium-phone-light",
+      "status": "error",
+      "layers": [],
+      "error": "candidate: step: #user_name not visible: not ready after 30000ms at http://localhost:3999/first_run: waiting for the step's element; settling"
+    },
+    {
+      "state": "auth/first_run/filled",
+      "cell": "chromium-phone-dark",
+      "status": "error",
+      "layers": [],
+      "error": "candidate: step: #user_name not visible: not ready after 30000ms at http://localhost:3999/first_run: waiting for the step's element; settling"
+    },
+    {
+      "state": "auth/first_run/completed",
+      "cell": "chromium-phone-dark",
+      "status": "error",
+      "layers": [],
+      "masks": [
+        "«join_code»: #invite_url [value] ~ //join/([^/?#]+)$/",
+        "pixels: #invite_url",
+        "pixels: a[href^='/qr_code/']"
+      ],
+      "error": "candidate: step: #user_name not visible: not ready after 30000ms at http://localhost:3999/first_run: waiting for the step's element; settling"
+    }
+  ]
+}

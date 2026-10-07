@@ -1,0 +1,4 @@
+00:40:18 falcon-fixes rep 1 start:  00:40:18 up 34 days,  3:00,  3 users,  load average: 3.82, 3.62, 3.26
+00:46:26 falcon-fixes rep 1 end:    00:46:26 up 34 days,  3:07,  5 users,  load average: 6.06, 4.34, 3.57
+00:46:26 sinatra rep 1 start:  00:46:26 up 34 days,  3:07,  5 users,  load average: 6.06, 4.34, 3.57
+00:52:53 sinatra rep 1 end:    00:52:53 up 34 days,  3:13,  6 users,  load average: 4.33, 3.47, 3.30

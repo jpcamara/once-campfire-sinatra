@@ -1,0 +1,14 @@
+candidate: reference :4111 vs candidate :4112 (seed default, clock frozen at 2026-03-02T16:00:00Z)
+breakpoint widths: {"chromium":[799,800,801],"firefox":[960,961],"webkit":[959,960]}
+194 cells (84 on shared servers, 110 on fresh servers in 3 slots) × 2 targets, 6 workers
+[25/194] pwa/install/absent_firefox @ chromium-phone-light pass
+[50/194] realtime/attachment_sent @ webkit-phone-light pass
+[75/194] realtime/message_edited @ webkit-phone-light pass
+[100/194] search/no_results @ chromium-desktop-light pass
+[125/194] realtime/typing/one @ firefox-phone-light pass
+[150/194] realtime/removed_from_room @ firefox-phone-light pass
+[175/194] realtime/unread_in_sidebar @ chromium-phone-light pass
+[194/194] realtime/presence_read @ chromium-phone-dark pass
+194 cells: 194 pass (0 flaky), 0 fail, 0 allowed, 0 error in 1332.8s
+report: /opt/campfire-perf/once-campfire-rust/parity/out/sinatra-final/b6-rest/report.html
+exit 0

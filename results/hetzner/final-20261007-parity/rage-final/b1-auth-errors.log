@@ -1,0 +1,10 @@
+candidate: reference :4211 vs candidate :4212 (seed default, clock frozen at 2026-03-02T16:00:00Z)
+breakpoint widths: {"chromium":[799,800,801],"firefox":[960,961],"webkit":[959,960]}
+92 cells (76 on shared servers, 16 on fresh servers in 3 slots) × 2 targets, 6 workers
+[25/92] auth/join @ chromium-phone-light pass
+[50/92] auth/incompatible_browser @ chromium-phone-light pass
+[75/92] errors/500/static @ chromium-desktop-dark pass
+[92/92] welcome/no_rooms @ chromium-bp801-dark pass
+92 cells: 92 pass (0 flaky), 0 fail, 0 allowed, 0 error in 193.3s
+report: /opt/campfire-perf/once-campfire-rust/parity/out/rage-final/b1-auth-errors/report.html
+exit 0

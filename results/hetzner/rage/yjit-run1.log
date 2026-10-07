@@ -1,0 +1,103 @@
+fatal: not a git repository (or any of the parent directories): .git
+fatal: not a git repository (or any of the parent directories): .git
+date: 2026-10-06T04:47:06+02:00
+host: 6.8.0-137-generic, AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics, 16 threads, 61GB
+server cpus: 4-7 (nproc 4); loadgen cpus: 0-3; network: host
+env: WEB_CONCURRENCY=3 JOB_CONCURRENCY=3 RAILS_MAX_THREADS=5 WEB_CONCURRENCY=4 
+rust extra env: 
+user agent: (none)
+sinatra image: campfire-sinatra:app sha256:c24a648f5a6c1fdd0ae2ee4f565edca95975ce1c3ae22c11409a6fe3785aa215 2026-10-06T03:33:28.550518498+02:00
+rage image: campfire-rage:app sha256:e1a5f1d47b7bcb891f0c012cb95965c84623c031f55b1d2df06a71099e07a6de 2026-10-06T04:31:31.653481521+02:00
+rust HEAD:  (dirty: 0 files)
+[04:48:07] load before run: 1.39 2.50 2.61 (waited 60s)
+[04:48:07] sinatra rep 1: starting (load: 1.39 2.50 2.61)
+[04:48:18] sinatra rep 1: cold start 1500ms, idle 191MB (anon 186MB)
+[04:48:29] sinatra rep 1: room_show c=1 726.6 rps p50 1.335 p99 1.841 {'200': 5814} err 0
+[04:48:37] sinatra rep 1: room_show c=16 2546.2 rps p50 5.875 p99 9.671 {'200': 20389} err 0
+[04:48:45] sinatra rep 1: room_show c=64 2538.2 rps p50 25.119 p99 31.023 {'200': 20380} err 0
+[04:48:55] sinatra rep 1: messages_page c=1 1995.5 rps p50 0.43 p99 0.857 {'200': 15964} err 0
+[04:49:03] sinatra rep 1: messages_page c=16 6821.7 rps p50 2.193 p99 2.909 {'200': 54590} err 0
+[04:49:11] sinatra rep 1: messages_page c=64 5954.1 rps p50 3.443 p99 64.959 {'200': 47900} err 0
+[04:49:21] sinatra rep 1: sidebar c=1 1183.5 rps p50 0.777 p99 1.388 {'200': 9468} err 0
+[04:49:29] sinatra rep 1: sidebar c=16 4061.7 rps p50 3.131 p99 11.871 {'200': 32509} err 0
+[04:49:37] sinatra rep 1: sidebar c=64 4236.4 rps p50 13.023 p99 62.911 {'200': 33942} err 0
+[04:49:47] sinatra rep 1: search c=1 1117.2 rps p50 0.845 p99 1.478 {'200': 8938} err 0
+[04:49:55] sinatra rep 1: search c=16 4157.5 rps p50 3.557 p99 6.711 {'200': 33284} err 0
+[04:50:03] sinatra rep 1: search c=64 4112.9 rps p50 15.023 p99 21.279 {'200': 32982} err 0
+[04:50:13] sinatra rep 1: avatar c=1 2832.8 rps p50 0.32 p99 0.925 {'200': 22663} err 0
+[04:50:21] sinatra rep 1: avatar c=16 10569.1 rps p50 1.334 p99 3.081 {'200': 84577} err 0
+[04:50:29] sinatra rep 1: avatar c=64 10415.2 rps p50 6.303 p99 8.751 {'200': 83399} err 0
+[04:50:39] sinatra rep 1: static_css c=1 14382.0 rps p50 0.059 p99 0.253 {'200': 115057} err 0
+[04:50:47] sinatra rep 1: static_css c=16 59267.7 rps p50 0.276 p99 1.055 {'200': 474170} err 0
+[04:50:55] sinatra rep 1: static_css c=64 58751.1 rps p50 1.043 p99 2.167 {'200': 470132} err 0
+[04:51:05] sinatra rep 1: up c=1 6083.6 rps p50 0.144 p99 0.623 {'200': 48669} err 0
+[04:51:13] sinatra rep 1: up c=16 23293.2 rps p50 0.661 p99 1.525 {'200': 186364} err 0
+[04:51:21] sinatra rep 1: up c=64 22917.7 rps p50 3.163 p99 5.087 {'200': 183443} err 0
+[04:51:31] sinatra rep 1: post_message c=1 570.7 rps p50 1.344 p99 14.575 {'200': 4569} err 0
+[04:51:39] sinatra rep 1: post_message c=16 1691.4 rps p50 7.655 p99 28.511 {'200': 13543} err 0
+[04:51:47] sinatra rep 1: post_message c=64 1680.6 rps p50 30.991 p99 140.031 {'200': 13471} err 0
+[04:52:10] sinatra rep 1: cable 100 clients ready 100 lat all p50 3.999 p99 13.583 tput 547.4 msg/s 8216 / 8216
+[04:52:35] sinatra rep 1: cable 500 clients ready 500 lat all p50 7.655 p99 14.967 tput 152.7 msg/s 2302 / 2302
+[04:53:01] sinatra rep 1: cable 1000 clients ready 1000 lat all p50 14.807 p99 30.271 tput 96.7 msg/s 1578 / 1578
+[04:53:04] sinatra rep 1: upload median 131.7ms
+[04:53:05] sinatra rep 1: done -> /opt/campfire-perf/results/rage/yjit-sinatra-vs-rage-run1/sinatra-1.json
+[04:54:05] load before run: 1.35 2.57 2.66 (waited 60s)
+[04:54:05] rage rep 1: starting (load: 1.35 2.57 2.66)
+[04:54:17] rage rep 1: cold start 1545ms, idle 175MB (anon 169MB)
+[04:54:27] rage rep 1: room_show c=1 691.3 rps p50 1.401 p99 1.957 {'200': 5531} err 0
+[04:54:35] rage rep 1: room_show c=16 2475.8 rps p50 7.451 p99 10.311 {'200': 19827} err 0
+[04:54:43] rage rep 1: room_show c=64 2466.2 rps p50 11.967 p99 67.775 {'200': 19879} err 0
+[04:54:53] rage rep 1: messages_page c=1 2191.6 rps p50 0.407 p99 0.892 {'200': 17534} err 0
+[04:55:01] rage rep 1: messages_page c=16 7696.1 rps p50 2.217 p99 4.319 {'200': 61597} err 0
+[04:55:09] rage rep 1: messages_page c=64 7705.2 rps p50 3.563 p99 17.759 {'200': 61763} err 0
+[04:55:19] rage rep 1: sidebar c=1 1103.3 rps p50 0.855 p99 1.406 {'200': 8827} err 0
+[04:55:27] rage rep 1: sidebar c=16 3922.2 rps p50 3.719 p99 7.699 {'200': 31406} err 0
+[04:55:35] rage rep 1: sidebar c=64 3904.6 rps p50 14.959 p99 28.287 {'200': 31337} err 0
+[04:55:45] rage rep 1: search c=1 1119.9 rps p50 0.837 p99 1.349 {'200': 8960} err 0
+[04:55:53] rage rep 1: search c=16 4017.0 rps p50 2.961 p99 7.603 {'200': 32160} err 0
+[04:56:02] rage rep 1: search c=64 4002.2 rps p50 10.823 p99 33.503 {'200': 32143} err 0
+[04:56:12] rage rep 1: avatar c=1 3114.0 rps p50 0.29 p99 0.788 {'200': 24913} err 0
+[04:56:20] rage rep 1: avatar c=16 11493.4 rps p50 1.312 p99 2.895 {'200': 91969} err 0
+[04:56:28] rage rep 1: avatar c=64 11459.3 rps p50 7.707 p99 11.575 {'200': 91794} err 0
+[04:56:38] rage rep 1: static_css c=1 37006.2 rps p50 0.024 p99 0.095 {'200': 296052} err 0
+[04:56:46] rage rep 1: static_css c=16 202464.6 rps p50 0.037 p99 0.325 {'200': 1619789} err 0
+[04:56:54] rage rep 1: static_css c=64 212975.7 rps p50 0.224 p99 1.132 {'200': 1704075} err 0
+[04:57:04] rage rep 1: up c=1 15010.0 rps p50 0.055 p99 0.212 {'200': 120082} err 0
+[04:57:12] rage rep 1: up c=16 64978.0 rps p50 0.179 p99 0.98 {'200': 519854} err 0
+[04:57:20] rage rep 1: up c=64 70652.1 rps p50 0.916 p99 2.337 {'200': 565330} err 0
+[04:57:30] rage rep 1: post_message c=1 562.2 rps p50 1.358 p99 14.487 {'200': 4498} err 0
+[04:57:38] rage rep 1: post_message c=16 1428.5 rps p50 8.791 p99 35.711 {'200': 11477} err 0
+[04:57:46] rage rep 1: post_message c=64 1451.9 rps p50 24.255 p99 199.551 {'200': 11745} err 0
+[04:58:09] rage rep 1: cable 100 clients ready 100 lat all p50 3.435 p99 7.223 tput 910.0 msg/s 13659 / 13659
+[04:58:34] rage rep 1: cable 500 clients ready 500 lat all p50 6.743 p99 14.367 tput 311.6 msg/s 4688 / 4688
+[04:58:59] rage rep 1: cable 1000 clients ready 1000 lat all p50 9.367 p99 31.407 tput 185.3 msg/s 2800 / 2800
+[04:59:01] rage rep 1: upload median 42.0ms
+[04:59:02] rage rep 1: done -> /opt/campfire-perf/results/rage/yjit-sinatra-vs-rage-run1/rage-1.json
+```
+date: 2026-10-06T04:47:06+02:00
+host: 6.8.0-137-generic, AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics, 16 threads, 61GB
+server cpus: 4-7 (nproc 4); loadgen cpus: 0-3; network: host
+env: WEB_CONCURRENCY=3 JOB_CONCURRENCY=3 RAILS_MAX_THREADS=5 WEB_CONCURRENCY=4 
+rust extra env: 
+user agent: (none)
+sinatra image: campfire-sinatra:app sha256:c24a648f5a6c1fdd0ae2ee4f565edca95975ce1c3ae22c11409a6fe3785aa215 2026-10-06T03:33:28.550518498+02:00
+rage image: campfire-rage:app sha256:e1a5f1d47b7bcb891f0c012cb95965c84623c031f55b1d2df06a71099e07a6de 2026-10-06T04:31:31.653481521+02:00
+rust HEAD:  (dirty: 0 files)
+```
+
+Reps: . Cells: median [min–max].
+
+### Startup and memory
+
+| Metric |  | Rust adv. |
+|---|---|
+| cold start: docker run → /up 200 (ms) |  | – |
+| idle memory.current (MB) |  | – |
+| idle anon (MB) |  | – |
+| peak memory.current under load (MB) |  | – |
+| peak anon under load (MB) |  | – |
+Traceback (most recent call last):
+  File "/opt/campfire-perf/once-campfire-rust/bench/report", line 86, in <module>
+    first = runs[apps[0]][0]
+                 ~~~~^^^
+IndexError: list index out of range

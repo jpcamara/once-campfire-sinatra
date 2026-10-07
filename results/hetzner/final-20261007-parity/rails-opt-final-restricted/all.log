@@ -1,0 +1,7 @@
+candidate: reference :4311 vs candidate :4312 (seed restricted, clock frozen at 2026-03-02T16:00:00Z)
+breakpoint widths: {"chromium":[799,800,801],"firefox":[960,961],"webkit":[959,960]}
+8 cells (8 on shared servers, 0 on fresh servers in 3 slots) × 2 targets, 6 workers
+[8/8] rooms/opens/new/restricted_member @ chromium-phone-dark pass
+8 cells: 8 pass (0 flaky), 0 fail, 0 allowed, 0 error in 20.4s
+report: /opt/campfire-perf/once-campfire-rust/parity/out/rails-opt-final-restricted/all/report.html
+exit 0

@@ -1,0 +1,9 @@
+account/custom_styles/filled                            {'pass': 4} 
+account/edit/with_logo                                  {'pass': 4} 
+account/edit/with_logo/member                           {'pass': 4} 
+auth/sign_in/custom_styles                              {'pass': 4} 
+pwa/manifest/custom_styles                              {'fail': 1} server
+rooms/show/designers/custom_styles                      {'pass': 4} 
+rooms/show/designers/custom_styles/member               {'pass': 4} 
+search/custom_styles                                    {'pass': 4} 
+users/profile/custom_styles                             {'pass': 4} 

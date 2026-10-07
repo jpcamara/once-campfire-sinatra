@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# PostgreSQL 17 for the -pg app variants.
+#
+#   bench/pg/pg start          container "campfire-pg" on 127.0.0.1:$PG_PORT, pinned to SERVER_CPUS
+#   bench/pg/pg seed IMAGE     load parity/.seed/default into the template database campfire_seed
+#   bench/pg/pg reset NAME     recreate database NAME from campfire_seed (a fresh copy, like the SQLite seed)
+#   bench/pg/pg stop
+#
+# synchronous_commit=off matches the SQLite runs: WAL with synchronous=NORMAL, which does not sync
+# each commit either. The server listens on loopback only.
+set -euo pipefail
+
+ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
+SERVER_CPUS=${SERVER_CPUS:-4-7}
+PG_PORT=${PG_PORT:-5442}
+NAME=campfire-pg
+URL_BASE=postgres://postgres:bench@127.0.0.1:$PG_PORT
+
+psql() { docker exec "$NAME" psql -q -v ON_ERROR_STOP=1 -U postgres -p "$PG_PORT" -h 127.0.0.1 "$@"; }
+
+case "${1:-}" in
+  start)
+    docker rm -f "$NAME" >/dev/null 2>&1 || true
+    docker run -d --name "$NAME" --network host --cpuset-cpus "$SERVER_CPUS" --shm-size 256m \
+      -e POSTGRES_PASSWORD=bench postgres:17 \
+      -c port="$PG_PORT" -c listen_addresses=127.0.0.1 -c shared_buffers=512MB \
+      -c synchronous_commit=off -c max_connections=200 >/dev/null
+    for _ in $(seq 1 300); do psql -c "select 1" >/dev/null 2>&1 && { echo "postgres up on $PG_PORT"; exit 0; }; sleep 0.2; done
+    docker logs "$NAME" | tail -20 >&2; exit 1 ;;
+  seed)
+    image=$2
+    psql -c "drop database if exists campfire_seed" -c "create database campfire_seed"
+    args=(); while IFS= read -r line; do args+=(-e "$line"); done < <(grep -Ev '^(#|$)' "$ROOT/parity/.env.reference")
+    docker run --rm --network host --user 1000:1000 "${args[@]}" -e RAILS_LOG_LEVEL=warn \
+      -e "DATABASE_URL=$URL_BASE/campfire_seed" \
+      -v "$ROOT/parity/.seed/default/db:/seed:ro" \
+      -v "$ROOT/bench/pg:/bench/pg:ro" --entrypoint "" "$image" \
+      bash -c "cp -r /seed /tmp/seed && bin/rails db:prepare && bin/rails runner /bench/pg/load_seed.rb /tmp/seed/production.sqlite3"
+    psql -c "vacuum analyze" -d campfire_seed ;;
+  reset)
+    db=$2
+    psql -c "drop database if exists $db with (force)" -c "create database $db template campfire_seed"
+    psql -d "$db" -c "analyze" ;;
+  stop) docker rm -f "$NAME" >/dev/null 2>&1 || true ;;
+  *) sed -n '2,/^set -euo/p' "$0" | sed '$d; s/^# \{0,1\}//'; exit 1 ;;
+esac

@@ -1,0 +1,393 @@
+fatal: not a git repository (or any of the parent directories): .git
+fatal: not a git repository (or any of the parent directories): .git
+date: 2026-10-05T19:07:03+02:00
+host: 6.8.0-137-generic, AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics, 16 threads, 61GB
+server cpus: 4-7 (nproc 4); loadgen cpus: 0-3; network: host
+env: WEB_CONCURRENCY=3 JOB_CONCURRENCY=3 RAILS_MAX_THREADS=5 WEB_CONCURRENCY=4 
+rust extra env: 
+user agent: (none)
+reference image: campfire-reference:app sha256:0701d9b06ec642db9cdac8efc2854ba0e7f33d404af39d814acbc0d56323f6b0 2026-10-05T17:10:33.410393286+02:00
+puma-fixes image: campfire-reference:puma-fixes sha256:a83983eeb714717756c566da45716b1a8e6c4696a588653125f8ad455259a63e 2026-10-05T19:05:00.490817293+02:00
+falcon-fixes image: campfire-reference:falcon-fixes sha256:3e3aede4c1165b694b8eb43121ac622537f832f7e3cd32ebc73c88e9e48c89f6 2026-10-05T19:05:58.551592135+02:00
+rust HEAD:  (dirty: 0 files)
+[19:07:03] load before run: 1.40 0.72 0.98 (waited 0s)
+[19:07:03] reference rep 1: starting (load: 1.40 0.72 0.98)
+[19:07:17] reference rep 1: cold start 3508ms, idle 303MB (anon 283MB)
+[19:07:28] reference rep 1: room_show c=1 93.0 rps p50 10.455 p99 12.591 {'200': 744} err 0
+[19:07:36] reference rep 1: room_show c=16 218.7 rps p50 74.303 p99 141.183 {'200': 1768} err 0
+[19:07:44] reference rep 1: room_show c=64 199.3 rps p50 300.031 p99 453.375 {'200': 1656} err 0
+[19:07:54] reference rep 1: messages_page c=1 167.3 rps p50 5.871 p99 7.335 {'200': 1339} err 0
+[19:08:03] reference rep 1: messages_page c=16 371.0 rps p50 46.527 p99 84.415 {'200': 2982} err 0
+[19:08:11] reference rep 1: messages_page c=64 359.5 rps p50 179.327 p99 218.879 {'200': 2934} err 0
+[19:08:21] reference rep 1: sidebar c=1 211.3 rps p50 4.615 p99 6.351 {'200': 1691} err 0
+[19:08:29] reference rep 1: sidebar c=16 490.0 rps p50 32.591 p99 64.735 {'200': 3933} err 0
+[19:08:37] reference rep 1: sidebar c=64 487.3 rps p50 129.023 p99 160.255 {'200': 3964} err 0
+[19:08:47] reference rep 1: search c=1 163.6 rps p50 6.011 p99 7.895 {'200': 1309} err 0
+[19:08:55] reference rep 1: search c=16 383.1 rps p50 41.471 p99 78.655 {'200': 3077} err 0
+[19:09:03] reference rep 1: search c=64 374.1 rps p50 171.775 p99 224.383 {'200': 3051} err 0
+[19:09:13] reference rep 1: avatar c=1 18492.9 rps p50 0.05 p99 0.115 {'200': 147945} err 0
+[19:09:21] reference rep 1: avatar c=16 62616.6 rps p50 0.169 p99 1.289 {'200': 500955} err 0
+[19:09:29] reference rep 1: avatar c=64 51992.2 rps p50 0.489 p99 7.427 {'200': 416026} err 0
+[19:09:39] reference rep 1: static_css c=1 23152.6 rps p50 0.04 p99 0.085 {'200': 185222} err 0
+[19:09:47] reference rep 1: static_css c=16 85291.9 rps p50 0.132 p99 0.951 {'200': 682367} err 0
+[19:09:55] reference rep 1: static_css c=64 73283.4 rps p50 0.429 p99 5.055 {'200': 586391} err 0
+[19:10:06] reference rep 1: up c=1 1542.3 rps p50 0.585 p99 1.149 {'200': 12339} err 0
+[19:10:14] reference rep 1: up c=16 3521.0 rps p50 4.403 p99 8.759 {'200': 28179} err 0
+[19:10:22] reference rep 1: up c=64 3459.9 rps p50 18.399 p99 27.951 {'200': 27748} err 0
+[19:10:32] reference rep 1: post_message c=1 113.9 rps p50 7.919 p99 28.511 {'200': 912} err 0
+[19:10:40] reference rep 1: post_message c=16 198.8 rps p50 78.143 p99 212.863 {'200': 1606} err 0
+[19:10:48] reference rep 1: post_message c=64 202.9 rps p50 309.247 p99 476.927 {'200': 1680} err 0
+[19:10:49] reference rep 1: done -> /opt/campfire-perf/results/compare-puma-falcon/reference-1.json
+[19:11:59] load before run: 1.37 1.95 1.49 (waited 70s)
+[19:11:59] puma-fixes rep 1: starting (load: 1.37 1.95 1.49)
+[19:12:13] puma-fixes rep 1: cold start 3572ms, idle 309MB (anon 288MB)
+[19:12:24] puma-fixes rep 1: room_show c=1 115.4 rps p50 8.391 p99 10.679 {'200': 923} err 0
+[19:12:32] puma-fixes rep 1: room_show c=16 346.9 rps p50 44.255 p99 101.887 {'200': 2787} err 0
+[19:12:40] puma-fixes rep 1: room_show c=64 307.6 rps p50 189.951 p99 400.383 {'200': 2543} err 0
+[19:12:50] puma-fixes rep 1: messages_page c=1 171.4 rps p50 5.747 p99 7.295 {'200': 1371} err 0
+[19:12:58] puma-fixes rep 1: messages_page c=16 554.6 rps p50 25.423 p99 78.975 {'200': 4452} err 0
+[19:13:06] puma-fixes rep 1: messages_page c=64 557.0 rps p50 108.479 p99 286.719 {'200': 4518} err 0
+[19:13:16] puma-fixes rep 1: sidebar c=1 200.9 rps p50 4.883 p99 6.467 {'200': 1608} err 0
+[19:13:24] puma-fixes rep 1: sidebar c=16 555.7 rps p50 27.855 p99 61.631 {'200': 4462} err 0
+[19:13:33] puma-fixes rep 1: sidebar c=64 499.2 rps p50 120.447 p99 225.919 {'200': 4077} err 0
+[19:13:43] puma-fixes rep 1: search c=1 170.8 rps p50 5.759 p99 7.491 {'200': 1367} err 0
+[19:13:51] puma-fixes rep 1: search c=16 491.2 rps p50 30.735 p99 73.151 {'200': 3948} err 0
+[19:13:59] puma-fixes rep 1: search c=64 465.3 rps p50 120.575 p99 292.863 {'200': 3816} err 0
+[19:14:09] puma-fixes rep 1: avatar c=1 18918.8 rps p50 0.049 p99 0.12 {'200': 151352} err 0
+[19:14:17] puma-fixes rep 1: avatar c=16 61284.0 rps p50 0.17 p99 1.339 {'200': 490301} err 0
+[19:14:25] puma-fixes rep 1: avatar c=64 50740.3 rps p50 0.499 p99 7.759 {'200': 406004} err 0
+[19:14:35] puma-fixes rep 1: static_css c=1 14915.7 rps p50 0.062 p99 0.169 {'200': 119327} err 0
+[19:14:43] puma-fixes rep 1: static_css c=16 63001.5 rps p50 0.194 p99 1.025 {'200': 504036} err 0
+[19:14:51] puma-fixes rep 1: static_css c=64 61947.1 rps p50 0.757 p99 4.235 {'200': 495658} err 0
+[19:15:01] puma-fixes rep 1: up c=1 1666.2 rps p50 0.535 p99 1.234 {'200': 13330} err 0
+[19:15:09] puma-fixes rep 1: up c=16 4077.3 rps p50 3.747 p99 9.047 {'200': 32631} err 0
+[19:15:17] puma-fixes rep 1: up c=64 4189.2 rps p50 14.775 p99 30.943 {'200': 33575} err 0
+[19:15:27] puma-fixes rep 1: post_message c=1 107.8 rps p50 7.843 p99 33.151 {'200': 863} err 0
+[19:15:35] puma-fixes rep 1: post_message c=16 229.2 rps p50 58.143 p99 230.655 {'200': 1847} err 0
+[19:15:44] puma-fixes rep 1: post_message c=64 241.4 rps p50 256.383 p99 461.567 {'200': 1983} err 0
+[19:15:45] puma-fixes rep 1: done -> /opt/campfire-perf/results/compare-puma-falcon/puma-fixes-1.json
+[19:17:05] load before run: 1.32 2.87 2.14 (waited 80s)
+[19:17:05] falcon-fixes rep 1: starting (load: 1.32 2.87 2.14)
+[19:17:21] falcon-fixes rep 1: cold start 5863ms, idle 631MB (anon 611MB)
+[19:17:32] falcon-fixes rep 1: room_show c=1 97.9 rps p50 9.319 p99 40.223 {'200': 783} err 0
+[19:17:40] falcon-fixes rep 1: room_show c=16 353.5 rps p50 41.471 p99 110.655 {'200': 2845} err 0
+[19:17:48] falcon-fixes rep 1: room_show c=64 339.8 rps p50 164.095 p99 448.511 {'200': 2773} err 0
+[19:17:58] falcon-fixes rep 1: messages_page c=1 189.5 rps p50 5.155 p99 6.603 {'200': 1516} err 0
+[19:18:06] falcon-fixes rep 1: messages_page c=16 580.7 rps p50 25.023 p99 66.687 {'200': 4666} err 0
+[19:18:14] falcon-fixes rep 1: messages_page c=64 567.1 rps p50 56.959 p99 619.519 {'200': 4629} err 0
+[19:18:24] falcon-fixes rep 1: sidebar c=1 214.0 rps p50 4.515 p99 6.275 {'200': 1713} err 0
+[19:18:32] falcon-fixes rep 1: sidebar c=16 620.1 rps p50 24.879 p99 54.303 {'200': 4978} err 0
+[19:18:41] falcon-fixes rep 1: sidebar c=64 612.8 rps p50 89.919 p99 331.263 {'200': 4957} err 0
+[19:18:51] falcon-fixes rep 1: search c=1 191.4 rps p50 5.087 p99 6.807 {'200': 1532} err 0
+[19:18:59] falcon-fixes rep 1: search c=16 553.8 rps p50 27.247 p99 65.791 {'200': 4451} err 0
+[19:19:07] falcon-fixes rep 1: search c=64 527.3 rps p50 20.239 p99 524.287 {'200': 4376} err 0
+[19:19:17] falcon-fixes rep 1: avatar c=1 19196.7 rps p50 0.048 p99 0.118 {'200': 153575} err 0
+[19:19:25] falcon-fixes rep 1: avatar c=16 63498.2 rps p50 0.165 p99 1.287 {'200': 508009} err 0
+[19:19:33] falcon-fixes rep 1: avatar c=64 51645.6 rps p50 0.477 p99 7.563 {'200': 413240} err 0
+[19:19:43] falcon-fixes rep 1: static_css c=1 23767.4 rps p50 0.039 p99 0.084 {'200': 190141} err 0
+[19:19:51] falcon-fixes rep 1: static_css c=16 84612.8 rps p50 0.132 p99 0.979 {'200': 676933} err 0
+[19:19:59] falcon-fixes rep 1: static_css c=64 71869.8 rps p50 0.418 p99 5.215 {'200': 575067} err 0
+[19:20:09] falcon-fixes rep 1: up c=1 1591.7 rps p50 0.57 p99 1.089 {'200': 12734} err 0
+[19:20:17] falcon-fixes rep 1: up c=16 4140.5 rps p50 3.571 p99 9.423 {'200': 33141} err 0
+[19:20:25] falcon-fixes rep 1: up c=64 4247.3 rps p50 13.711 p99 38.143 {'200': 34016} err 0
+[19:20:35] falcon-fixes rep 1: post_message c=1 120.4 rps p50 7.667 p99 28.351 {'200': 964} err 0
+[19:20:43] falcon-fixes rep 1: post_message c=16 247.1 rps p50 55.391 p99 214.015 {'200': 1986} err 0
+[19:20:52] falcon-fixes rep 1: post_message c=64 242.4 rps p50 291.839 p99 511.231 {'200': 2016} err 0
+[19:20:53] falcon-fixes rep 1: done -> /opt/campfire-perf/results/compare-puma-falcon/falcon-fixes-1.json
+[19:22:13] load before run: 1.42 2.87 2.41 (waited 80s)
+[19:22:13] falcon-fixes rep 2: starting (load: 1.42 2.87 2.41)
+[19:22:29] falcon-fixes rep 2: cold start 5852ms, idle 630MB (anon 610MB)
+[19:22:40] falcon-fixes rep 2: room_show c=1 111.9 rps p50 8.887 p99 10.391 {'200': 895} err 0
+[19:22:48] falcon-fixes rep 2: room_show c=16 332.2 rps p50 43.711 p99 123.839 {'200': 2677} err 0
+[19:22:56] falcon-fixes rep 2: room_show c=64 343.4 rps p50 168.831 p99 445.439 {'200': 2803} err 0
+[19:23:06] falcon-fixes rep 2: messages_page c=1 186.7 rps p50 5.235 p99 6.843 {'200': 1494} err 0
+[19:23:14] falcon-fixes rep 2: messages_page c=16 578.5 rps p50 25.439 p99 65.055 {'200': 4647} err 0
+[19:23:22] falcon-fixes rep 2: messages_page c=64 585.3 rps p50 87.743 p99 322.815 {'200': 4767} err 0
+[19:23:33] falcon-fixes rep 2: sidebar c=1 212.8 rps p50 4.559 p99 6.319 {'200': 1703} err 0
+[19:23:41] falcon-fixes rep 2: sidebar c=16 620.7 rps p50 24.799 p99 52.639 {'200': 4981} err 0
+[19:23:49] falcon-fixes rep 2: sidebar c=64 615.8 rps p50 94.271 p99 252.927 {'200': 5002} err 0
+[19:23:59] falcon-fixes rep 2: search c=1 188.8 rps p50 5.175 p99 7.103 {'200': 1511} err 0
+[19:24:07] falcon-fixes rep 2: search c=16 548.1 rps p50 27.375 p99 68.223 {'200': 4405} err 0
+[19:24:15] falcon-fixes rep 2: search c=64 523.0 rps p50 42.463 p99 482.815 {'200': 4359} err 0
+[19:24:25] falcon-fixes rep 2: avatar c=1 19211.5 rps p50 0.048 p99 0.118 {'200': 153694} err 0
+[19:24:33] falcon-fixes rep 2: avatar c=16 62424.5 rps p50 0.168 p99 1.31 {'200': 499421} err 0
+[19:24:41] falcon-fixes rep 2: avatar c=64 51555.9 rps p50 0.456 p99 7.743 {'200': 412538} err 0
+[19:24:51] falcon-fixes rep 2: static_css c=1 22852.9 rps p50 0.041 p99 0.088 {'200': 182825} err 0
+[19:24:59] falcon-fixes rep 2: static_css c=16 84524.1 rps p50 0.132 p99 0.972 {'200': 676228} err 0
+[19:25:07] falcon-fixes rep 2: static_css c=64 72175.1 rps p50 0.433 p99 5.119 {'200': 577501} err 0
+[19:25:17] falcon-fixes rep 2: up c=1 1550.7 rps p50 0.58 p99 1.227 {'200': 12407} err 0
+[19:25:25] falcon-fixes rep 2: up c=16 4121.3 rps p50 3.557 p99 9.871 {'200': 32986} err 0
+[19:25:34] falcon-fixes rep 2: up c=64 4230.6 rps p50 13.711 p99 38.431 {'200': 33886} err 0
+[19:25:44] falcon-fixes rep 2: post_message c=1 116.9 rps p50 7.783 p99 32.559 {'200': 936} err 0
+[19:25:52] falcon-fixes rep 2: post_message c=16 239.3 rps p50 33.631 p99 244.479 {'200': 1937} err 0
+[19:26:00] falcon-fixes rep 2: post_message c=64 242.9 rps p50 234.111 p99 513.279 {'200': 2014} err 0
+[19:26:01] falcon-fixes rep 2: done -> /opt/campfire-perf/results/compare-puma-falcon/falcon-fixes-2.json
+[19:27:31] load before run: 1.29 2.78 2.57 (waited 90s)
+[19:27:31] puma-fixes rep 2: starting (load: 1.29 2.78 2.57)
+[19:27:45] puma-fixes rep 2: cold start 3598ms, idle 308MB (anon 287MB)
+[19:27:56] puma-fixes rep 2: room_show c=1 114.9 rps p50 8.463 p99 10.719 {'200': 920} err 0
+[19:28:04] puma-fixes rep 2: room_show c=16 349.4 rps p50 43.967 p99 95.231 {'200': 2807} err 0
+[19:28:12] puma-fixes rep 2: room_show c=64 309.0 rps p50 209.279 p99 335.615 {'200': 2536} err 0
+[19:28:22] puma-fixes rep 2: messages_page c=1 166.3 rps p50 5.951 p99 7.443 {'200': 1331} err 0
+[19:28:30] puma-fixes rep 2: messages_page c=16 563.8 rps p50 24.959 p99 76.479 {'200': 4529} err 0
+[19:28:38] puma-fixes rep 2: messages_page c=64 572.7 rps p50 100.351 p99 285.439 {'200': 4645} err 0
+[19:28:48] puma-fixes rep 2: sidebar c=1 203.7 rps p50 4.791 p99 6.511 {'200': 1630} err 0
+[19:28:56] puma-fixes rep 2: sidebar c=16 565.5 rps p50 26.767 p99 65.983 {'200': 4542} err 0
+[19:29:05] puma-fixes rep 2: sidebar c=64 517.2 rps p50 114.495 p99 286.463 {'200': 4229} err 0
+[19:29:15] puma-fixes rep 2: search c=1 169.3 rps p50 5.835 p99 7.323 {'200': 1355} err 0
+[19:29:23] puma-fixes rep 2: search c=16 493.3 rps p50 30.895 p99 72.255 {'200': 3961} err 0
+[19:29:31] puma-fixes rep 2: search c=64 469.4 rps p50 115.519 p99 338.687 {'200': 3828} err 0
+[19:29:41] puma-fixes rep 2: avatar c=1 18581.3 rps p50 0.05 p99 0.123 {'200': 148652} err 0
+[19:29:49] puma-fixes rep 2: avatar c=16 60732.9 rps p50 0.174 p99 1.324 {'200': 485906} err 0
+[19:29:57] puma-fixes rep 2: avatar c=64 50066.6 rps p50 0.49 p99 7.803 {'200': 400609} err 0
+[19:30:07] puma-fixes rep 2: static_css c=1 15230.9 rps p50 0.06 p99 0.169 {'200': 121849} err 0
+[19:30:15] puma-fixes rep 2: static_css c=16 64360.0 rps p50 0.191 p99 1.002 {'200': 514906} err 0
+[19:30:23] puma-fixes rep 2: static_css c=64 62521.4 rps p50 0.746 p99 4.195 {'200': 500296} err 0
+[19:30:33] puma-fixes rep 2: up c=1 1670.0 rps p50 0.531 p99 1.661 {'200': 13361} err 0
+[19:30:41] puma-fixes rep 2: up c=16 4073.9 rps p50 3.739 p99 8.983 {'200': 32608} err 0
+[19:30:49] puma-fixes rep 2: up c=64 4184.2 rps p50 14.903 p99 30.047 {'200': 33539} err 0
+[19:30:59] puma-fixes rep 2: post_message c=1 97.6 rps p50 8.115 p99 36.639 {'200': 781} err 0
+[19:31:07] puma-fixes rep 2: post_message c=16 237.3 rps p50 56.511 p99 219.519 {'200': 1915} err 0
+[19:31:16] puma-fixes rep 2: post_message c=64 241.7 rps p50 257.919 p99 468.223 {'200': 1989} err 0
+[19:31:17] puma-fixes rep 2: done -> /opt/campfire-perf/results/compare-puma-falcon/puma-fixes-2.json
+[19:32:37] load before run: 1.31 2.97 2.80 (waited 80s)
+[19:32:37] reference rep 2: starting (load: 1.31 2.97 2.80)
+[19:32:50] reference rep 2: cold start 3580ms, idle 309MB (anon 289MB)
+[19:33:01] reference rep 2: room_show c=1 92.5 rps p50 10.463 p99 12.599 {'200': 740} err 0
+[19:33:10] reference rep 2: room_show c=16 227.8 rps p50 86.847 p99 150.271 {'200': 1835} err 0
+[19:33:18] reference rep 2: room_show c=64 192.8 rps p50 347.903 p99 414.719 {'200': 1606} err 0
+[19:33:28] reference rep 2: messages_page c=1 162.4 rps p50 6.039 p99 7.483 {'200': 1300} err 0
+[19:33:36] reference rep 2: messages_page c=16 354.6 rps p50 43.615 p99 84.031 {'200': 2845} err 0
+[19:33:44] reference rep 2: messages_page c=64 342.8 rps p50 179.199 p99 281.855 {'200': 2802} err 0
+[19:33:54] reference rep 2: sidebar c=1 201.3 rps p50 4.835 p99 6.643 {'200': 1611} err 0
+[19:34:02] reference rep 2: sidebar c=16 459.3 rps p50 33.759 p99 86.143 {'200': 3696} err 0
+[19:34:10] reference rep 2: sidebar c=64 441.9 rps p50 143.487 p99 203.135 {'200': 3600} err 0
+[19:34:21] reference rep 2: search c=1 159.6 rps p50 6.139 p99 7.883 {'200': 1277} err 0
+[19:34:29] reference rep 2: search c=16 371.2 rps p50 42.335 p99 82.687 {'200': 2982} err 0
+[19:34:37] reference rep 2: search c=64 354.1 rps p50 180.991 p99 232.191 {'200': 2889} err 0
+[19:34:47] reference rep 2: avatar c=1 18241.9 rps p50 0.051 p99 0.114 {'200': 145936} err 0
+[19:34:55] reference rep 2: avatar c=16 62351.5 rps p50 0.168 p99 1.295 {'200': 498849} err 0
+[19:35:03] reference rep 2: avatar c=64 50983.3 rps p50 0.482 p99 7.707 {'200': 407954} err 0
+[19:35:13] reference rep 2: static_css c=1 23747.4 rps p50 0.039 p99 0.086 {'200': 189981} err 0
+[19:35:21] reference rep 2: static_css c=16 84420.7 rps p50 0.132 p99 0.982 {'200': 675396} err 0
+[19:35:29] reference rep 2: static_css c=64 72878.9 rps p50 0.427 p99 5.123 {'200': 583114} err 0
+[19:35:39] reference rep 2: up c=1 1541.5 rps p50 0.584 p99 1.184 {'200': 12332} err 0
+[19:35:47] reference rep 2: up c=16 3502.1 rps p50 4.471 p99 8.407 {'200': 28031} err 0
+[19:35:55] reference rep 2: up c=64 3443.6 rps p50 18.463 p99 27.151 {'200': 27619} err 0
+[19:36:05] reference rep 2: post_message c=1 106.8 rps p50 8.131 p99 32.895 {'200': 855} err 0
+[19:36:13] reference rep 2: post_message c=16 190.2 rps p50 77.567 p99 237.695 {'200': 1534} err 0
+[19:36:22] reference rep 2: post_message c=64 202.1 rps p50 306.431 p99 474.111 {'200': 1671} err 0
+[19:36:22] reference rep 2: done -> /opt/campfire-perf/results/compare-puma-falcon/reference-2.json
+[19:37:23] load before run: 1.46 2.70 2.77 (waited 60s)
+[19:37:23] reference rep 3: starting (load: 1.46 2.70 2.77)
+[19:37:36] reference rep 3: cold start 3601ms, idle 303MB (anon 284MB)
+[19:37:47] reference rep 3: room_show c=1 92.5 rps p50 10.607 p99 12.223 {'200': 740} err 0
+[19:37:55] reference rep 3: room_show c=16 223.1 rps p50 70.719 p99 138.751 {'200': 1800} err 0
+[19:38:04] reference rep 3: room_show c=64 187.5 rps p50 340.991 p99 454.911 {'200': 1573} err 0
+[19:38:14] reference rep 3: messages_page c=1 162.6 rps p50 6.019 p99 7.583 {'200': 1301} err 0
+[19:38:22] reference rep 3: messages_page c=16 392.3 rps p50 18.559 p99 137.471 {'200': 3156} err 0
+[19:38:30] reference rep 3: messages_page c=64 335.2 rps p50 184.063 p99 266.495 {'200': 2740} err 0
+[19:38:40] reference rep 3: sidebar c=1 204.4 rps p50 4.775 p99 6.295 {'200': 1636} err 0
+[19:38:48] reference rep 3: sidebar c=16 474.6 rps p50 32.367 p99 64.479 {'200': 3814} err 0
+[19:38:56] reference rep 3: sidebar c=64 469.1 rps p50 137.343 p99 217.727 {'200': 3823} err 0
+[19:39:06] reference rep 3: search c=1 160.8 rps p50 6.123 p99 7.879 {'200': 1287} err 0
+[19:39:15] reference rep 3: search c=16 377.2 rps p50 42.495 p99 85.631 {'200': 3031} err 0
+[19:39:23] reference rep 3: search c=64 360.6 rps p50 152.575 p99 331.775 {'200': 2960} err 0
+[19:39:33] reference rep 3: avatar c=1 18309.6 rps p50 0.051 p99 0.115 {'200': 146478} err 0
+[19:39:41] reference rep 3: avatar c=16 62472.4 rps p50 0.169 p99 1.289 {'200': 499800} err 0
+[19:39:49] reference rep 3: avatar c=64 51157.0 rps p50 0.472 p99 7.667 {'200': 409356} err 0
+[19:39:59] reference rep 3: static_css c=1 23295.4 rps p50 0.04 p99 0.088 {'200': 186365} err 0
+[19:40:07] reference rep 3: static_css c=16 86110.7 rps p50 0.131 p99 0.953 {'200': 688920} err 0
+[19:40:15] reference rep 3: static_css c=64 73281.5 rps p50 0.42 p99 5.059 {'200': 586403} err 0
+[19:40:25] reference rep 3: up c=1 1547.5 rps p50 0.581 p99 1.192 {'200': 12380} err 0
+[19:40:33] reference rep 3: up c=16 3486.1 rps p50 4.443 p99 8.871 {'200': 27907} err 0
+[19:40:41] reference rep 3: up c=64 3430.7 rps p50 18.447 p99 27.007 {'200': 27503} err 0
+[19:40:51] reference rep 3: post_message c=1 116.7 rps p50 7.679 p99 28.623 {'200': 934} err 0
+[19:40:59] reference rep 3: post_message c=16 201.9 rps p50 73.471 p99 189.695 {'200': 1625} err 0
+[19:41:08] reference rep 3: post_message c=64 202.0 rps p50 311.807 p99 451.327 {'200': 1678} err 0
+[19:41:09] reference rep 3: done -> /opt/campfire-perf/results/compare-puma-falcon/reference-3.json
+[19:42:19] load before run: 1.36 2.60 2.75 (waited 70s)
+[19:42:19] puma-fixes rep 3: starting (load: 1.36 2.60 2.75)
+[19:42:32] puma-fixes rep 3: cold start 3602ms, idle 303MB (anon 282MB)
+[19:42:43] puma-fixes rep 3: room_show c=1 111.1 rps p50 8.023 p99 19.967 {'200': 889} err 0
+[19:42:51] puma-fixes rep 3: room_show c=16 338.0 rps p50 43.775 p99 127.935 {'200': 2716} err 0
+[19:43:00] puma-fixes rep 3: room_show c=64 358.1 rps p50 163.199 p99 371.967 {'200': 2957} err 0
+[19:43:10] puma-fixes rep 3: messages_page c=1 166.0 rps p50 5.955 p99 7.543 {'200': 1329} err 0
+[19:43:18] puma-fixes rep 3: messages_page c=16 570.5 rps p50 24.671 p99 76.671 {'200': 4587} err 0
+[19:43:26] puma-fixes rep 3: messages_page c=64 582.8 rps p50 100.031 p99 236.287 {'200': 4728} err 0
+[19:43:36] puma-fixes rep 3: sidebar c=1 212.9 rps p50 4.551 p99 6.671 {'200': 1704} err 0
+[19:43:44] puma-fixes rep 3: sidebar c=16 596.8 rps p50 25.391 p99 63.775 {'200': 4790} err 0
+[19:43:52] puma-fixes rep 3: sidebar c=64 603.6 rps p50 114.175 p99 172.287 {'200': 4906} err 0
+[19:44:02] puma-fixes rep 3: search c=1 172.3 rps p50 5.723 p99 7.523 {'200': 1379} err 0
+[19:44:10] puma-fixes rep 3: search c=16 513.1 rps p50 29.871 p99 66.367 {'200': 4120} err 0
+[19:44:18] puma-fixes rep 3: search c=64 532.1 rps p50 116.863 p99 204.671 {'200': 4330} err 0
+[19:44:28] puma-fixes rep 3: avatar c=1 17978.7 rps p50 0.052 p99 0.125 {'200': 143831} err 0
+[19:44:37] puma-fixes rep 3: avatar c=16 60430.6 rps p50 0.175 p99 1.33 {'200': 483466} err 0
+[19:44:45] puma-fixes rep 3: avatar c=64 50603.4 rps p50 0.501 p99 7.691 {'200': 404904} err 0
+[19:44:55] puma-fixes rep 3: static_css c=1 14792.6 rps p50 0.062 p99 0.165 {'200': 118342} err 0
+[19:45:03] puma-fixes rep 3: static_css c=16 62131.0 rps p50 0.197 p99 1.055 {'200': 497072} err 0
+[19:45:11] puma-fixes rep 3: static_css c=64 60596.4 rps p50 0.767 p99 4.363 {'200': 484880} err 0
+[19:45:21] puma-fixes rep 3: up c=1 1705.3 rps p50 0.53 p99 1.052 {'200': 13643} err 0
+[19:45:29] puma-fixes rep 3: up c=16 4165.1 rps p50 3.633 p99 9.095 {'200': 33344} err 0
+[19:45:37] puma-fixes rep 3: up c=64 4244.1 rps p50 14.679 p99 29.759 {'200': 34024} err 0
+[19:45:47] puma-fixes rep 3: post_message c=1 119.7 rps p50 7.615 p99 30.415 {'200': 958} err 0
+[19:45:55] puma-fixes rep 3: post_message c=16 238.4 rps p50 51.327 p99 234.751 {'200': 1924} err 0
+[19:46:03] puma-fixes rep 3: post_message c=64 238.5 rps p50 257.919 p99 461.055 {'200': 1974} err 0
+[19:46:04] puma-fixes rep 3: done -> /opt/campfire-perf/results/compare-puma-falcon/puma-fixes-3.json
+[19:47:24] load before run: 1.45 3.07 3.00 (waited 80s)
+[19:47:24] falcon-fixes rep 3: starting (load: 1.45 3.07 3.00)
+[19:47:40] falcon-fixes rep 3: cold start 5878ms, idle 631MB (anon 611MB)
+[19:47:51] falcon-fixes rep 3: room_show c=1 109.5 rps p50 8.895 p99 10.591 {'200': 876} err 0
+[19:47:59] falcon-fixes rep 3: room_show c=16 350.2 rps p50 42.271 p99 109.887 {'200': 2818} err 0
+[19:48:08] falcon-fixes rep 3: room_show c=64 335.6 rps p50 162.175 p99 488.191 {'200': 2757} err 0
+[19:48:18] falcon-fixes rep 3: messages_page c=1 188.5 rps p50 5.191 p99 6.791 {'200': 1508} err 0
+[19:48:26] falcon-fixes rep 3: messages_page c=16 581.4 rps p50 25.359 p99 63.967 {'200': 4669} err 0
+[19:48:34] falcon-fixes rep 3: messages_page c=64 579.7 rps p50 80.959 p99 368.383 {'200': 4701} err 0
+[19:48:44] falcon-fixes rep 3: sidebar c=1 216.6 rps p50 4.435 p99 6.279 {'200': 1734} err 0
+[19:48:52] falcon-fixes rep 3: sidebar c=16 624.6 rps p50 24.287 p99 59.551 {'200': 5017} err 0
+[19:49:00] falcon-fixes rep 3: sidebar c=64 621.4 rps p50 92.479 p99 266.239 {'200': 5033} err 0
+[19:49:10] falcon-fixes rep 3: search c=1 184.4 rps p50 5.295 p99 6.935 {'200': 1476} err 0
+[19:49:18] falcon-fixes rep 3: search c=16 556.1 rps p50 27.727 p99 63.583 {'200': 4467} err 0
+[19:49:26] falcon-fixes rep 3: search c=64 543.6 rps p50 73.023 p99 358.399 {'200': 4462} err 0
+[19:49:36] falcon-fixes rep 3: avatar c=1 19049.5 rps p50 0.049 p99 0.118 {'200': 152397} err 0
+[19:49:44] falcon-fixes rep 3: avatar c=16 63086.2 rps p50 0.168 p99 1.276 {'200': 504729} err 0
+[19:49:52] falcon-fixes rep 3: avatar c=64 51632.5 rps p50 0.462 p99 7.691 {'200': 413142} err 0
+[19:50:03] falcon-fixes rep 3: static_css c=1 23142.6 rps p50 0.04 p99 0.086 {'200': 185142} err 0
+[19:50:11] falcon-fixes rep 3: static_css c=16 84825.6 rps p50 0.132 p99 0.989 {'200': 678633} err 0
+[19:50:19] falcon-fixes rep 3: static_css c=64 73484.8 rps p50 0.433 p99 4.979 {'200': 587982} err 0
+[19:50:29] falcon-fixes rep 3: up c=1 1523.6 rps p50 0.585 p99 1.656 {'200': 12190} err 0
+[19:50:37] falcon-fixes rep 3: up c=16 4112.9 rps p50 3.623 p99 9.519 {'200': 32913} err 0
+[19:50:45] falcon-fixes rep 3: up c=64 4210.4 rps p50 13.927 p99 38.367 {'200': 33757} err 0
+[19:50:55] falcon-fixes rep 3: post_message c=1 119.2 rps p50 7.639 p99 30.031 {'200': 954} err 0
+[19:51:03] falcon-fixes rep 3: post_message c=16 233.8 rps p50 54.655 p99 199.679 {'200': 1896} err 0
+[19:51:11] falcon-fixes rep 3: post_message c=64 249.1 rps p50 222.591 p99 596.991 {'200': 2065} err 0
+[19:51:12] falcon-fixes rep 3: done -> /opt/campfire-perf/results/compare-puma-falcon/falcon-fixes-3.json
+```
+date: 2026-10-05T19:07:03+02:00
+host: 6.8.0-137-generic, AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics, 16 threads, 61GB
+server cpus: 4-7 (nproc 4); loadgen cpus: 0-3; network: host
+env: WEB_CONCURRENCY=3 JOB_CONCURRENCY=3 RAILS_MAX_THREADS=5 WEB_CONCURRENCY=4 
+rust extra env: 
+user agent: (none)
+reference image: campfire-reference:app sha256:0701d9b06ec642db9cdac8efc2854ba0e7f33d404af39d814acbc0d56323f6b0 2026-10-05T17:10:33.410393286+02:00
+puma-fixes image: campfire-reference:puma-fixes sha256:a83983eeb714717756c566da45716b1a8e6c4696a588653125f8ad455259a63e 2026-10-05T19:05:00.490817293+02:00
+falcon-fixes image: campfire-reference:falcon-fixes sha256:3e3aede4c1165b694b8eb43121ac622537f832f7e3cd32ebc73c88e9e48c89f6 2026-10-05T19:05:58.551592135+02:00
+rust HEAD:  (dirty: 0 files)
+```
+
+Reps: reference 3. Cells: median [min–max].
+
+### Startup and memory
+
+| Metric | Rails | Rust adv. |
+|---|---|---|
+| cold start: docker run → /up 200 (ms) | 3,580 [3,508–3,601] | – |
+| idle memory.current (MB) | 303 [303–309] | – |
+| idle anon (MB) | 284 [283–289] | – |
+| peak memory.current under load (MB) | 912 [890–941] | – |
+| peak anon under load (MB) | 813 [812–820] | – |
+
+### HTTP (signed in as david; keep-alive; c = concurrent connections)
+
+| Metric | Rails | Rust adv. |
+|---|---|---|
+| room_show c=1 req/s | 92.5 [92.5–93.0] | – |
+| room_show c=1 p50 ms | 10.5 [10.5–10.6] | – |
+| room_show c=1 p99 ms | 12.6 [12.2–12.6] | – |
+| room_show c=16 req/s | 223 [219–228] | – |
+| room_show c=16 p50 ms | 74.3 [70.7–86.8] | – |
+| room_show c=16 p99 ms | 141 [139–150] | – |
+| room_show c=64 req/s | 193 [188–199] | – |
+| room_show c=64 p50 ms | 341 [300–348] | – |
+| room_show c=64 p99 ms | 453 [415–455] | – |
+| messages_page c=1 req/s | 163 [162–167] | – |
+| messages_page c=1 p50 ms | 6.02 [5.87–6.04] | – |
+| messages_page c=1 p99 ms | 7.48 [7.33–7.58] | – |
+| messages_page c=16 req/s | 371 [355–392] | – |
+| messages_page c=16 p50 ms | 43.6 [18.6–46.5] | – |
+| messages_page c=16 p99 ms | 84.4 [84.0–137.5] | – |
+| messages_page c=64 req/s | 343 [335–360] | – |
+| messages_page c=64 p50 ms | 179 [179–184] | – |
+| messages_page c=64 p99 ms | 266 [219–282] | – |
+| sidebar c=1 req/s | 204 [201–211] | – |
+| sidebar c=1 p50 ms | 4.78 [4.62–4.83] | – |
+| sidebar c=1 p99 ms | 6.35 [6.29–6.64] | – |
+| sidebar c=16 req/s | 475 [459–490] | – |
+| sidebar c=16 p50 ms | 32.6 [32.4–33.8] | – |
+| sidebar c=16 p99 ms | 64.7 [64.5–86.1] | – |
+| sidebar c=64 req/s | 469 [442–487] | – |
+| sidebar c=64 p50 ms | 137 [129–143] | – |
+| sidebar c=64 p99 ms | 203 [160–218] | – |
+| search c=1 req/s | 161 [160–164] | – |
+| search c=1 p50 ms | 6.12 [6.01–6.14] | – |
+| search c=1 p99 ms | 7.88 [7.88–7.89] | – |
+| search c=16 req/s | 377 [371–383] | – |
+| search c=16 p50 ms | 42.3 [41.5–42.5] | – |
+| search c=16 p99 ms | 82.7 [78.7–85.6] | – |
+| search c=64 req/s | 361 [354–374] | – |
+| search c=64 p50 ms | 172 [153–181] | – |
+| search c=64 p99 ms | 232 [224–332] | – |
+| avatar c=1 req/s | 18,310 [18,242–18,493] | – |
+| avatar c=1 p50 ms | 0.05 [0.05–0.05] | – |
+| avatar c=1 p99 ms | 0.12 [0.11–0.12] | – |
+| avatar c=16 req/s | 62,472 [62,352–62,617] | – |
+| avatar c=16 p50 ms | 0.17 [0.17–0.17] | – |
+| avatar c=16 p99 ms | 1.29 [1.29–1.29] | – |
+| avatar c=64 req/s | 51,157 [50,983–51,992] | – |
+| avatar c=64 p50 ms | 0.48 [0.47–0.49] | – |
+| avatar c=64 p99 ms | 7.67 [7.43–7.71] | – |
+| static_css c=1 req/s | 23,295 [23,153–23,747] | – |
+| static_css c=1 p50 ms | 0.04 [0.04–0.04] | – |
+| static_css c=1 p99 ms | 0.09 [0.09–0.09] | – |
+| static_css c=16 req/s | 85,292 [84,421–86,111] | – |
+| static_css c=16 p50 ms | 0.13 [0.13–0.13] | – |
+| static_css c=16 p99 ms | 0.95 [0.95–0.98] | – |
+| static_css c=64 req/s | 73,282 [72,879–73,283] | – |
+| static_css c=64 p50 ms | 0.43 [0.42–0.43] | – |
+| static_css c=64 p99 ms | 5.06 [5.05–5.12] | – |
+| up c=1 req/s | 1,542 [1,542–1,548] | – |
+| up c=1 p50 ms | 0.58 [0.58–0.58] | – |
+| up c=1 p99 ms | 1.18 [1.15–1.19] | – |
+| up c=16 req/s | 3,502 [3,486–3,521] | – |
+| up c=16 p50 ms | 4.44 [4.40–4.47] | – |
+| up c=16 p99 ms | 8.76 [8.41–8.87] | – |
+| up c=64 req/s | 3,444 [3,431–3,460] | – |
+| up c=64 p50 ms | 18.4 [18.4–18.5] | – |
+| up c=64 p99 ms | 27.2 [27.0–28.0] | – |
+| post_message c=1 req/s | 114 [107–117] | – |
+| post_message c=1 p50 ms | 7.92 [7.68–8.13] | – |
+| post_message c=1 p99 ms | 28.6 [28.5–32.9] | – |
+| post_message c=16 req/s | 199 [190–202] | – |
+| post_message c=16 p50 ms | 77.6 [73.5–78.1] | – |
+| post_message c=16 p99 ms | 213 [190–238] | – |
+| post_message c=64 req/s | 202 [202–203] | – |
+| post_message c=64 p50 ms | 309 [306–312] | – |
+| post_message c=64 p99 ms | 474 [451–477] | – |
+
+### HTTP errors / non-2xx-3xx (first rep, per app)
+
+| Metric | Rails | Rust adv. |
+|---|---|---|
+- reference: none
+
+### Action Cable fan-out (one room; chatter.js subscriptions per client)
+
+| Metric | Rails | Rust adv. |
+|---|---|---|
+
+### Upload + thumbnail (black_hole.jpg, 505 KB)
+
+| Metric | Rails | Rust adv. |
+|---|---|---|
+| POST with attachment (ms) | – | – |
+| then GET thumb → 200 (ms) | – | – |
+| POST → thumbnail served (ms) | – | – |
+
+### Memory during cable fan-out, by process (MB, peak within the phase)
+
+App process: Rails' Puma master and workers (Action Cable runs in them), or Rust's one campfire
+process (its front server included). Pss counts pages shared between forked workers once;
+RssAnon counts them in every process.
+
+| Metric | Rails | Rust adv. |
+|---|---|---|

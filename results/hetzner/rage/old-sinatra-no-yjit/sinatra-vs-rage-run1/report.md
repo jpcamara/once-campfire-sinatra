@@ -1,0 +1,23 @@
+```
+date: 2026-10-06T02:47:22+02:00
+host: 6.8.0-137-generic, AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics, 16 threads, 61GB
+server cpus: 4-7 (nproc 4); loadgen cpus: 0-3; network: host
+env: WEB_CONCURRENCY=3 JOB_CONCURRENCY=3 RAILS_MAX_THREADS=5 WEB_CONCURRENCY=4 
+rust extra env: 
+user agent: (none)
+sinatra image: campfire-sinatra:app sha256:73c1f65c94ab80f40e1a4f27330b7fc48f4f0de0db848dc05767d8afe88e61e3 2026-10-06T02:38:39.636369252+02:00
+rage image: campfire-rage:app sha256:ca8e10c17b4df67dd5cd415397b0cb2aa67ad155473ec18e0e5d2bac739d5a96 2026-10-06T02:37:05.271669294+02:00
+rust HEAD:  (dirty: 0 files)
+```
+
+Reps: . Cells: median [min–max].
+
+### Startup and memory
+
+| Metric |  | Rust adv. |
+|---|---|
+| cold start: docker run → /up 200 (ms) |  | – |
+| idle memory.current (MB) |  | – |
+| idle anon (MB) |  | – |
+| peak memory.current under load (MB) |  | – |
+| peak anon under load (MB) |  | – |

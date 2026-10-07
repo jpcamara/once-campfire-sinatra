@@ -1,0 +1,4 @@
+01:30:12 falcon-fixes rep 1 start:  01:30:12 up 34 days,  3:50,  5 users,  load average: 0.02, 0.87, 2.09
+01:34:00 falcon-fixes rep 1 end:    01:34:00 up 34 days,  3:54,  7 users,  load average: 5.80, 2.97, 2.63
+01:34:00 rails-opt rep 1 start:  01:34:00 up 34 days,  3:54,  7 users,  load average: 5.80, 2.97, 2.63
+01:39:18 rails-opt rep 1 end:    01:39:18 up 34 days,  3:59,  7 users,  load average: 4.99, 3.39, 2.80

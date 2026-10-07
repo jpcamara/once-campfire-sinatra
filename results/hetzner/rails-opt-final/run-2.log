@@ -1,0 +1,95 @@
+fatal: not a git repository (or any of the parent directories): .git
+fatal: not a git repository (or any of the parent directories): .git
+date: 2026-10-06T01:12:57+02:00
+host: 6.8.0-137-generic, AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics, 16 threads, 61GB
+server cpus: 4-7 (nproc 4); loadgen cpus: 0-3; network: host
+env: WEB_CONCURRENCY=3 JOB_CONCURRENCY=3 RAILS_MAX_THREADS=5 WEB_CONCURRENCY=4 
+rust extra env: 
+user agent: (none)
+rails-opt image: campfire-reference:rails-opt sha256:b1c2fd8833861a36f210c97298e9cda0dd285e0dc311d641e0217ae04e4e041d 2026-10-06T00:27:57.477511538+02:00
+falcon-fixes image: campfire-reference:falcon-fixes sha256:3e3aede4c1165b694b8eb43121ac622537f832f7e3cd32ebc73c88e9e48c89f6 2026-10-05T19:05:58.551592135+02:00
+rust HEAD:  (dirty: 0 files)
+[01:14:07] load before run: 1.39 2.69 3.14 (waited 70s)
+[01:14:07] rails-opt rep 1: starting (load: 1.39 2.69 3.14)
+[01:14:23] rails-opt rep 1: cold start 5861ms, idle 631MB (anon 612MB)
+[01:14:34] rails-opt rep 1: room_show c=1 145.0 rps p50 6.755 p99 8.583 {'200': 1160} err 0
+[01:14:42] rails-opt rep 1: room_show c=16 458.5 rps p50 34.143 p99 68.671 {'200': 3687} err 0
+[01:14:51] rails-opt rep 1: room_show c=64 468.1 rps p50 133.759 p99 282.111 {'200': 3810} err 0
+[01:15:01] rails-opt rep 1: messages_page c=1 234.7 rps p50 4.187 p99 5.443 {'200': 1878} err 0
+[01:15:09] rails-opt rep 1: messages_page c=16 698.6 rps p50 22.047 p99 49.343 {'200': 5608} err 0
+[01:15:17] rails-opt rep 1: messages_page c=64 719.5 rps p50 88.191 p99 231.039 {'200': 5824} err 0
+[01:15:27] rails-opt rep 1: sidebar c=1 268.6 rps p50 3.595 p99 5.315 {'200': 2150} err 0
+[01:15:35] rails-opt rep 1: sidebar c=16 749.6 rps p50 20.895 p99 38.463 {'200': 6016} err 0
+[01:15:43] rails-opt rep 1: sidebar c=64 748.2 rps p50 86.975 p99 172.415 {'200': 6049} err 0
+[01:15:53] rails-opt rep 1: search c=1 238.3 rps p50 4.071 p99 5.599 {'200': 1907} err 0
+[01:16:01] rails-opt rep 1: search c=16 677.1 rps p50 23.295 p99 43.999 {'200': 5436} err 0
+[01:16:09] rails-opt rep 1: search c=64 674.1 rps p50 87.487 p99 162.431 {'200': 5466} err 0
+[01:16:19] rails-opt rep 1: avatar c=1 19634.9 rps p50 0.047 p99 0.113 {'200': 157081} err 0
+[01:16:27] rails-opt rep 1: avatar c=16 63311.0 rps p50 0.165 p99 1.291 {'200': 506512} err 0
+[01:16:35] rails-opt rep 1: avatar c=64 51693.5 rps p50 0.466 p99 7.619 {'200': 413621} err 0
+[01:16:45] rails-opt rep 1: static_css c=1 23253.5 rps p50 0.04 p99 0.088 {'200': 186030} err 0
+[01:16:53] rails-opt rep 1: static_css c=16 85253.0 rps p50 0.132 p99 0.946 {'200': 682055} err 0
+[01:17:01] rails-opt rep 1: static_css c=64 72457.9 rps p50 0.427 p99 5.179 {'200': 579753} err 0
+[01:17:11] rails-opt rep 1: up c=1 1616.6 rps p50 0.553 p99 1.18 {'200': 12934} err 0
+[01:17:20] rails-opt rep 1: up c=16 4266.5 rps p50 3.473 p99 9.151 {'200': 34147} err 0
+[01:17:28] rails-opt rep 1: up c=64 4377.8 rps p50 13.191 p99 37.695 {'200': 35065} err 0
+[01:17:38] rails-opt rep 1: post_message c=1 130.9 rps p50 6.899 p99 28.031 {'200': 1048} err 0
+[01:17:46] rails-opt rep 1: post_message c=16 258.2 rps p50 50.911 p99 178.047 {'200': 2087} err 0
+[01:17:54] rails-opt rep 1: post_message c=64 261.7 rps p50 235.135 p99 550.911 {'200': 2177} err 0
+[01:17:55] rails-opt rep 1: done -> /opt/campfire-perf/results/rails-opt-final/run-2/rails-opt-1.json
+[01:19:25] load before run: 1.31 2.76 3.10 (waited 90s)
+[01:19:25] falcon-fixes rep 1: starting (load: 1.31 2.76 3.10)
+[01:19:41] falcon-fixes rep 1: cold start 5847ms, idle 631MB (anon 611MB)
+[01:19:52] falcon-fixes rep 1: room_show c=1 105.6 rps p50 9.455 p99 10.551 {'200': 845} err 0
+[01:20:00] falcon-fixes rep 1: room_show c=16 351.6 rps p50 41.471 p99 113.343 {'200': 2828} err 0
+[01:20:08] falcon-fixes rep 1: room_show c=64 332.9 rps p50 167.679 p99 566.271 {'200': 2738} err 0
+[01:20:18] falcon-fixes rep 1: messages_page c=1 190.3 rps p50 5.127 p99 6.615 {'200': 1523} err 0
+[01:20:27] falcon-fixes rep 1: messages_page c=16 580.5 rps p50 25.439 p99 65.727 {'200': 4661} err 0
+[01:20:35] falcon-fixes rep 1: messages_page c=64 591.4 rps p50 93.375 p99 277.503 {'200': 4785} err 0
+[01:20:45] falcon-fixes rep 1: sidebar c=1 216.4 rps p50 4.459 p99 6.131 {'200': 1732} err 0
+[01:20:53] falcon-fixes rep 1: sidebar c=16 625.5 rps p50 24.367 p99 53.375 {'200': 5017} err 0
+[01:21:01] falcon-fixes rep 1: sidebar c=64 621.2 rps p50 96.895 p99 219.903 {'200': 5037} err 0
+[01:21:11] falcon-fixes rep 1: search c=1 188.7 rps p50 5.171 p99 6.963 {'200': 1510} err 0
+[01:21:19] falcon-fixes rep 1: search c=16 551.3 rps p50 27.423 p99 68.927 {'200': 4429} err 0
+[01:21:27] falcon-fixes rep 1: search c=64 533.5 rps p50 41.791 p99 472.575 {'200': 4417} err 0
+[01:21:37] falcon-fixes rep 1: avatar c=1 19237.5 rps p50 0.048 p99 0.117 {'200': 153901} err 0
+[01:21:45] falcon-fixes rep 1: avatar c=16 62732.4 rps p50 0.167 p99 1.321 {'200': 501880} err 0
+[01:21:53] falcon-fixes rep 1: avatar c=64 51850.0 rps p50 0.465 p99 7.511 {'200': 414880} err 0
+[01:22:03] falcon-fixes rep 1: static_css c=1 24086.6 rps p50 0.038 p99 0.086 {'200': 192695} err 0
+[01:22:11] falcon-fixes rep 1: static_css c=16 85261.2 rps p50 0.132 p99 0.96 {'200': 682122} err 0
+[01:22:19] falcon-fixes rep 1: static_css c=64 72344.2 rps p50 0.424 p99 5.195 {'200': 578851} err 0
+[01:22:30] falcon-fixes rep 1: up c=1 1614.8 rps p50 0.558 p99 1.168 {'200': 12919} err 0
+[01:22:38] falcon-fixes rep 1: up c=16 4163.7 rps p50 3.563 p99 9.503 {'200': 33320} err 0
+[01:22:46] falcon-fixes rep 1: up c=64 4248.8 rps p50 13.695 p99 38.271 {'200': 34029} err 0
+[01:22:56] falcon-fixes rep 1: post_message c=1 116.8 rps p50 7.867 p99 28.815 {'200': 935} err 0
+[01:23:04] falcon-fixes rep 1: post_message c=16 234.8 rps p50 32.399 p99 245.631 {'200': 1904} err 0
+[01:23:12] falcon-fixes rep 1: post_message c=64 244.0 rps p50 73.919 p99 971.263 {'200': 2044} err 0
+[01:23:13] falcon-fixes rep 1: done -> /opt/campfire-perf/results/rails-opt-final/run-2/falcon-fixes-1.json
+```
+date: 2026-10-06T01:12:57+02:00
+host: 6.8.0-137-generic, AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics, 16 threads, 61GB
+server cpus: 4-7 (nproc 4); loadgen cpus: 0-3; network: host
+env: WEB_CONCURRENCY=3 JOB_CONCURRENCY=3 RAILS_MAX_THREADS=5 WEB_CONCURRENCY=4 
+rust extra env: 
+user agent: (none)
+rails-opt image: campfire-reference:rails-opt sha256:b1c2fd8833861a36f210c97298e9cda0dd285e0dc311d641e0217ae04e4e041d 2026-10-06T00:27:57.477511538+02:00
+falcon-fixes image: campfire-reference:falcon-fixes sha256:3e3aede4c1165b694b8eb43121ac622537f832f7e3cd32ebc73c88e9e48c89f6 2026-10-05T19:05:58.551592135+02:00
+rust HEAD:  (dirty: 0 files)
+```
+
+Reps: . Cells: median [min–max].
+
+### Startup and memory
+
+| Metric |  | Rust adv. |
+|---|---|
+| cold start: docker run → /up 200 (ms) |  | – |
+| idle memory.current (MB) |  | – |
+| idle anon (MB) |  | – |
+| peak memory.current under load (MB) |  | – |
+| peak anon under load (MB) |  | – |
+Traceback (most recent call last):
+  File "/opt/campfire-perf/once-campfire-rust/bench/report", line 86, in <module>
+    first = runs[apps[0]][0]
+                 ~~~~^^^
+IndexError: list index out of range

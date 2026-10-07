@@ -1,0 +1,7 @@
+account/edit/crowd                                      {'pass': 4} 
+account/edit/crowd/next_page                            {'pass': 4} 
+account/users/next_page/fragment                        {'pass': 1} 
+rooms/closeds/new/crowd                                 {'pass': 4} 
+rooms/opens/edit/crowd                                  {'pass': 4} 
+rooms/opens/edit/filtered                               {'pass': 4} 
+rooms/opens/new/crowd                                   {'pass': 4} 

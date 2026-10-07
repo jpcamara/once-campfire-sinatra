@@ -1,0 +1,25 @@
+```
+date: 2026-10-05T21:58:45+02:00
+host: 6.8.0-137-generic, AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics, 16 threads, 61GB
+server cpus: 4-7 (nproc 4); loadgen cpus: 0-3; network: host
+env: WEB_CONCURRENCY=3 JOB_CONCURRENCY=3 RAILS_MAX_THREADS=5 WEB_CONCURRENCY=4 
+rust extra env: 
+user agent: (none)
+puma-fixes image: campfire-reference:puma-fixes sha256:a83983eeb714717756c566da45716b1a8e6c4696a588653125f8ad455259a63e 2026-10-05T19:05:00.490817293+02:00
+falcon-fixes image: campfire-reference:falcon-fixes sha256:3e3aede4c1165b694b8eb43121ac622537f832f7e3cd32ebc73c88e9e48c89f6 2026-10-05T19:05:58.551592135+02:00
+puma-fixes-pg image: campfire-reference:puma-fixes-pg sha256:fabfb0aa00159a0898896c53552721f14daee6bf124a02771c0a03fd94ba7e1c 2026-10-05T20:50:42.837458637+02:00
+falcon-fixes-pg image: campfire-reference:falcon-fixes-pg sha256:bde68c4ac1e035484ea02111cd315f2c2e2513d6d5899ac506de3a12132791d2 2026-10-05T20:51:56.128829251+02:00
+rust HEAD:  (dirty: 0 files)
+```
+
+Reps: . Cells: median [min–max].
+
+### Startup and memory
+
+| Metric |  | Rust adv. |
+|---|---|
+| cold start: docker run → /up 200 (ms) |  | – |
+| idle memory.current (MB) |  | – |
+| idle anon (MB) |  | – |
+| peak memory.current under load (MB) |  | – |
+| peak anon under load (MB) |  | – |
