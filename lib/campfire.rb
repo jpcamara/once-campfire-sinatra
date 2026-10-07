@@ -6,6 +6,14 @@ require "delegate"
 require "net/http"
 require "tempfile"
 
+module Campfire
+  # ActiveRecord::RecordInvalid from a bang method: the request answers the public 422 page.
+  class RecordInvalid < StandardError; end
+
+  # production.rb: config.assume_ssl and config.force_ssl, unless DISABLE_SSL is set.
+  def self.ssl? = ENV["DISABLE_SSL"].to_s.strip.empty?
+end
+
 require_relative "campfire/rails_compat"
 require_relative "campfire/time_format"
 require_relative "campfire/db"
@@ -36,12 +44,6 @@ require_relative "campfire/request_id"
 require_relative "campfire/date_header"
 
 module Campfire
-  # ActiveRecord::RecordInvalid from a bang method: the request answers the public 422 page.
-  class RecordInvalid < StandardError; end
-
-  # production.rb: config.assume_ssl and config.force_ssl, unless DISABLE_SSL is set.
-  def self.ssl? = ENV["DISABLE_SSL"].to_s.strip.empty?
-
   def self.boot
     Assets.load(ROOT)
     View.compile(ROOT)
