@@ -71,19 +71,6 @@ module Campfire
 
     Created = Data.define(:message, :body, :plain, :blob)
 
-    # A body that is plain text nothing in the pipeline changes: no markup or character references,
-    # no non-breaking spaces or control characters (the HTML5 parser and serializer rewrite those),
-    # nothing auto_link would link (no ":", "@" or "www."), and no /play command. Canonicalizing it
-    # only strips it, its plain text is itself, and its presentation is the lexxy-content wrapper
-    # around it. CAMPFIRE_CHECK_CACHES=1 runs the full pipeline as well and compares.
-    PLAIN_BODY = /\A[^<>&:@\u00A0\x00-\x1f\x7f]*\z/
-
-    def plain_body?(value)
-      value.valid_encoding? && value.match?(PLAIN_BODY) && !value.match?(/www\./i) && !value.lstrip.start_with?("/")
-    end
-
-    def plain_presentation(text) = %(<div class="lexxy-content">\n  #{text}\n</div>\n)
-
     def create(...) = create_with_details(...).message
 
     # A new message and its view. A text message's view is built from what the request already holds;
@@ -95,9 +82,8 @@ module Campfire
       return [ created, views(ctx, [ message ]).first ] if created.blob
 
       plain = created.plain.strip.empty? ? "" : created.plain
-      presentation = plain_body?(created.body.to_s) && !plain.empty? ? plain_presentation(plain) : presentation(ctx, created.body, nil, plain)
       view = Repo::MessageView.new(message: message, creator: creator, room: room,
-        presentation: presentation, attachment: nil, boosts: [], emoji: ctx.runtime.all_emoji?(plain))
+        presentation: presentation(ctx, created.body, nil, plain), attachment: nil, boosts: [], emoji: ctx.runtime.all_emoji?(plain))
       check_view(ctx, view) if ENV["CAMPFIRE_CHECK_CACHES"]
       [ created, view ]
     end
@@ -116,11 +102,7 @@ module Campfire
       body = canonical_body(params["body"])
       upload = params["attachment"]
       blob = upload.is_a?(Hash) && upload[:tempfile] ? Uploads.store(ctx, upload) : nil
-      plain =
-        if blob && body.to_s.strip.empty? then blob.filename
-        elsif body && !body.strip.empty? && plain_body?(body) then check_plain(ctx, body, body)
-        else PlainText.convert(body.to_s, attachment_text: ->(node) { Attachments.plain_text(ctx, node) })
-        end
+      plain = blob && body.to_s.strip.empty? ? blob.filename : PlainText.convert(body.to_s, attachment_text: ->(node) { Attachments.plain_text(ctx, node) })
       plain = blob.filename if plain.strip.empty? && blob
 
       created_at = TimeFormat.now_text
@@ -153,22 +135,7 @@ module Campfire
       return nil if value.nil?
       html = value.to_s
       return html if html.strip.empty?
-      return check_canonical(html, html.strip) if plain_body?(html)
       RichText.to_html(Attachments.canonicalize(RichText.fragment(html)))
-    end
-
-    def check_canonical(html, fast)
-      if ENV["CAMPFIRE_CHECK_CACHES"] && (full = RichText.to_html(Attachments.canonicalize(RichText.fragment(html)))) != fast
-        warn "CACHE MISMATCH plain body canonical #{html.inspect}: #{full.inspect}"
-      end
-      fast
-    end
-
-    def check_plain(ctx, body, fast)
-      if ENV["CAMPFIRE_CHECK_CACHES"] && (full = PlainText.convert(body, attachment_text: ->(node) { Attachments.plain_text(ctx, node) })) != fast
-        warn "CACHE MISMATCH plain body text #{body.inspect}: #{full.inspect}"
-      end
-      fast
     end
 
     # RichTextHelper#editable_body, then Lexxy's render_custom_attachments_in: each attachment
