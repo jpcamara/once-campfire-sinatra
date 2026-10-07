@@ -15,7 +15,7 @@ module Campfire
 
     def call(env)
       path = Rack::Utils.unescape_path(env["PATH_INFO"])
-      entry = @entries[path] ||= load(path)
+      entry = @entries[path] || lookup(path)
       return [ 404, { "content-type" => "text/plain" }, [ "Not found" ] ] unless entry
 
       headers = { "cache-control" => @cache_control, "content-type" => entry.type, "last-modified" => entry.last_modified }
@@ -47,9 +47,17 @@ module Campfire
         [ 206, headers, env["REQUEST_METHOD"] == "HEAD" ? [] : [ slice ] ]
       end
 
-      def load(path)
+      # Files are kept only under their canonical path, so other spellings of it (`//`, `/./`,
+      # `/a/../`) and missing files add nothing.
+      def lookup(path)
         file = File.expand_path(File.join(@root, path))
-        return nil unless file.start_with?("#{@root}/") && File.file?(file)
+        return nil unless file.start_with?("#{@root}/")
+        canonical = file.delete_prefix(@root)
+        @entries[canonical] || (entry = load(file)) && (@entries[canonical] = entry)
+      end
+
+      def load(file)
+        return nil unless File.file?(file)
         body = File.binread(file).freeze
         type = Rack::Mime.mime_type(File.extname(file), "application/octet-stream")
         # Thruster compresses everything, so every file gets a gzip copy (made once).
