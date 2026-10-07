@@ -10,18 +10,6 @@ module Campfire
       @db = db
     end
 
-    # The records these build are kept (frozen) with the read cache, so a hit skips building them.
-    MEMOIZED = %i[ account attachment_blob session_by_token user user_room membership room original_room_id
-      user_original_room user_last_room room_message_count last_page page_before page_after room_message search
-      recent_search_queries sidebar_memberships direct_room_ids member_ids_of_rooms room_users_except
-      direct_room_member_names active_users_excluding ].freeze
-
-    prepend(Module.new do
-      MEMOIZED.each do |name|
-        define_method(name) { |*args, **options| @db.memo([ name, options, *args ]) { super(*args, **options).freeze } }
-      end
-    end)
-
     attr_reader :db
 
     def account
