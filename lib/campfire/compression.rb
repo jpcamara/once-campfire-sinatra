@@ -7,6 +7,7 @@ module Campfire
   class Compression
     NO_BODY = [ 101, 204, 304 ].freeze
     KEPT_LIMIT = 1024
+    STREAM_OVER = 1024 * 1024 # larger bodies are compressed as they're sent, not in memory
 
     def initialize(app)
       @app = app
@@ -27,7 +28,11 @@ module Campfire
       return [ status, headers, body ] if NO_BODY.include?(status) || env["REQUEST_METHOD"] == "HEAD" || headers.key?("content-range")
       return [ status, headers, body ] if headers["content-encoding"] || !env["HTTP_ACCEPT_ENCODING"].to_s.include?("gzip")
 
-      if body.is_a?(FragmentBody)
+      if headers["content-length"].to_i > STREAM_OVER
+        headers.delete("content-length")
+        headers["content-encoding"] = "gzip"
+        return [ status, headers, GzipStream.new(body) ]
+      elsif body.is_a?(FragmentBody)
         compressed = body.gzip
       elsif (digest = env[ETag::BODY_DIGEST]) && env["REQUEST_METHOD"] == "GET" # a write's response is its own
         compressed = kept(digest) { gzip(body) }
@@ -37,6 +42,30 @@ module Campfire
       headers["content-encoding"] = "gzip"
       headers["content-length"] = compressed.bytesize.to_s
       [ status, headers, [ compressed ] ]
+    end
+
+    # A gzip stream of a body, compressed chunk by chunk as the server writes it out.
+    class GzipStream
+      def initialize(body)
+        @body = body
+      end
+
+      def each
+        deflater = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, Zlib::MAX_WBITS + 16)
+        @body.each do |chunk|
+          out = deflater.deflate(chunk)
+          yield out unless out.empty?
+        end
+        yield deflater.finish
+      ensure
+        deflater&.close
+      end
+
+      def close
+        @body.close if @body.respond_to?(:close)
+      end
+
+      def streaming? = true
     end
 
     private

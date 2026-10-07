@@ -10,6 +10,7 @@ module Campfire
     MAX_ITEM = 1024 * 1024
     MAX_URI = 2048
     BODILESS_HEADERS = %w[ content-type content-length ].freeze
+    VARY_LIMIT = 16_384 # URLs whose Vary names are remembered, least recently stored dropped first
 
     Entry = Data.define(:status, :headers, :body, :expires_at, :size)
 
@@ -31,6 +32,9 @@ module Campfire
       status, headers, body = @app.call(env)
       if (lifetime = lifetime(status, headers))
         headers.delete("set-cookie")
+        # A body that can't fit in one item streams through untouched rather than being read into
+        # memory first (a download of a large attachment).
+        return [ status, headers, body ] if headers["content-length"].to_i > MAX_ITEM || body.respond_to?(:streaming?)
         content = +""
         body.each { content << it }
         body.close if body.respond_to?(:close)
@@ -76,7 +80,9 @@ module Campfire
         size = content.bytesize + key.bytesize + kept.sum { |name, value| name.bytesize + value.to_s.bytesize }
         return if size > MAX_ITEM
 
+        @vary.delete(base)
         @vary[base] = names
+        @vary.delete(@vary.first[0]) while @vary.size > VARY_LIMIT
         if (previous = @entries.delete(key))
           @size -= previous.size
         end
