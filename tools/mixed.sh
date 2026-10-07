@@ -5,6 +5,8 @@
 # App order and rate order rotate between reps. Run under the bench lock.
 #
 #   mixed.sh OUT_DIR [REPS] [READ_SECS]
+#
+# MIXED_APPS="sinatra rage" limits the apps; VARIANT_ENV="K=V ..." goes to every app but stock Rails.
 set -euo pipefail
 out=$1 reps=${2:-3} secs=${3:-20}
 cd /opt/campfire-perf/once-campfire-rust
@@ -18,14 +20,15 @@ image_for() { case "$1" in sinatra) echo campfire-sinatra:app ;; rage) echo camp
 # Stock Rails keeps its default process count (ceil(nproc * 0.666) = 3); the others run 4, as in bench/run-hetzner.
 workers_for() { case "$1" in reference) echo "" ;; *) echo 4 ;; esac; }
 
-apps=(sinatra rage rails-opt reference) rates=(0 20 100)
+read -ra apps <<< "${MIXED_APPS:-sinatra rage rails-opt reference}"; rates=(0 20 100)
 for rep in $(seq 1 "$reps"); do
   app_shift=$(( (rep - 1) % ${#apps[@]} )) rate_shift=$(( (rep - 1) % ${#rates[@]} ))
   rep_apps=("${apps[@]:app_shift}" "${apps[@]:0:app_shift}")
   rep_rates=("${rates[@]:rate_shift}" "${rates[@]:0:rate_shift}")
   for app in "${rep_apps[@]}"; do
     for rate in "${rep_rates[@]}"; do
-      WEB_CONCURRENCY=$(workers_for "$app") LOG_LEVEL=warn bench/probe start "$(image_for "$app")" >/dev/null
+      env_for_app=""; [ "$app" = reference ] || env_for_app=${VARIANT_ENV:-}
+      EXTRA_ENV=$env_for_app WEB_CONCURRENCY=$(workers_for "$app") LOG_LEVEL=warn bench/probe start "$(image_for "$app")" >/dev/null
       bench/probe login >/dev/null
       poster_cookie=$(taskset -c $LOADGEN_CPUS $LG login --base http://127.0.0.1:4390 --email "$(label emails.jason)" \
         --password "$(label passwords.all)" | python3 -c 'import json,sys; print(json.load(sys.stdin)["cookie"])')

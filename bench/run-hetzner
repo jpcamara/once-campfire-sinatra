@@ -119,6 +119,8 @@ env_args() {
   # HETZNER CHANGE: -pg apps use bench/pg/pg's PostgreSQL; Falcon's fibers each hold a connection.
   case "${1:-}" in *-pg) printf '%s\n' -e "DATABASE_URL=postgres://postgres:bench@127.0.0.1:${PG_PORT:-5442}/campfire" ;; esac
   case "${1:-}" in falcon*-pg) printf '%s\n' -e DB_POOL=16 ;; esac
+  # HETZNER CHANGE: VARIANT_ENV="K=V ..." goes to every variant app (not the reference or Rust).
+  case "${1:-}" in reference|rust*) ;; *) local v; for v in ${VARIANT_ENV:-}; do printf '%s\n' -e "$v"; done ;; esac
 }
 
 # Web Push and webhook deliveries to the seed's real endpoints (fcm.googleapis.com, ...) go to a

@@ -1,0 +1,42 @@
+{
+ "app": "rails-opt",
+ "rep": 1,
+ "rate": 20,
+ "read": {
+  "avg_bytes": 16183,
+  "conc": 16,
+  "errors": 0,
+  "gzip": true,
+  "latency": {
+   "max_ms": 396.543,
+   "mean_ms": 37.6,
+   "n": 8516,
+   "p50_ms": 35.135,
+   "p90_ms": 56.991,
+   "p99_ms": 97.919
+  },
+  "ok": 8516,
+  "path": "/rooms/486777696",
+  "rps": 425.1,
+  "secs": 20.03,
+  "statuses": {
+   "200": 8516
+  }
+ },
+ "post": {
+  "offered_rate": 20.0,
+  "achieved_rate": 20.0,
+  "sent": 520,
+  "statuses": {
+   "200": 520
+  },
+  "errors": 0,
+  "latency_ms": {
+   "p50": 24.07,
+   "p90": 73.11,
+   "p99": 148.96,
+   "max": 396.43
+  },
+  "elapsed_s": 25.96
+ }
+}

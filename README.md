@@ -58,6 +58,67 @@ offered rate.
 At 100 posts/sec, Sinatra and Rage keep about 70% of their read rate. Optimized Rails falls to
 about stock's level, because each write invalidates the caches it depends on.
 
+## Caching
+
+The rule: only cache what the Rust or Elixir ports cache, checked against their source.
+
+**What the Rust port caches** (from its source):
+
+| Cache | What it holds | Rust source |
+|---|---|---|
+| Message fragments | Rails' own `cache message do` fragments, in memory, bounded by bytes | `views/src/fragment_cache.rs` |
+| Compressed pieces | Each fragment's deflate block, the text between fragments, and a whole body's gzip by digest | `kit/src/deflater/splice.rs` |
+| Public responses | `Cache-Control: public` responses such as avatars and assets | `kit/src/front/cache.rs` |
+| Prepared statements | 256 per connection | `db` crate |
+
+Rust caches no query results and no pages, sidebars or page shells. It renders every page on every
+request.
+
+**What our apps cache beyond that.** All of it is Elixir-only. Each cell is the effect of that one
+change in a per-step A/B:
+
+| Cache (Elixir only) | Rails (optimized) | Sinatra | Rage |
+|---|---|---|---|
+| Read cache, cleared on `PRAGMA data_version` | +10–16% | +16–25% | +26–47% |
+| Finished sidebar until its data changes | sidebar 3.3× | sidebar +61% | sidebar 3.4× |
+| Messages page per ETag | messages 1.9× | not measured alone | messages 1.9× |
+| Room and search shell, memoized by its inputs | none | not measured alone | not measured alone |
+| Verified session signatures | none | room +12% | none |
+
+Sinatra and Rage also memoize some small derived values (avatar tokens, signed ids, stream names,
+initials); those have no reference precedent.
+
+**Rust-level caching only.** `CAMPFIRE_CACHING=rust` in each app turns off every cache in the
+second table, and the small memos, and keeps Rust's. It ran on the same harness, box and CPUs, on
+images built from the commit that adds the switch: 3 reps, 0 errors. Each cell is full caching →
+Rust-level caching only.
+
+| Workload (req/s, 16 clients) | Rails (stock) | Rails (optimized) | Sinatra | Rage |
+|---|---:|---:|---:|---:|
+| Room page | 225 | 538 → 498 | 12,849 → 4,812 | 10,127 → 4,752 |
+| Messages page | 364 | 2,003 → 902 | 19,729 → 7,637 | 24,569 → 9,402 |
+| Sidebar | 482 | 3,578 → 824 | 23,016 → 6,365 | 34,134 → 6,618 |
+| Search | 378 | 872 → 767 | 15,503 → 7,442 | 16,837 → 7,536 |
+| Post a message | 198 | 258 → 268 | 3,302 → 3,165 | 1,848 → 1,780 |
+
+Stock Rails is from the full run; in the Rust-level run it measured 221 / 365 / 467 / 368 / 196.
+
+The mixed read/write run in both modes (3 reps, fresh seed each):
+
+| Room reads/sec while posts arrive at | 0/s | 20/s | 100/s |
+|---|---:|---:|---:|
+| Rails (stock) | 228 | 214 | 194 |
+| Rails (optimized), full caching | 537 | 430 | 208 |
+| Rails (optimized), Rust-level caching only | 504 | 416 | 208 |
+| Sinatra, full caching | 12,648 | 12,096 | 8,909 |
+| Sinatra, Rust-level caching only | 4,763 | 4,634 | 3,741 |
+| Rage, full caching | 10,074 | 9,309 | 6,697 |
+| Rage, Rust-level caching only | 4,763 | 4,401 | 3,164 |
+
+With Rust-level caching only, Sinatra and Rage still serve 13–26× stock Rails on reads, and keep
+66–79% of their room-page rate at 100 posts/s. Optimized Rails stays about 2× stock on room, messages
+and search without the Elixir-only caches; its sidebar and messages-page gains come mostly from them.
+
 ## The rules
 
 **Parity.** Each app must match the Rails reference as a black box. That's checked with DHH's

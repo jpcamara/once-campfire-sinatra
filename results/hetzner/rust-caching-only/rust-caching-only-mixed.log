@@ -1,0 +1,28 @@
+[16:11:42] rep 1 rails-opt rate 0: reads 509 {'200': 10210} err 0 posts None
+[16:12:20] rep 1 rails-opt rate 20: reads 425 {'200': 8516} err 0 posts (20.0, {'200': 520}, 'err', 0, 'p50', 24.07)
+[16:12:58] rep 1 rails-opt rate 100: reads 212 {'200': 4271} err 0 posts (100.0, {'200': 2600}, 'err', 0, 'p50', 19.65)
+[16:13:26] rep 1 sinatra rate 0: reads 4751 {'200': 95042} err 0 posts None
+[16:13:59] rep 1 sinatra rate 20: reads 4640 {'200': 92825} err 0 posts (20.0, {'200': 520}, 'err', 0, 'p50', 3.35)
+[16:14:32] rep 1 sinatra rate 100: reads 3741 {'200': 74844} err 0 posts (100.0, {'200': 2600}, 'err', 0, 'p50', 2.93)
+[16:15:00] rep 1 rage rate 0: reads 4763 {'200': 95297} err 0 posts None
+[16:15:33] rep 1 rage rate 20: reads 4401 {'200': 88041} err 0 posts (20.0, {'200': 520}, 'err', 0, 'p50', 4.62)
+[16:16:06] rep 1 rage rate 100: reads 2708 {'200': 54177} err 0 posts (100.0, {'200': 2600}, 'err', 0, 'p50', 2.56)
+[16:16:40] rep 2 sinatra rate 20: reads 4632 {'200': 92672} err 0 posts (20.0, {'200': 520}, 'err', 0, 'p50', 3.1)
+[16:17:13] rep 2 sinatra rate 100: reads 3765 {'200': 75320} err 0 posts (100.0, {'200': 2600}, 'err', 0, 'p50', 3.12)
+[16:17:40] rep 2 sinatra rate 0: reads 4792 {'200': 95864} err 0 posts None
+[16:18:14] rep 2 rage rate 20: reads 4427 {'200': 88567} err 0 posts (20.0, {'200': 520}, 'err', 0, 'p50', 5.23)
+[16:18:47] rep 2 rage rate 100: reads 3267 {'200': 65404} err 0 posts (100.0, {'200': 2600}, 'err', 0, 'p50', 4.75)
+[16:19:14] rep 2 rage rate 0: reads 4783 {'200': 95678} err 0 posts None
+[16:19:53] rep 2 rails-opt rate 20: reads 416 {'200': 8330} err 0 posts (20.0, {'200': 520}, 'err', 0, 'p50', 26.19)
+[16:20:31] rep 2 rails-opt rate 100: reads 208 {'200': 4201} err 0 posts (99.9, {'200': 2600}, 'err', 0, 'p50', 24.1)
+[16:21:03] rep 2 rails-opt rate 0: reads 502 {'200': 10053} err 0 posts None
+[16:21:36] rep 3 rage rate 100: reads 3164 {'200': 63293} err 0 posts (100.0, {'200': 2600}, 'err', 0, 'p50', 5.06)
+[16:22:04] rep 3 rage rate 0: reads 4604 {'200': 92114} err 0 posts None
+[16:22:37] rep 3 rage rate 20: reads 4352 {'200': 87073} err 0 posts (20.0, {'200': 520}, 'err', 0, 'p50', 3.74)
+[16:23:16] rep 3 rails-opt rate 100: reads 203 {'200': 4089} err 0 posts (100.0, {'200': 2600}, 'err', 0, 'p50', 20.97)
+[16:23:48] rep 3 rails-opt rate 0: reads 504 {'200': 10112} err 0 posts None
+[16:24:26] rep 3 rails-opt rate 20: reads 413 {'200': 8274} err 0 posts (20.0, {'200': 520}, 'err', 0, 'p50', 25.53)
+[16:24:59] rep 3 sinatra rate 100: reads 3714 {'200': 74289} err 0 posts (100.0, {'200': 2600}, 'err', 0, 'p50', 2.96)
+[16:25:27] rep 3 sinatra rate 0: reads 4763 {'200': 95271} err 0 posts None
+[16:26:00] rep 3 sinatra rate 20: reads 4634 {'200': 92710} err 0 posts (20.0, {'200': 520}, 'err', 0, 'p50', 3.11)
+mixed-done

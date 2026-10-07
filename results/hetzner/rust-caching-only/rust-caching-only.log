@@ -1,0 +1,479 @@
+fatal: not a git repository (or any of the parent directories): .git
+fatal: not a git repository (or any of the parent directories): .git
+date: 2026-10-07T15:13:04+02:00
+host: 6.8.0-137-generic, AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics, 16 threads, 61GB
+server cpus: 4-7 (nproc 4); loadgen cpus: 0-3; network: host
+env: WEB_CONCURRENCY=3 JOB_CONCURRENCY=3 RAILS_MAX_THREADS=5 WEB_CONCURRENCY=4 
+rust extra env: 
+user agent: (none)
+reference image: campfire-reference:app sha256:0701d9b06ec642db9cdac8efc2854ba0e7f33d404af39d814acbc0d56323f6b0 2026-10-05T17:10:33.410393286+02:00
+rails-opt image: campfire-reference:rails-opt sha256:6f520516328aa2a27175662c32aed1c8c7d432e7b5e8b0ec8f578edfc542ec3b 2026-10-07T15:03:20.686141338+02:00
+sinatra image: campfire-sinatra:app sha256:5a4251f6788448a44bb213f11a821a7e17b219fbb024004e2d09208918118726 2026-10-07T15:02:52.186225614+02:00
+rage image: campfire-rage:app sha256:9a8fa62006cb18e3ccb9fc55ed3a093f48a6794b041ae9303d4ce31c0c7e0af9 2026-10-07T15:02:58.993474214+02:00
+rust HEAD:  (dirty: 0 files)
+[15:13:04] load before run: 0.21 0.26 0.20 (waited 0s)
+[15:13:04] reference rep 1: starting (load: 0.21 0.26 0.20)
+[15:13:18] reference rep 1: cold start 3551ms, idle 304MB (anon 284MB)
+[15:13:29] reference rep 1: room_show c=1 90.2 rps p50 10.863 p99 13.039 {'200': 722} err 0
+[15:13:37] reference rep 1: room_show c=16 218.6 rps p50 70.847 p99 127.935 {'200': 1760} err 0
+[15:13:45] reference rep 1: room_show c=64 191.5 rps p50 335.871 p99 388.095 {'200': 1589} err 0
+[15:13:55] reference rep 1: messages_page c=1 159.5 rps p50 6.123 p99 7.883 {'200': 1277} err 0
+[15:14:03] reference rep 1: messages_page c=16 364.7 rps p50 42.335 p99 107.775 {'200': 2933} err 0
+[15:14:12] reference rep 1: messages_page c=64 332.3 rps p50 184.703 p99 263.935 {'200': 2718} err 0
+[15:14:22] reference rep 1: sidebar c=1 200.2 rps p50 4.883 p99 6.495 {'200': 1602} err 0
+[15:14:30] reference rep 1: sidebar c=16 466.6 rps p50 32.639 p99 63.519 {'200': 3746} err 0
+[15:14:38] reference rep 1: sidebar c=64 407.8 rps p50 141.823 p99 224.767 {'200': 3334} err 0
+[15:14:48] reference rep 1: search c=1 153.7 rps p50 6.419 p99 7.967 {'200': 1230} err 0
+[15:14:56] reference rep 1: search c=16 368.0 rps p50 42.367 p99 85.695 {'200': 2961} err 0
+[15:15:04] reference rep 1: search c=64 326.3 rps p50 194.303 p99 258.559 {'200': 2679} err 0
+[15:15:14] reference rep 1: avatar c=1 18556.6 rps p50 0.05 p99 0.113 {'200': 148454} err 0
+[15:15:22] reference rep 1: avatar c=16 62302.6 rps p50 0.169 p99 1.287 {'200': 498465} err 0
+[15:15:30] reference rep 1: avatar c=64 50691.1 rps p50 0.462 p99 7.771 {'200': 405604} err 0
+[15:15:41] reference rep 1: static_css c=1 23439.8 rps p50 0.04 p99 0.087 {'200': 187521} err 0
+[15:15:49] reference rep 1: static_css c=16 83876.7 rps p50 0.132 p99 0.995 {'200': 671042} err 0
+[15:15:57] reference rep 1: static_css c=64 72680.8 rps p50 0.428 p99 5.199 {'200': 581574} err 0
+[15:16:07] reference rep 1: up c=1 1548.3 rps p50 0.577 p99 1.722 {'200': 12387} err 0
+[15:16:15] reference rep 1: up c=16 3471.7 rps p50 4.491 p99 8.703 {'200': 27789} err 0
+[15:16:23] reference rep 1: up c=64 3462.7 rps p50 18.319 p99 27.967 {'200': 27776} err 0
+[15:16:33] reference rep 1: post_message c=1 113.0 rps p50 7.923 p99 35.103 {'200': 904} err 0
+[15:16:41] reference rep 1: post_message c=16 200.7 rps p50 69.951 p99 206.719 {'200': 1616} err 0
+[15:16:49] reference rep 1: post_message c=64 207.2 rps p50 303.103 p99 438.783 {'200': 1716} err 0
+[15:16:50] reference rep 1: done -> /opt/campfire-perf/results/rust-caching-only/reference-1.json
+[15:18:00] load before run: 1.48 1.86 0.97 (waited 70s)
+[15:18:00] rails-opt rep 1: starting (load: 1.48 1.86 0.97)
+[15:18:16] rails-opt rep 1: cold start 5861ms, idle 642MB (anon 622MB)
+[15:18:27] rails-opt rep 1: room_show c=1 159.5 rps p50 6.155 p99 7.583 {'200': 1277} err 0
+[15:18:35] rails-opt rep 1: room_show c=16 495.4 rps p50 31.247 p99 63.807 {'200': 3990} err 0
+[15:18:43] rails-opt rep 1: room_show c=64 513.2 rps p50 123.391 p99 211.327 {'200': 4174} err 0
+[15:18:53] rails-opt rep 1: messages_page c=1 300.8 rps p50 3.183 p99 4.483 {'200': 2407} err 0
+[15:19:01] rails-opt rep 1: messages_page c=16 897.7 rps p50 17.231 p99 36.639 {'200': 7196} err 0
+[15:19:09] rails-opt rep 1: messages_page c=64 901.9 rps p50 69.887 p99 121.087 {'200': 7282} err 0
+[15:19:20] rails-opt rep 1: sidebar c=1 300.1 rps p50 3.143 p99 5.023 {'200': 2401} err 0
+[15:19:28] rails-opt rep 1: sidebar c=16 824.5 rps p50 18.847 p99 37.407 {'200': 6613} err 0
+[15:19:36] rails-opt rep 1: sidebar c=64 819.5 rps p50 76.991 p99 163.199 {'200': 6625} err 0
+[15:19:46] rails-opt rep 1: search c=1 261.3 rps p50 3.707 p99 5.327 {'200': 2091} err 0
+[15:19:54] rails-opt rep 1: search c=16 747.1 rps p50 21.199 p99 38.495 {'200': 5996} err 0
+[15:20:02] rails-opt rep 1: search c=64 747.2 rps p50 82.687 p99 240.255 {'200': 6047} err 0
+[15:20:12] rails-opt rep 1: avatar c=1 18289.2 rps p50 0.051 p99 0.11 {'200': 146315} err 0
+[15:20:20] rails-opt rep 1: avatar c=16 63146.9 rps p50 0.167 p99 1.295 {'200': 505205} err 0
+[15:20:28] rails-opt rep 1: avatar c=64 50777.3 rps p50 0.481 p99 7.599 {'200': 406299} err 0
+[15:20:38] rails-opt rep 1: static_css c=1 23712.3 rps p50 0.039 p99 0.085 {'200': 189699} err 0
+[15:20:46] rails-opt rep 1: static_css c=16 86461.2 rps p50 0.13 p99 0.953 {'200': 691719} err 0
+[15:20:54] rails-opt rep 1: static_css c=64 73292.3 rps p50 0.427 p99 5.015 {'200': 586480} err 0
+[15:21:04] rails-opt rep 1: up c=1 2223.6 rps p50 0.403 p99 0.996 {'200': 17790} err 0
+[15:21:12] rails-opt rep 1: up c=16 6040.5 rps p50 2.487 p99 6.675 {'200': 48337} err 0
+[15:21:20] rails-opt rep 1: up c=64 6140.9 rps p50 9.727 p99 25.551 {'200': 49185} err 0
+[15:21:30] rails-opt rep 1: post_message c=1 130.9 rps p50 6.643 p99 34.367 {'200': 1048} err 0
+[15:21:38] rails-opt rep 1: post_message c=16 263.8 rps p50 47.679 p99 185.471 {'200': 2132} err 0
+[15:21:47] rails-opt rep 1: post_message c=64 266.2 rps p50 175.615 p99 634.879 {'200': 2200} err 0
+[15:21:48] rails-opt rep 1: done -> /opt/campfire-perf/results/rust-caching-only/rails-opt-1.json
+[15:23:08] load before run: 1.41 2.61 1.62 (waited 80s)
+[15:23:08] sinatra rep 1: starting (load: 1.41 2.61 1.62)
+[15:23:19] sinatra rep 1: cold start 1506ms, idle 205MB (anon 200MB)
+[15:23:30] sinatra rep 1: room_show c=1 1430.8 rps p50 0.663 p99 1.097 {'200': 11447} err 0
+[15:23:38] sinatra rep 1: room_show c=16 4812.5 rps p50 3.053 p99 5.411 {'200': 38524} err 0
+[15:23:46] sinatra rep 1: room_show c=64 4707.5 rps p50 13.703 p99 16.671 {'200': 37733} err 0
+[15:23:56] sinatra rep 1: messages_page c=1 2240.7 rps p50 0.372 p99 0.782 {'200': 17926} err 0
+[15:24:04] sinatra rep 1: messages_page c=16 7709.0 rps p50 1.953 p99 2.641 {'200': 61692} err 0
+[15:24:12] sinatra rep 1: messages_page c=64 7500.6 rps p50 8.623 p99 9.271 {'200': 60072} err 0
+[15:24:22] sinatra rep 1: sidebar c=1 1901.1 rps p50 0.476 p99 1.01 {'200': 15209} err 0
+[15:24:30] sinatra rep 1: sidebar c=16 6364.7 rps p50 2.315 p99 5.979 {'200': 50935} err 0
+[15:24:38] sinatra rep 1: sidebar c=64 5962.6 rps p50 6.927 p99 56.511 {'200': 47764} err 0
+[15:24:48] sinatra rep 1: search c=1 2048.7 rps p50 0.438 p99 0.972 {'200': 16390} err 0
+[15:24:56] sinatra rep 1: search c=16 7373.8 rps p50 1.9 p99 4.275 {'200': 59013} err 0
+[15:25:04] sinatra rep 1: search c=64 7232.5 rps p50 8.959 p99 12.903 {'200': 57950} err 0
+[15:25:14] sinatra rep 1: avatar c=1 15996.9 rps p50 0.052 p99 0.273 {'200': 127976} err 0
+[15:25:22] sinatra rep 1: avatar c=16 74240.3 rps p50 0.18 p99 0.912 {'200': 593958} err 0
+[15:25:30] sinatra rep 1: avatar c=64 72627.0 rps p50 0.837 p99 1.855 {'200': 581140} err 0
+[15:25:40] sinatra rep 1: static_css c=1 20620.0 rps p50 0.043 p99 0.199 {'200': 164962} err 0
+[15:25:48] sinatra rep 1: static_css c=16 93717.9 rps p50 0.165 p99 0.803 {'200': 749783} err 0
+[15:25:56] sinatra rep 1: static_css c=64 93237.6 rps p50 0.62 p99 1.366 {'200': 746017} err 0
+[15:26:06] sinatra rep 1: up c=1 9677.4 rps p50 0.093 p99 0.458 {'200': 77420} err 0
+[15:26:14] sinatra rep 1: up c=16 39373.5 rps p50 0.356 p99 1.099 {'200': 315010} err 0
+[15:26:22] sinatra rep 1: up c=64 38665.1 rps p50 1.47 p99 3.319 {'200': 309410} err 0
+[15:26:32] sinatra rep 1: post_message c=1 1336.2 rps p50 0.658 p99 1.626 {'200': 10691} err 0
+[15:26:41] sinatra rep 1: post_message c=16 3165.1 rps p50 4.131 p99 26.447 {'200': 25332} err 0
+[15:26:49] sinatra rep 1: post_message c=64 3215.7 rps p50 17.295 p99 66.879 {'200': 25783} err 0
+[15:26:49] sinatra rep 1: done -> /opt/campfire-perf/results/rust-caching-only/sinatra-1.json
+[15:27:49] load before run: 1.42 2.56 1.90 (waited 60s)
+[15:27:49] rage rep 1: starting (load: 1.42 2.56 1.90)
+[15:28:01] rage rep 1: cold start 1640ms, idle 171MB (anon 165MB)
+[15:28:12] rage rep 1: room_show c=1 1350.5 rps p50 0.695 p99 1.269 {'200': 10804} err 0
+[15:28:20] rage rep 1: room_show c=16 4752.4 rps p50 3.747 p99 6.119 {'200': 38040} err 0
+[15:28:28] rage rep 1: room_show c=64 4774.0 rps p50 9.527 p99 28.303 {'200': 38310} err 0
+[15:28:38] rage rep 1: messages_page c=1 2650.1 rps p50 0.333 p99 0.757 {'200': 21201} err 0
+[15:28:46] rage rep 1: messages_page c=16 9402.5 rps p50 1.793 p99 3.335 {'200': 75250} err 0
+[15:28:54] rage rep 1: messages_page c=64 9305.7 rps p50 5.615 p99 13.567 {'200': 74557} err 0
+[15:29:04] rage rep 1: sidebar c=1 2014.0 rps p50 0.458 p99 1.057 {'200': 16113} err 0
+[15:29:12] rage rep 1: sidebar c=16 6691.8 rps p50 1.653 p99 9.567 {'200': 53551} err 0
+[15:29:20] rage rep 1: sidebar c=64 6353.9 rps p50 3.733 p99 91.583 {'200': 50920} err 0
+[15:29:30] rage rep 1: search c=1 2072.4 rps p50 0.444 p99 1.009 {'200': 16580} err 0
+[15:29:38] rage rep 1: search c=16 7543.1 rps p50 1.995 p99 3.163 {'200': 60370} err 0
+[15:29:46] rage rep 1: search c=64 7528.8 rps p50 5.923 p99 17.199 {'200': 60352} err 0
+[15:29:56] rage rep 1: avatar c=1 31764.4 rps p50 0.029 p99 0.05 {'200': 254118} err 0
+[15:30:04] rage rep 1: avatar c=16 181568.3 rps p50 0.081 p99 0.218 {'200': 1452613} err 0
+[15:30:12] rage rep 1: avatar c=64 182458.1 rps p50 0.4 p99 1.019 {'200': 1459903} err 0
+[15:30:22] rage rep 1: static_css c=1 36121.7 rps p50 0.025 p99 0.038 {'200': 288987} err 0
+[15:30:30] rage rep 1: static_css c=16 203664.9 rps p50 0.062 p99 0.253 {'200': 1629388} err 0
+[15:30:38] rage rep 1: static_css c=64 209864.4 rps p50 0.301 p99 0.898 {'200': 1679164} err 0
+[15:30:48] rage rep 1: up c=1 19689.4 rps p50 0.046 p99 0.124 {'200': 157517} err 0
+[15:30:56] rage rep 1: up c=16 94725.7 rps p50 0.176 p99 0.523 {'200': 757838} err 0
+[15:31:04] rage rep 1: up c=64 95230.6 rps p50 0.531 p99 2.393 {'200': 762127} err 0
+[15:31:14] rage rep 1: post_message c=1 733.5 rps p50 0.932 p99 14.007 {'200': 5868} err 0
+[15:31:22] rage rep 1: post_message c=16 1749.7 rps p50 2.829 p99 52.543 {'200': 14066} err 0
+[15:31:31] rage rep 1: post_message c=64 1913.6 rps p50 11.839 p99 231.551 {'200': 15450} err 0
+[15:31:31] rage rep 1: done -> /opt/campfire-perf/results/rust-caching-only/rage-1.json
+[15:32:32] load before run: 1.40 2.51 2.08 (waited 60s)
+[15:32:32] rage rep 2: starting (load: 1.40 2.51 2.08)
+[15:32:43] rage rep 2: cold start 1578ms, idle 176MB (anon 170MB)
+[15:32:54] rage rep 2: room_show c=1 1353.2 rps p50 0.695 p99 1.202 {'200': 10826} err 0
+[15:33:02] rage rep 2: room_show c=16 4617.3 rps p50 3.111 p99 6.811 {'200': 36992} err 0
+[15:33:10] rage rep 2: room_show c=64 4650.3 rps p50 6.007 p99 42.015 {'200': 37374} err 0
+[15:33:20] rage rep 2: messages_page c=1 2651.7 rps p50 0.335 p99 0.736 {'200': 21214} err 0
+[15:33:28] rage rep 2: messages_page c=16 9391.7 rps p50 1.836 p99 3.221 {'200': 75154} err 0
+[15:33:36] rage rep 2: messages_page c=64 9378.5 rps p50 4.263 p99 16.687 {'200': 75173} err 0
+[15:33:46] rage rep 2: sidebar c=1 2023.8 rps p50 0.453 p99 0.926 {'200': 16191} err 0
+[15:33:54] rage rep 2: sidebar c=16 6429.7 rps p50 1.289 p99 12.911 {'200': 51455} err 0
+[15:34:02] rage rep 2: sidebar c=64 6285.9 rps p50 3.615 p99 79.039 {'200': 50353} err 0
+[15:34:12] rage rep 2: search c=1 2021.7 rps p50 0.455 p99 1.023 {'200': 16174} err 0
+[15:34:20] rage rep 2: search c=16 7505.3 rps p50 2.343 p99 4.143 {'200': 60065} err 0
+[15:34:28] rage rep 2: search c=64 7453.2 rps p50 4.695 p99 19.103 {'200': 59762} err 0
+[15:34:38] rage rep 2: avatar c=1 32799.6 rps p50 0.028 p99 0.049 {'200': 262400} err 0
+[15:34:46] rage rep 2: avatar c=16 184584.6 rps p50 0.079 p99 0.224 {'200': 1476748} err 0
+[15:34:54] rage rep 2: avatar c=64 184539.2 rps p50 0.244 p99 1.167 {'200': 1476536} err 0
+[15:35:04] rage rep 2: static_css c=1 37008.1 rps p50 0.025 p99 0.042 {'200': 296067} err 0
+[15:35:12] rage rep 2: static_css c=16 208369.5 rps p50 0.067 p99 0.28 {'200': 1667029} err 0
+[15:35:20] rage rep 2: static_css c=64 211868.0 rps p50 0.349 p99 1.111 {'200': 1695214} err 0
+[15:35:30] rage rep 2: up c=1 19923.3 rps p50 0.045 p99 0.132 {'200': 159388} err 0
+[15:35:38] rage rep 2: up c=16 95039.5 rps p50 0.171 p99 0.754 {'200': 760349} err 0
+[15:35:46] rage rep 2: up c=64 95530.8 rps p50 0.65 p99 1.895 {'200': 764385} err 0
+[15:35:56] rage rep 2: post_message c=1 727.5 rps p50 0.937 p99 13.975 {'200': 5820} err 0
+[15:36:04] rage rep 2: post_message c=16 1780.2 rps p50 7.159 p99 30.095 {'200': 14296} err 0
+[15:36:13] rage rep 2: post_message c=64 1895.9 rps p50 22.031 p99 177.663 {'200': 15345} err 0
+[15:36:14] rage rep 2: done -> /opt/campfire-perf/results/rust-caching-only/rage-2.json
+[15:37:24] load before run: 1.35 2.59 2.28 (waited 70s)
+[15:37:24] sinatra rep 2: starting (load: 1.35 2.59 2.28)
+[15:37:35] sinatra rep 2: cold start 1527ms, idle 207MB (anon 201MB)
+[15:37:46] sinatra rep 2: room_show c=1 1427.4 rps p50 0.667 p99 1.137 {'200': 11421} err 0
+[15:37:54] sinatra rep 2: room_show c=16 4800.3 rps p50 3.505 p99 5.607 {'200': 38426} err 0
+[15:38:02] sinatra rep 2: room_show c=64 4671.8 rps p50 13.031 p99 16.991 {'200': 37448} err 0
+[15:38:12] sinatra rep 2: messages_page c=1 2230.1 rps p50 0.372 p99 0.831 {'200': 17841} err 0
+[15:38:20] sinatra rep 2: messages_page c=16 7585.6 rps p50 1.998 p99 3.151 {'200': 60702} err 0
+[15:38:28] sinatra rep 2: messages_page c=64 7446.1 rps p50 8.687 p99 9.359 {'200': 59636} err 0
+[15:38:38] sinatra rep 2: sidebar c=1 1876.7 rps p50 0.474 p99 0.965 {'200': 15014} err 0
+[15:38:46] sinatra rep 2: sidebar c=16 6299.3 rps p50 2.171 p99 6.767 {'200': 50410} err 0
+[15:38:54] sinatra rep 2: sidebar c=64 6046.1 rps p50 7.435 p99 61.471 {'200': 48428} err 0
+[15:39:04] sinatra rep 2: search c=1 2047.2 rps p50 0.437 p99 0.955 {'200': 16378} err 0
+[15:39:12] sinatra rep 2: search c=16 7449.9 rps p50 2.325 p99 4.039 {'200': 59624} err 0
+[15:39:20] sinatra rep 2: search c=64 7317.7 rps p50 8.847 p99 10.967 {'200': 58610} err 0
+[15:39:30] sinatra rep 2: avatar c=1 16066.8 rps p50 0.053 p99 0.254 {'200': 128536} err 0
+[15:39:38] sinatra rep 2: avatar c=16 74431.7 rps p50 0.179 p99 0.988 {'200': 595484} err 0
+[15:39:46] sinatra rep 2: avatar c=64 73936.0 rps p50 0.694 p99 2.155 {'200': 591614} err 0
+[15:39:56] sinatra rep 2: static_css c=1 20831.8 rps p50 0.04 p99 0.224 {'200': 166661} err 0
+[15:40:04] sinatra rep 2: static_css c=16 95202.9 rps p50 0.159 p99 0.869 {'200': 761661} err 0
+[15:40:12] sinatra rep 2: static_css c=64 94265.8 rps p50 0.621 p99 1.48 {'200': 754251} err 0
+[15:40:22] sinatra rep 2: up c=1 9603.3 rps p50 0.094 p99 0.471 {'200': 76828} err 0
+[15:40:30] sinatra rep 2: up c=16 39895.2 rps p50 0.342 p99 1.137 {'200': 319185} err 0
+[15:40:38] sinatra rep 2: up c=64 39198.6 rps p50 1.408 p99 3.895 {'200': 313744} err 0
+[15:40:48] sinatra rep 2: post_message c=1 1304.2 rps p50 0.682 p99 1.645 {'200': 10434} err 0
+[15:40:56] sinatra rep 2: post_message c=16 3279.9 rps p50 3.087 p99 26.399 {'200': 26249} err 0
+[15:41:04] sinatra rep 2: post_message c=64 3290.6 rps p50 15.071 p99 72.447 {'200': 26379} err 0
+[15:41:05] sinatra rep 2: done -> /opt/campfire-perf/results/rust-caching-only/sinatra-2.json
+[15:42:05] load before run: 1.33 2.43 2.33 (waited 60s)
+[15:42:05] rails-opt rep 2: starting (load: 1.33 2.43 2.33)
+[15:42:21] rails-opt rep 2: cold start 5850ms, idle 633MB (anon 613MB)
+[15:42:32] rails-opt rep 2: room_show c=1 156.5 rps p50 6.235 p99 8.271 {'200': 1252} err 0
+[15:42:40] rails-opt rep 2: room_show c=16 498.4 rps p50 30.239 p99 63.967 {'200': 4002} err 0
+[15:42:48] rails-opt rep 2: room_show c=64 507.7 rps p50 87.743 p99 298.495 {'200': 4169} err 0
+[15:42:58] rails-opt rep 2: messages_page c=1 307.2 rps p50 3.135 p99 4.499 {'200': 2458} err 0
+[15:43:06] rails-opt rep 2: messages_page c=16 909.5 rps p50 17.007 p99 33.855 {'200': 7294} err 0
+[15:43:15] rails-opt rep 2: messages_page c=64 909.9 rps p50 68.927 p99 137.343 {'200': 7352} err 0
+[15:43:25] rails-opt rep 2: sidebar c=1 305.3 rps p50 3.151 p99 4.827 {'200': 2443} err 0
+[15:43:33] rails-opt rep 2: sidebar c=16 823.6 rps p50 18.655 p99 45.119 {'200': 6610} err 0
+[15:43:41] rails-opt rep 2: sidebar c=64 815.5 rps p50 75.647 p99 168.191 {'200': 6586} err 0
+[15:43:51] rails-opt rep 2: search c=1 266.1 rps p50 3.639 p99 5.163 {'200': 2129} err 0
+[15:43:59] rails-opt rep 2: search c=16 766.6 rps p50 20.255 p99 39.775 {'200': 6152} err 0
+[15:44:07] rails-opt rep 2: search c=64 764.9 rps p50 83.583 p99 163.455 {'200': 6182} err 0
+[15:44:17] rails-opt rep 2: avatar c=1 18612.1 rps p50 0.05 p99 0.113 {'200': 148898} err 0
+[15:44:25] rails-opt rep 2: avatar c=16 64314.8 rps p50 0.166 p99 1.248 {'200': 514543} err 0
+[15:44:33] rails-opt rep 2: avatar c=64 51693.5 rps p50 0.472 p99 7.567 {'200': 413652} err 0
+[15:44:43] rails-opt rep 2: static_css c=1 23954.4 rps p50 0.038 p99 0.088 {'200': 191637} err 0
+[15:44:51] rails-opt rep 2: static_css c=16 85800.9 rps p50 0.132 p99 0.944 {'200': 686438} err 0
+[15:44:59] rails-opt rep 2: static_css c=64 74392.4 rps p50 0.416 p99 5.051 {'200': 595268} err 0
+[15:45:09] rails-opt rep 2: up c=1 2298.3 rps p50 0.393 p99 0.83 {'200': 18387} err 0
+[15:45:17] rails-opt rep 2: up c=16 6139.8 rps p50 2.423 p99 6.723 {'200': 49135} err 0
+[15:45:25] rails-opt rep 2: up c=64 6263.2 rps p50 9.495 p99 26.063 {'200': 50174} err 0
+[15:45:35] rails-opt rep 2: post_message c=1 140.7 rps p50 6.203 p99 27.503 {'200': 1126} err 0
+[15:45:43] rails-opt rep 2: post_message c=16 273.5 rps p50 49.887 p99 182.527 {'200': 2201} err 0
+[15:45:52] rails-opt rep 2: post_message c=64 279.0 rps p50 204.287 p99 430.079 {'200': 2299} err 0
+[15:45:53] rails-opt rep 2: done -> /opt/campfire-perf/results/rust-caching-only/rails-opt-2.json
+[15:47:13] load before run: 1.40 2.70 2.54 (waited 80s)
+[15:47:13] reference rep 2: starting (load: 1.40 2.70 2.54)
+[15:47:27] reference rep 2: cold start 3610ms, idle 301MB (anon 281MB)
+[15:47:38] reference rep 2: room_show c=1 88.4 rps p50 10.223 p99 22.207 {'200': 708} err 0
+[15:47:46] reference rep 2: room_show c=16 221.4 rps p50 80.959 p99 166.399 {'200': 1784} err 0
+[15:47:54] reference rep 2: room_show c=64 217.1 rps p50 292.095 p99 393.727 {'200': 1797} err 0
+[15:48:04] reference rep 2: messages_page c=1 168.2 rps p50 5.851 p99 7.263 {'200': 1346} err 0
+[15:48:12] reference rep 2: messages_page c=16 378.4 rps p50 42.111 p99 91.327 {'200': 3038} err 0
+[15:48:20] reference rep 2: messages_page c=64 356.8 rps p50 177.791 p99 239.743 {'200': 2919} err 0
+[15:48:30] reference rep 2: sidebar c=1 207.2 rps p50 4.707 p99 6.611 {'200': 1658} err 0
+[15:48:38] reference rep 2: sidebar c=16 486.0 rps p50 32.223 p99 60.959 {'200': 3903} err 0
+[15:48:47] reference rep 2: sidebar c=64 484.4 rps p50 128.767 p99 183.423 {'200': 3945} err 0
+[15:48:57] reference rep 2: search c=1 162.8 rps p50 5.975 p99 8.511 {'200': 1303} err 0
+[15:49:05] reference rep 2: search c=16 381.1 rps p50 39.967 p99 84.543 {'200': 3064} err 0
+[15:49:13] reference rep 2: search c=64 375.4 rps p50 165.375 p99 231.423 {'200': 3069} err 0
+[15:49:23] reference rep 2: avatar c=1 18188.6 rps p50 0.051 p99 0.115 {'200': 145510} err 0
+[15:49:31] reference rep 2: avatar c=16 62433.4 rps p50 0.169 p99 1.294 {'200': 499490} err 0
+[15:49:39] reference rep 2: avatar c=64 50510.4 rps p50 0.454 p99 7.891 {'200': 404187} err 0
+[15:49:49] reference rep 2: static_css c=1 23949.2 rps p50 0.038 p99 0.085 {'200': 191595} err 0
+[15:49:57] reference rep 2: static_css c=16 83893.5 rps p50 0.133 p99 0.973 {'200': 671204} err 0
+[15:50:05] reference rep 2: static_css c=64 72115.2 rps p50 0.43 p99 5.179 {'200': 577056} err 0
+[15:50:15] reference rep 2: up c=1 1560.9 rps p50 0.58 p99 1.118 {'200': 12488} err 0
+[15:50:23] reference rep 2: up c=16 3526.5 rps p50 4.411 p99 8.975 {'200': 28228} err 0
+[15:50:31] reference rep 2: up c=64 3471.0 rps p50 18.383 p99 27.615 {'200': 27837} err 0
+[15:50:41] reference rep 2: post_message c=1 114.5 rps p50 7.971 p99 28.719 {'200': 917} err 0
+[15:50:49] reference rep 2: post_message c=16 196.5 rps p50 66.367 p99 219.263 {'200': 1586} err 0
+[15:50:58] reference rep 2: post_message c=64 199.3 rps p50 315.391 p99 449.023 {'200': 1655} err 0
+[15:50:59] reference rep 2: done -> /opt/campfire-perf/results/rust-caching-only/reference-2.json
+[15:52:09] load before run: 1.38 2.62 2.59 (waited 70s)
+[15:52:09] reference rep 3: starting (load: 1.38 2.62 2.59)
+[15:52:22] reference rep 3: cold start 3573ms, idle 307MB (anon 288MB)
+[15:52:33] reference rep 3: room_show c=1 92.1 rps p50 10.503 p99 13.439 {'200': 737} err 0
+[15:52:42] reference rep 3: room_show c=16 224.7 rps p50 74.623 p99 146.559 {'200': 1811} err 0
+[15:52:50] reference rep 3: room_show c=64 192.6 rps p50 328.191 p99 404.223 {'200': 1601} err 0
+[15:53:00] reference rep 3: messages_page c=1 163.2 rps p50 5.995 p99 7.631 {'200': 1307} err 0
+[15:53:08] reference rep 3: messages_page c=16 362.9 rps p50 46.207 p99 88.383 {'200': 2917} err 0
+[15:53:16] reference rep 3: messages_page c=64 338.1 rps p50 187.135 p99 263.423 {'200': 2761} err 0
+[15:53:26] reference rep 3: sidebar c=1 195.1 rps p50 5.035 p99 6.671 {'200': 1561} err 0
+[15:53:34] reference rep 3: sidebar c=16 462.6 rps p50 34.463 p99 58.207 {'200': 3716} err 0
+[15:53:43] reference rep 3: sidebar c=64 404.5 rps p50 152.063 p99 215.423 {'200': 3303} err 0
+[15:53:53] reference rep 3: search c=1 158.0 rps p50 6.215 p99 7.775 {'200': 1264} err 0
+[15:54:01] reference rep 3: search c=16 365.8 rps p50 41.535 p99 85.695 {'200': 2937} err 0
+[15:54:09] reference rep 3: search c=64 326.4 rps p50 186.367 p99 286.975 {'200': 2666} err 0
+[15:54:19] reference rep 3: avatar c=1 18191.1 rps p50 0.051 p99 0.117 {'200': 145530} err 0
+[15:54:27] reference rep 3: avatar c=16 62810.8 rps p50 0.167 p99 1.286 {'200': 502514} err 0
+[15:54:35] reference rep 3: avatar c=64 50956.8 rps p50 0.472 p99 7.667 {'200': 407740} err 0
+[15:54:45] reference rep 3: static_css c=1 23021.5 rps p50 0.04 p99 0.087 {'200': 184174} err 0
+[15:54:53] reference rep 3: static_css c=16 85174.3 rps p50 0.132 p99 0.977 {'200': 681426} err 0
+[15:55:01] reference rep 3: static_css c=64 72536.7 rps p50 0.435 p99 5.195 {'200': 580386} err 0
+[15:55:11] reference rep 3: up c=1 1505.8 rps p50 0.588 p99 1.818 {'200': 12047} err 0
+[15:55:19] reference rep 3: up c=16 3426.0 rps p50 4.503 p99 9.335 {'200': 27423} err 0
+[15:55:27] reference rep 3: up c=64 3441.6 rps p50 18.543 p99 27.519 {'200': 27600} err 0
+[15:55:37] reference rep 3: post_message c=1 99.5 rps p50 8.147 p99 34.559 {'200': 797} err 0
+[15:55:45] reference rep 3: post_message c=16 187.9 rps p50 71.871 p99 223.231 {'200': 1513} err 0
+[15:55:54] reference rep 3: post_message c=64 198.7 rps p50 319.999 p99 453.887 {'200': 1637} err 0
+[15:55:55] reference rep 3: done -> /opt/campfire-perf/results/rust-caching-only/reference-3.json
+[15:57:25] load before run: 1.44 2.70 2.68 (waited 90s)
+[15:57:25] rails-opt rep 3: starting (load: 1.44 2.70 2.68)
+[15:57:41] rails-opt rep 3: cold start 5877ms, idle 632MB (anon 613MB)
+[15:57:52] rails-opt rep 3: room_show c=1 159.1 rps p50 6.155 p99 7.935 {'200': 1273} err 0
+[15:58:00] rails-opt rep 3: room_show c=16 516.3 rps p50 29.967 p99 61.951 {'200': 4148} err 0
+[15:58:08] rails-opt rep 3: room_show c=64 507.1 rps p50 123.263 p99 187.391 {'200': 4123} err 0
+[15:58:18] rails-opt rep 3: messages_page c=1 309.7 rps p50 3.157 p99 4.347 {'200': 2478} err 0
+[15:58:26] rails-opt rep 3: messages_page c=16 902.5 rps p50 17.295 p99 33.439 {'200': 7236} err 0
+[15:58:34] rails-opt rep 3: messages_page c=64 907.4 rps p50 68.479 p99 211.071 {'200': 7325} err 0
+[15:58:44] rails-opt rep 3: sidebar c=1 303.3 rps p50 3.165 p99 4.815 {'200': 2427} err 0
+[15:58:52] rails-opt rep 3: sidebar c=16 827.9 rps p50 18.351 p99 49.023 {'200': 6644} err 0
+[15:59:00] rails-opt rep 3: sidebar c=64 823.3 rps p50 74.495 p99 188.927 {'200': 6696} err 0
+[15:59:10] rails-opt rep 3: search c=1 268.2 rps p50 3.607 p99 4.835 {'200': 2146} err 0
+[15:59:18] rails-opt rep 3: search c=16 772.4 rps p50 19.903 p99 41.919 {'200': 6197} err 0
+[15:59:26] rails-opt rep 3: search c=64 760.8 rps p50 83.327 p99 164.479 {'200': 6156} err 0
+[15:59:36] rails-opt rep 3: avatar c=1 18537.4 rps p50 0.05 p99 0.114 {'200': 148300} err 0
+[15:59:44] rails-opt rep 3: avatar c=16 63451.4 rps p50 0.166 p99 1.3 {'200': 507637} err 0
+[15:59:53] rails-opt rep 3: avatar c=64 51720.0 rps p50 0.462 p99 7.507 {'200': 413841} err 0
+[16:00:03] rails-opt rep 3: static_css c=1 23634.0 rps p50 0.039 p99 0.088 {'200': 189074} err 0
+[16:00:11] rails-opt rep 3: static_css c=16 86170.3 rps p50 0.131 p99 0.956 {'200': 689397} err 0
+[16:00:19] rails-opt rep 3: static_css c=64 73805.9 rps p50 0.421 p99 5.051 {'200': 590536} err 0
+[16:00:29] rails-opt rep 3: up c=1 2188.1 rps p50 0.405 p99 0.952 {'200': 17505} err 0
+[16:00:37] rails-opt rep 3: up c=16 6117.3 rps p50 2.451 p99 6.527 {'200': 48960} err 0
+[16:00:45] rails-opt rep 3: up c=64 6196.9 rps p50 9.551 p99 26.175 {'200': 49610} err 0
+[16:00:55] rails-opt rep 3: post_message c=1 143.6 rps p50 6.183 p99 26.655 {'200': 1149} err 0
+[16:01:03] rails-opt rep 3: post_message c=16 267.9 rps p50 47.423 p99 209.407 {'200': 2161} err 0
+[16:01:11] rails-opt rep 3: post_message c=64 272.4 rps p50 226.047 p99 377.855 {'200': 2244} err 0
+[16:01:12] rails-opt rep 3: done -> /opt/campfire-perf/results/rust-caching-only/rails-opt-3.json
+[16:02:32] load before run: 1.30 2.56 2.67 (waited 80s)
+[16:02:32] sinatra rep 3: starting (load: 1.30 2.56 2.67)
+[16:02:44] sinatra rep 3: cold start 1546ms, idle 205MB (anon 200MB)
+[16:02:54] sinatra rep 3: room_show c=1 1447.3 rps p50 0.661 p99 1.076 {'200': 11579} err 0
+[16:03:02] sinatra rep 3: room_show c=16 4855.5 rps p50 3.149 p99 4.655 {'200': 38863} err 0
+[16:03:10] sinatra rep 3: room_show c=64 4722.0 rps p50 13.615 p99 15.831 {'200': 37847} err 0
+[16:03:20] sinatra rep 3: messages_page c=1 2237.0 rps p50 0.372 p99 0.796 {'200': 17897} err 0
+[16:03:28] sinatra rep 3: messages_page c=16 7637.1 rps p50 1.999 p99 2.991 {'200': 61120} err 0
+[16:03:36] sinatra rep 3: messages_page c=64 7371.0 rps p50 8.679 p99 9.511 {'200': 59037} err 0
+[16:03:46] sinatra rep 3: sidebar c=1 1892.0 rps p50 0.48 p99 1.015 {'200': 15136} err 0
+[16:03:55] sinatra rep 3: sidebar c=16 6384.1 rps p50 2.127 p99 7.763 {'200': 51087} err 0
+[16:04:03] sinatra rep 3: sidebar c=64 6072.0 rps p50 6.139 p99 59.391 {'200': 48628} err 0
+[16:04:13] sinatra rep 3: search c=1 2048.0 rps p50 0.443 p99 0.994 {'200': 16385} err 0
+[16:04:21] sinatra rep 3: search c=16 7441.7 rps p50 1.879 p99 4.599 {'200': 59566} err 0
+[16:04:29] sinatra rep 3: search c=64 7307.5 rps p50 8.991 p99 10.223 {'200': 58532} err 0
+[16:04:39] sinatra rep 3: avatar c=1 16089.3 rps p50 0.053 p99 0.243 {'200': 128716} err 0
+[16:04:47] sinatra rep 3: avatar c=16 72456.7 rps p50 0.183 p99 0.974 {'200': 579684} err 0
+[16:04:55] sinatra rep 3: avatar c=64 72295.9 rps p50 0.797 p99 2.03 {'200': 578457} err 0
+[16:05:05] sinatra rep 3: static_css c=1 20204.0 rps p50 0.044 p99 0.2 {'200': 161634} err 0
+[16:05:13] sinatra rep 3: static_css c=16 93285.6 rps p50 0.144 p99 0.84 {'200': 746330} err 0
+[16:05:21] sinatra rep 3: static_css c=64 92411.6 rps p50 0.632 p99 1.475 {'200': 739416} err 0
+[16:05:31] sinatra rep 3: up c=1 9735.2 rps p50 0.094 p99 0.285 {'200': 77883} err 0
+[16:05:39] sinatra rep 3: up c=16 39287.3 rps p50 0.358 p99 1.145 {'200': 314336} err 0
+[16:05:47] sinatra rep 3: up c=64 38581.0 rps p50 1.67 p99 2.793 {'200': 308715} err 0
+[16:05:57] sinatra rep 3: post_message c=1 1325.2 rps p50 0.661 p99 1.594 {'200': 10602} err 0
+[16:06:05] sinatra rep 3: post_message c=16 3090.3 rps p50 4.075 p99 42.975 {'200': 24789} err 0
+[16:06:13] sinatra rep 3: post_message c=64 3010.1 rps p50 16.831 p99 74.751 {'200': 24131} err 0
+[16:06:14] sinatra rep 3: done -> /opt/campfire-perf/results/rust-caching-only/sinatra-3.json
+[16:07:14] load before run: 1.38 2.47 2.64 (waited 60s)
+[16:07:14] rage rep 3: starting (load: 1.38 2.47 2.64)
+[16:07:26] rage rep 3: cold start 1639ms, idle 176MB (anon 170MB)
+[16:07:36] rage rep 3: room_show c=1 1355.8 rps p50 0.718 p99 1.236 {'200': 10847} err 0
+[16:07:44] rage rep 3: room_show c=16 4767.0 rps p50 3.045 p99 6.559 {'200': 38161} err 0
+[16:07:52] rage rep 3: room_show c=64 4745.8 rps p50 10.751 p99 31.279 {'200': 38097} err 0
+[16:08:02] rage rep 3: messages_page c=1 2679.4 rps p50 0.333 p99 0.754 {'200': 21436} err 0
+[16:08:10] rage rep 3: messages_page c=16 9657.8 rps p50 1.431 p99 3.085 {'200': 77290} err 0
+[16:08:18] rage rep 3: messages_page c=64 9554.4 rps p50 5.675 p99 12.087 {'200': 76543} err 0
+[16:08:28] rage rep 3: sidebar c=1 2036.3 rps p50 0.449 p99 0.941 {'200': 16291} err 0
+[16:08:36] rage rep 3: sidebar c=16 6618.4 rps p50 1.903 p99 11.463 {'200': 52966} err 0
+[16:08:45] rage rep 3: sidebar c=64 6222.7 rps p50 2.051 p99 90.495 {'200': 49856} err 0
+[16:08:55] rage rep 3: search c=1 2031.7 rps p50 0.455 p99 1.017 {'200': 16254} err 0
+[16:09:03] rage rep 3: search c=16 7536.3 rps p50 1.878 p99 4.195 {'200': 60317} err 0
+[16:09:11] rage rep 3: search c=64 7484.2 rps p50 5.039 p99 19.151 {'200': 60008} err 0
+[16:09:21] rage rep 3: avatar c=1 32882.8 rps p50 0.028 p99 0.044 {'200': 263065} err 0
+[16:09:29] rage rep 3: avatar c=16 179518.0 rps p50 0.06 p99 0.275 {'200': 1436312} err 0
+[16:09:37] rage rep 3: avatar c=64 185326.7 rps p50 0.47 p99 1.161 {'200': 1482838} err 0
+[16:09:47] rage rep 3: static_css c=1 36753.6 rps p50 0.025 p99 0.045 {'200': 294032} err 0
+[16:09:55] rage rep 3: static_css c=16 208530.6 rps p50 0.062 p99 0.285 {'200': 1668322} err 0
+[16:10:03] rage rep 3: static_css c=64 206912.5 rps p50 0.164 p99 1.403 {'200': 1655562} err 0
+[16:10:13] rage rep 3: up c=1 20107.3 rps p50 0.044 p99 0.125 {'200': 160866} err 0
+[16:10:21] rage rep 3: up c=16 96084.6 rps p50 0.139 p99 0.781 {'200': 768714} err 0
+[16:10:29] rage rep 3: up c=64 96338.4 rps p50 0.529 p99 2.263 {'200': 770837} err 0
+[16:10:39] rage rep 3: post_message c=1 720.6 rps p50 0.933 p99 14.167 {'200': 5765} err 0
+[16:10:47] rage rep 3: post_message c=16 1848.4 rps p50 7.751 p99 25.023 {'200': 14861} err 0
+[16:10:55] rage rep 3: post_message c=64 2015.9 rps p50 18.591 p99 162.431 {'200': 16284} err 0
+[16:10:56] rage rep 3: done -> /opt/campfire-perf/results/rust-caching-only/rage-3.json
+```
+date: 2026-10-07T15:13:04+02:00
+host: 6.8.0-137-generic, AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics, 16 threads, 61GB
+server cpus: 4-7 (nproc 4); loadgen cpus: 0-3; network: host
+env: WEB_CONCURRENCY=3 JOB_CONCURRENCY=3 RAILS_MAX_THREADS=5 WEB_CONCURRENCY=4 
+rust extra env: 
+user agent: (none)
+reference image: campfire-reference:app sha256:0701d9b06ec642db9cdac8efc2854ba0e7f33d404af39d814acbc0d56323f6b0 2026-10-05T17:10:33.410393286+02:00
+rails-opt image: campfire-reference:rails-opt sha256:6f520516328aa2a27175662c32aed1c8c7d432e7b5e8b0ec8f578edfc542ec3b 2026-10-07T15:03:20.686141338+02:00
+sinatra image: campfire-sinatra:app sha256:5a4251f6788448a44bb213f11a821a7e17b219fbb024004e2d09208918118726 2026-10-07T15:02:52.186225614+02:00
+rage image: campfire-rage:app sha256:9a8fa62006cb18e3ccb9fc55ed3a093f48a6794b041ae9303d4ce31c0c7e0af9 2026-10-07T15:02:58.993474214+02:00
+rust HEAD:  (dirty: 0 files)
+```
+
+Reps: reference 3. Cells: median [min–max].
+
+### Startup and memory
+
+| Metric | Rails | Rust adv. |
+|---|---|---|
+| cold start: docker run → /up 200 (ms) | 3,573 [3,551–3,610] | – |
+| idle memory.current (MB) | 304 [301–307] | – |
+| idle anon (MB) | 284 [281–288] | – |
+| peak memory.current under load (MB) | 931 [890–963] | – |
+| peak anon under load (MB) | 830 [804–871] | – |
+
+### HTTP (signed in as david; keep-alive; c = concurrent connections)
+
+| Metric | Rails | Rust adv. |
+|---|---|---|
+| room_show c=1 req/s | 90.2 [88.4–92.1] | – |
+| room_show c=1 p50 ms | 10.5 [10.2–10.9] | – |
+| room_show c=1 p99 ms | 13.4 [13.0–22.2] | – |
+| room_show c=16 req/s | 221 [219–225] | – |
+| room_show c=16 p50 ms | 74.6 [70.8–81.0] | – |
+| room_show c=16 p99 ms | 147 [128–166] | – |
+| room_show c=64 req/s | 193 [192–217] | – |
+| room_show c=64 p50 ms | 328 [292–336] | – |
+| room_show c=64 p99 ms | 394 [388–404] | – |
+| messages_page c=1 req/s | 163 [160–168] | – |
+| messages_page c=1 p50 ms | 6.00 [5.85–6.12] | – |
+| messages_page c=1 p99 ms | 7.63 [7.26–7.88] | – |
+| messages_page c=16 req/s | 365 [363–378] | – |
+| messages_page c=16 p50 ms | 42.3 [42.1–46.2] | – |
+| messages_page c=16 p99 ms | 91.3 [88.4–107.8] | – |
+| messages_page c=64 req/s | 338 [332–357] | – |
+| messages_page c=64 p50 ms | 185 [178–187] | – |
+| messages_page c=64 p99 ms | 263 [240–264] | – |
+| sidebar c=1 req/s | 200 [195–207] | – |
+| sidebar c=1 p50 ms | 4.88 [4.71–5.04] | – |
+| sidebar c=1 p99 ms | 6.61 [6.50–6.67] | – |
+| sidebar c=16 req/s | 467 [463–486] | – |
+| sidebar c=16 p50 ms | 32.6 [32.2–34.5] | – |
+| sidebar c=16 p99 ms | 61.0 [58.2–63.5] | – |
+| sidebar c=64 req/s | 408 [404–484] | – |
+| sidebar c=64 p50 ms | 142 [129–152] | – |
+| sidebar c=64 p99 ms | 215 [183–225] | – |
+| search c=1 req/s | 158 [154–163] | – |
+| search c=1 p50 ms | 6.21 [5.97–6.42] | – |
+| search c=1 p99 ms | 7.97 [7.78–8.51] | – |
+| search c=16 req/s | 368 [366–381] | – |
+| search c=16 p50 ms | 41.5 [40.0–42.4] | – |
+| search c=16 p99 ms | 85.7 [84.5–85.7] | – |
+| search c=64 req/s | 326 [326–375] | – |
+| search c=64 p50 ms | 186 [165–194] | – |
+| search c=64 p99 ms | 259 [231–287] | – |
+| avatar c=1 req/s | 18,191 [18,189–18,557] | – |
+| avatar c=1 p50 ms | 0.05 [0.05–0.05] | – |
+| avatar c=1 p99 ms | 0.12 [0.11–0.12] | – |
+| avatar c=16 req/s | 62,433 [62,303–62,811] | – |
+| avatar c=16 p50 ms | 0.17 [0.17–0.17] | – |
+| avatar c=16 p99 ms | 1.29 [1.29–1.29] | – |
+| avatar c=64 req/s | 50,691 [50,510–50,957] | – |
+| avatar c=64 p50 ms | 0.46 [0.45–0.47] | – |
+| avatar c=64 p99 ms | 7.77 [7.67–7.89] | – |
+| static_css c=1 req/s | 23,440 [23,022–23,949] | – |
+| static_css c=1 p50 ms | 0.04 [0.04–0.04] | – |
+| static_css c=1 p99 ms | 0.09 [0.09–0.09] | – |
+| static_css c=16 req/s | 83,894 [83,877–85,174] | – |
+| static_css c=16 p50 ms | 0.13 [0.13–0.13] | – |
+| static_css c=16 p99 ms | 0.98 [0.97–0.99] | – |
+| static_css c=64 req/s | 72,537 [72,115–72,681] | – |
+| static_css c=64 p50 ms | 0.43 [0.43–0.43] | – |
+| static_css c=64 p99 ms | 5.20 [5.18–5.20] | – |
+| up c=1 req/s | 1,548 [1,506–1,561] | – |
+| up c=1 p50 ms | 0.58 [0.58–0.59] | – |
+| up c=1 p99 ms | 1.72 [1.12–1.82] | – |
+| up c=16 req/s | 3,472 [3,426–3,526] | – |
+| up c=16 p50 ms | 4.49 [4.41–4.50] | – |
+| up c=16 p99 ms | 8.97 [8.70–9.34] | – |
+| up c=64 req/s | 3,463 [3,442–3,471] | – |
+| up c=64 p50 ms | 18.4 [18.3–18.5] | – |
+| up c=64 p99 ms | 27.6 [27.5–28.0] | – |
+| post_message c=1 req/s | 113 [100–114] | – |
+| post_message c=1 p50 ms | 7.97 [7.92–8.15] | – |
+| post_message c=1 p99 ms | 34.6 [28.7–35.1] | – |
+| post_message c=16 req/s | 196 [188–201] | – |
+| post_message c=16 p50 ms | 70.0 [66.4–71.9] | – |
+| post_message c=16 p99 ms | 219 [207–223] | – |
+| post_message c=64 req/s | 199 [199–207] | – |
+| post_message c=64 p50 ms | 315 [303–320] | – |
+| post_message c=64 p99 ms | 449 [439–454] | – |
+
+### HTTP errors / non-2xx-3xx (first rep, per app)
+
+| Metric | Rails | Rust adv. |
+|---|---|---|
+- reference: none
+
+### Action Cable fan-out (one room; chatter.js subscriptions per client)
+
+| Metric | Rails | Rust adv. |
+|---|---|---|
+
+### Upload + thumbnail (black_hole.jpg, 505 KB)
+
+| Metric | Rails | Rust adv. |
+|---|---|---|
+| POST with attachment (ms) | – | – |
+| then GET thumb → 200 (ms) | – | – |
+| POST → thumbnail served (ms) | – | – |
+
+### Memory during cable fan-out, by process (MB, peak within the phase)
+
+App process: Rails' Puma master and workers (Action Cable runs in them), or Rust's one campfire
+process (its front server included). Pss counts pages shared between forked workers once;
+RssAnon counts them in every process.
+
+| Metric | Rails | Rust adv. |
+|---|---|---|
