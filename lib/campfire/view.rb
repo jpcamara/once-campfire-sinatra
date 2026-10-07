@@ -159,7 +159,7 @@ module Campfire
       fragment = message_fragment(view)
       if @fragments
         @fragments << fragment
-        "\u0001#{@fragments.size - 1}\u0002"
+        FragmentBody.marker(@fragments.size - 1)
       else
         fragment.html
       end

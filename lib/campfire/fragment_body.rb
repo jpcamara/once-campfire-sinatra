@@ -1,4 +1,5 @@
 require "zlib"
+require "securerandom"
 
 module Campfire
   # A cached HTML fragment that can also hand out its own gzip-ready deflate block, so pages built
@@ -67,7 +68,13 @@ module Campfire
   # pieces as they are; gzip clients get the cached deflate blocks of each run of fragments and of
   # each literal segment.
   class FragmentBody
-    MARKER = /\u0001(\d+)\u0002/
+    # Where View#render_message_cached left each fragment. The markers carry a secret made at boot
+    # and never sent, so text in the page (a room name, a search query) can't pass for one; the Rust
+    # port records each fragment's offset while rendering instead (crates/views/src/recorded.rs).
+    MARKER_SECRET = SecureRandom.hex(16).freeze
+    MARKER = /\u0001#{MARKER_SECRET}:(\d+)\u0002/
+
+    def self.marker(index) = "\u0001#{MARKER_SECRET}:#{index}\u0002"
 
     def self.deflate_block(string)
       deflater = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS)
