@@ -76,8 +76,11 @@ Source: `FrameworkBenchmarks/frameworks/Ruby/rage-sequel` (rage-rb ~> 1.19, sequ
 
 ## Divergences from the reference
 
-Only the Rust port's documented ones, all inherited from the Sinatra snapshot:
-- CSRF: `Sec-Fetch-Site`/`Origin` checks replace tokens (pages have no CSRF tags).
+Only the Rust port's documented ones (see "Caching matched to the references, and the audit fixes"
+below for the Oct 7 state):
+- CSRF: `Sec-Fetch-Site`/`Origin` checks replace tokens, as Rust's `verify_authenticity_token` does. Pages
+  have no CSRF tags (since f8e0309; before that, one random token per process for the stock
+  `file_uploader.js`); the app ships Rust's `file_uploader.js` override instead.
 - Cookies: `session_token` written on sign-in and on the hourly refresh, not every request; `last_room`
   only when it changes; `_campfire_session` only for flash and the post-login redirect. Rails-compatible
   formats, so reference sessions stay valid.
@@ -85,7 +88,7 @@ Only the Rust port's documented ones, all inherited from the Sinatra snapshot:
 - ETags on room, messages and search pages hash their inputs, not the body.
 
 Ported later from the Sinatra app (its commits after 69b4e3a, up to 8aac9d6): CSRF meta tags for the file
-uploader, ETags on every 200, asset byte ranges, message show/edit in the full layout for frames,
+uploader (removed again in f8e0309), ETags on every 200, asset byte ranges, message show/edit in the full layout for frames,
 room_not_found in the layout, no-cache on 204s, before-action heads as text/html, the sidebar's direct rooms
 cached in Redis by membership, the bot boosts API, raw bodies for bot updates, and remote cable disconnects
 (sign out, ban, deactivation, revoked membership), delivered here over Iodine's pub/sub.
@@ -276,3 +279,102 @@ matches (sha256 per path). Results: `results/hetzner/final-20261007-parity/rage-
   9825d44 matches Rails instead; Rage doesn't have it.
 - first_run: all 16 cells error with a 500 on `/first_run`, the same shared-view bug as Sinatra
   (`View#account_logo_path` on a nil account, lib/campfire/view.rb:72). Not fixed (held for JP).
+
+## Caching matched to the references, and the audit fixes (Oct 7)
+
+JP's rule: only caching that Rust or Elixir actually do, checked in their source, and every finding in
+`notes/audit.md` fixed. Commits on `main` after 4e6b2af, one change each.
+
+### Caching
+
+| Page | Before | Now | Precedent |
+|---|---|---|---|
+| Room, search | Whole finished response kept until any write (d4a8b90) | Assembled on every request: queries through the `data_version` read cache, the page around the messages memoized by a SHA-256 of everything its templates read (user, account, host, user agent, frame, Accept, flash, the action's inputs including message ids and versions), messages spliced in from their cached fragments and gzip blocks (f5ec624) | Elixir `room_page.ex` and `searches.ex` memoize the shell by its inputs; Rust renders each request and splices cached, pre-gzipped fragments |
+| Messages page | Parts and gzip kept per ETag; messages read and ETag computed every request | Unchanged, comment cites Elixir | Elixir `messages.ex` keeps parts and gzip per ETag |
+| Sidebar | Finished sidebar kept until any write | Unchanged, comment cites Elixir; now also replays its Link header (d64d616) | Elixir `sidebar.ex` keeps its HTML until one of its tables is written (ours clears on any write, more conservative) |
+
+What the whole-response keep was worth (`ab-rage.sh`, c=16, 8 s, 4 alternating reps, fresh seed per
+measurement, medians; `final-4e6b2af` vs f5ec624):
+
+| | kept (before) | assembled (now) | |
+|---|---:|---:|---:|
+| room | 17,814 | 7,792 | 0.44x |
+| search | 28,830 | 12,587 | 0.44x |
+| messages | 22,623 | 24,610 | unchanged code |
+| sidebar | 35,918 | 35,716 | unchanged code |
+
+Before the kept pages (7734116..807a8e1), room was 6,264 and search 11,877, so the memoized shell is
+worth about +24% room and +6% search over rendering everything.
+
+The audit fixes on top (shell1 = f5ec624 vs fix2 = fa86c81, same method, 3 reps):
+
+| | f5ec624 | fa86c81 | |
+|---|---:|---:|---:|
+| room | 8,010 | 10,086 | 1.26x |
+| search | 12,651 | 16,966 | 1.34x |
+| sidebar | 36,149 | 33,190 | 0.92x |
+| messages | 24,943 | 24,347 | 0.98x |
+| post | 1,846 | 1,836 | 0.99x |
+
+Not isolated. Likely causes: the marker regex now starts with a 34-byte literal (the token), which
+the regex engine can skip through faster than a lone \u0001 when splitting the shell; and X-Request-Id
+(a UUID and a header on every response) costs the cheapest route, the kept sidebar, a few percent.
+
+### Audit fixes
+
+| Finding (audit.md) | Fix | Commit |
+|---|---|---|
+| S1 stored XSS: blobs served inline with the declared type | Active Storage's `content_type_for_serving` / `forced_disposition_for_serving` with its default type lists (Rust `content_types.rs`) | 13278c9 |
+| D5/S6 no HTTPS mode | `assume_ssl` + `force_ssl` unless `DISABLE_SSL`: HTTPS assumed, HTTP redirected (301/308), HSTS `max-age=63072000; includeSubDomains`, secure cookies (Rust `kit/src/adapter.rs`) | 02a34eb |
+| D2/S8, D3 CSRF wider than the spec, empty 422 | Rust's `verify_authenticity_token`: Origin must match (null rejected); same-origin/same-site pass; missing only without SSL; else the public 422 page | e4ea2a8 |
+| D4 (part) CSRF before authentication | Authentication now runs before the forgery check, so a signed-out write redirects to sign in | e4ea2a8 |
+| D6/S2 `/cable` accepts any Origin | `CableGate`: only a GET upgrade from the app's own origin reaches the cable server; else Action Cable's 404 "Page not found" (also fixes D17's 426). It wraps the bare cable app, as `mount` takes it: Rage's cable chain adds its OriginValidator (fixed origin lists only, so it refused same-origin sockets) and the app's middlewares | 536e4e9, fa86c81 |
+| S3 bot API cookie writes skip CSRF | Forgery check unless authenticated by bot key | fdba370 |
+| S4 marker injection | Markers carry a random per-process token; a marker without its fragment raises instead of leaking it | b6d4747 |
+| first_run 500 | No account: no logo check, unversioned logo URL (Sinatra 3ef3adf) | 331d19a |
+| custom_styles manifest | Small logo URL HTML-escaped (`&amp;`), as Rails' ERB writes it (Sinatra 9825d44) | e46f44e |
+| D9/S7 email normalization | Emails stored as typed: the reference doesn't normalize them and signs in by exact match | 165d013 |
+| D10/S5 sign-out keeps the push subscription | Deletes the endpoint's subscription, as `SessionsController#destroy` | bac9964 |
+| D7 bans for private IPs | `Ban#ip_address_is_public`: refused ban, nothing changed, 422 | 95db3f8 |
+| D8 boosts cut to 16 characters | Full content, as Rails and Rust store it | 1b30c99 |
+| D11 no X-Request-Id | `ActionDispatch::RequestId`: client id sanitized or a UUID; none on public/ files | 513703a |
+| D19 kept sidebar drops Link | Kept with the body and replayed | d64d616 |
+| D1 CSRF meta tag with a per-process token | Removed; Rust's `file_uploader.js` override installed over the reference's assets under its own digest (Sinatra 31f73ed) | f8e0309 |
+| C1 StaticFiles copy per path spelling | Kept by resolved path, only for files that exist | 5be42a9 |
+| C2 ResponseCache buffers big bodies; Vary index unbounded | Bodies over 1 MB or of unknown size pass through unread; Vary index capped (4,096, a dropped one is a miss) | aaaae01 |
+
+Left as disclosed divergences:
+- `send_file` and gzip still read a whole file into memory (Rage's file reads go through
+  `Fiber.blocking`, and Iodine's X-Sendfile only works when it serves a static folder). Rails,
+  Thruster and Rust stream. A large attachment download costs its size (twice with gzip) per request.
+- Browser check order (D4): the incompatible-browser page is still checked before authentication and
+  forgery; Rails checks it last. Only an unsupported browser that is also signed out, or sending a
+  forged write, sees the difference.
+- D12-D23 nits in audit.md not listed above (Range `X-Cache: miss` vs `bypass`, If-Modified-Since on
+  assets, `return_to` only for GET/HEAD, Iodine's 50 MB body cap, chunked vs content-length, missing
+  rarely used routes).
+
+### Verification (image fa86c81: campfire-rage:fix2, also tagged campfire-rage:app and campfire-rage-candidate:latest)
+
+- Server HTML: the 64 pages in `script/paths.txt`, each fetched twice (cold and cached), identical to the
+  reference after the harness's normalizer (`tools/rage-compare.sh`): 128 of 128.
+- Write flows (`script/flows`): 24 of 24 same status and redirect as the reference.
+- Cache check mode (`tools/rage-checkmode.sh`, `CAMPFIRE_CHECK_CACHES=1`, reads around posts and a rename
+  from 4 processes, then load on each route): 0 mismatches.
+- Audit fixes from the outside (`tools/rage-fixcheck.sh`): 30 of 30 checks pass (X-Request-Id, cable
+  origin and upgrade, every forgery rule, bot API forgery, marker injection, sidebar Link, HTML blob
+  served as an octet-stream attachment, full boost content, refused private-IP ban with nothing changed).
+- The harness's cable and upload suites (1 rep): every client got every message at 100 and 1,000 clients
+  (p50 4.6 ms and 8.7 ms; 1,127 and 198 delivered msg/s); upload median 142.9 ms.
+- Playwright parity, every inventory state on fa86c81 (`tools/parity-app.sh`, ports 4211/4212):
+
+  | Seed | Cells | Pass | Fail | Error | Allowed |
+  |---|---:|---:|---:|---:|---:|
+  | default | 874 | 874 | 0 | 0 | 0 |
+  | crowd | 25 | 25 | 0 | 0 | 0 |
+  | custom_styles | 33 | 33 | 0 | 0 | 0 |
+  | first_run | 16 | 16 | 0 | 0 | 0 |
+  | restricted | 8 | 8 | 0 | 0 | 0 |
+
+  pwa/manifest now passes outright (it was the one allowed cell). Results in
+  `results/hetzner/rage/fix2-parity/`.

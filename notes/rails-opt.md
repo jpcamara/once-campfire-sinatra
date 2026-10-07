@@ -154,3 +154,56 @@ Default seed: round r3 on this image (874/874), not rerun. Results: `results/het
 | custom_styles | 33 | 33 | 0 | 0 | 0 |
 | first_run | 16 | 16 | 0 | 0 | 0 |
 | restricted | 8 | 8 | 0 | 0 | 0 |
+
+## Pass 3 (Oct 7): only caching the Rust or Elixir ports do, and the audit's fixes
+
+Rule: keep a cache only when the Rust port (basecamp/once-campfire-rust) or the Elixir port
+(basecamp/once-campfire-elixir PR #5) does the same, checked in their source.
+
+| Commit | Change | Precedent |
+|---|---|---|
+| 5694cce | Room and search pages render on every request (no kept response). SearchesController is back to the stock code. | Rust renders every request (crates/views/src/recorded.rs); Elixir assembles room/search from cached parts (room_page.ex, searches.ex) |
+| 025b8be | Messages page kept by the ETag fresh_when computes per request, not until any write | Elixir keeps the messages page per ETag (messages.ex) |
+| 115de7b | Sidebar still kept until the database changes; comment cites Elixir | Elixir keeps the sidebar's HTML until its tables change (sidebar.ex) |
+
+Still in place, each with precedent: the per-process fragment cache (Rust and Elixir cache message
+fragments), the data_version read cache (Elixir's DB.cached, invalidated by table generations), and
+gzip kept by body digest (Rust's deflater reuse, Elixir's http_compression.ex).
+
+Audit fixes (notes/audit.md, R4-R6 and C7/C9):
+
+| Commit | Fix | Checked on the box (stock / before / after) |
+|---|---|---|
+| 5694cce | POST /searches runs the search before recording it (R4) | `q=OR`: 500 not saved / 302 saved / 500 not saved |
+| 1e00c72 | Sign-out writes the rotated `_campfire_session` (R5) | cookie written: yes / no / yes |
+| e8ab8ce | Active Storage controllers check Sec-Fetch-Site, as Rust's direct uploads do (R6) | direct upload: 200 / 422 / 200; cross-site: 422 |
+| f6e0000 | busy_timeout on the data_version connection (C9) | – |
+| 544b4bb | GzipCache keyed by SHA-256, not MD5 (C7) | – |
+
+Image campfire-reference:rails-opt-fix1 from 544b4bb, labelled
+org.opencontainers.image.revision=544b4bbdfb1d1d9fa6c93880cc160df4f7151529.
+
+A/B, rails-opt (b868f70) vs rails-opt-fix1 (544b4bb), c=16, 4 alternating reps, fresh seed each
+(tools/ab.sh), median [range]:
+
+| Route | b868f70 | 544b4bb | Change |
+|---|---|---|---|
+| room | 2944 [2872-3037] | 523 [514-534] | −82% |
+| messages | 3112 [3051-3206] | 2017 [1986-2058] | −35% |
+| sidebar | 3727 [3685-3858] | 3615 [3574-3636] | −3% |
+| search | 3697 [3629-3779] | 859 [845-861] | −77% |
+| post | 267 [260-270] | 270 [265-272] | +1% |
+
+Room and search fall back to about where they were before whole-page keeping (543 and 835 in pass 2).
+The messages page keeps most of its gain, because the ETag is computed from the page's records on
+each request and an unchanged page is served from the per-ETag copy. An Elixir-style memo of the room
+shell (composer, nav, notification dialog) wasn't added.
+
+Parity on 544b4bb:
+- Server-HTML diff against stock (tools/pagediff.sh, CSRF elements masked): identical on all 58 responses.
+- Playwright, full default-seed inventory (parity/out/rails-opt-fix1b): 874 of 874 cells pass, 0 fail,
+  0 error, 0 allowed.
+- A first run (rails-opt-fix1) errored on cable readiness. That was a harness mistake: the candidate
+  image was built from parity/docker/candidate (the Rust one) instead of parity/docker/Dockerfile,
+  so it lacked parity_action_cable.rb and the one-worker resque-pool.yml. The rebuilt candidate
+  passed everything.

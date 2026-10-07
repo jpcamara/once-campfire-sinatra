@@ -1,0 +1,2 @@
+account/edit/restricted_room_creation                   {'pass': 4} 
+rooms/opens/new/restricted_member                       {'pass': 4} 

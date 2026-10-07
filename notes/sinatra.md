@@ -23,27 +23,36 @@ on the Hetzner box, built from `apps/sinatra/Dockerfile` (reuses the reference i
 - Jobs (push, webhooks, banned content removal) run in-process on a small thread pool.
 - YJIT on (`RUBY_YJIT_ENABLE=1` in the image); each Falcon worker logs "YJIT enabled" at boot.
 - Falcon hosted by `falcon.rb` (forked, one process per CPU, no ContentEncoding middleware); the Rack
-  stack in config.ru: ResponseCache (Thruster's public-response cache), Compression (Thruster's
-  gzip, with gzip kept by body digest), ETag, then /assets/ and /cable by prefix, else the app.
+  stack in config.ru: DateHeader (Thruster's Date), SSL (assume_ssl/force_ssl unless DISABLE_SSL),
+  ResponseCache (Thruster's public-response cache), Compression (Thruster's gzip, with gzip kept by
+  body digest; bodies over 1 MB stream), ETag, then /assets/ by prefix, else RequestId/Runtime and
+  the app or /cable.
 - Read cache per process (`DB::ReadCache`): rows and the records built from them, cleared when
   `PRAGMA data_version` changes (checked per request, cable command and job) or after own commits.
-  Finished room, messages, search and sidebar responses kept under its generation plus the page's
-  ETag inputs; `CAMPFIRE_CHECK_CACHES=1` re-renders every hit and compares.
-- WAL checkpoints in `bin/checkpoint` (its own process), app connections `wal_autocheckpoint=0`.
+- Page caching matched to the Elixir port (lib/campfire/{room_page,searches,messages,sidebar}.ex), and
+  nothing beyond it (since bbddf04): room and search pages are assembled on every request from a kept
+  shell (keyed by everything its templates read except the messages) plus each message's cached
+  fragment and compressed block; the messages page keeps its parts and gzip by its ETag; the sidebar
+  keeps its finished HTML until the database changes. `CAMPFIRE_CHECK_CACHES=1` renders every hit in
+  full as well and compares.
+- WAL checkpoints in `bin/checkpoint` (its own process, restarted if it exits), app connections
+  `wal_autocheckpoint=0`.
 - gzip in-process at zlib's default level; Rack::ETag behavior (MD5 of body, or of the inputs for the
   big message pages).
 
 ## Divergences (all taken from the Rust port's choices)
 
-- CSRF: `Sec-Fetch-Site`/`Origin` checks replace tokens. Forms have no token fields. The layout
-  does render the csrf meta tags (a random token, one per process, nobody checks) because the
-  reference's models/file_uploader.js reads it; the Rust port patches that file instead. The
-  harness strips both from both sides.
+- CSRF: `Sec-Fetch-Site`/`Origin` checks replace tokens, exactly as the Rust port specifies them
+  (null or foreign Origin fails; same-origin/same-site pass; a missing header passes only without
+  SSL; anything else fails; failures answer the public 422 page). Pages carry no CSRF meta tags or
+  token fields; `overrides/models/file_uploader.js` (identical to the Rust port's override) sends no
+  token, installed over the reference's assets at build time (since 31f73ed).
 - Cookies: `session_token` is written on sign-in and on the hourly activity refresh, not every request;
   `last_room` only when it changes; `_campfire_session` only for flash and the post-login redirect.
 - Jobs are in-process (no Resque); queued pushes/webhooks are lost on a crash.
-- ETags on room, messages and search pages hash their inputs rather than the body, and finished
-  pages (and sidebars) are kept per process until the database changes (the Rust port's "Caching").
+- ETags on room, messages and search pages hash their inputs (user, host, user agent, the page's
+  records and message versions) rather than the body. The Rust port hashes the cached page parts;
+  both change exactly when the page does.
 - WAL checkpoints run in their own process instead of inside a commit (not visible in responses).
 - Public responses are cached per process (Thruster's cache is one per container), so a second
   request that reaches another worker says `X-Cache: miss` where the reference says `hit`.

@@ -1,0 +1,24 @@
+same post message                 ref: 200                                      app: 200 
+same boost                        ref: 302 /messages/933434506/boosts           app: 302 /messages/933434506/boosts
+same edit message                 ref: 302 /rooms/654632876/messages/933434505  app: 302 /rooms/654632876/messages/933434505
+same delete message               ref: 200                                      app: 200 
+same involvement                  ref: 302 /rooms/654632876/involvement         app: 302 /rooms/654632876/involvement
+same search create                ref: 302 /searches?q=launch+plan              app: 302 /searches?q=launch+plan
+same search clear                 ref: 302 /searches                            app: 302 /searches
+same new open room                ref: 302 /rooms/699448330                     app: 302 /rooms/699448330
+same new closed room              ref: 302 /rooms/699448331                     app: 302 /rooms/699448331
+same update room                  ref: 302 /rooms/486777696                     app: 302 /rooms/486777696
+same direct room                  ref: 302 /rooms/699448332                     app: 302 /rooms/699448332
+same profile                      ref: 302 /users/me/profile                    app: 302 /users/me/profile
+same role                         ref: 302 /account/edit                        app: 302 /account/edit
+same account name                 ref: 302 /account/edit                        app: 302 /account/edit
+same custom styles                ref: 302 /account/custom_styles/edit          app: 302 /account/custom_styles/edit
+same join code                    ref: 302 /account/edit                        app: 302 /account/edit
+same new bot                      ref: 302 /account/bots                        app: 302 /account/bots
+same bot key                      ref: 302 /account/bots                        app: 302 /account/bots
+same ban                          ref: 302 /users/773523953                     app: 302 /users/773523953
+same unban                        ref: 302 /users/773523953                     app: 302 /users/773523953
+same deactivate                   ref: 302 /account/edit                        app: 302 /account/edit
+same delete room                  ref: 302 /                                    app: 302 /
+same unknown message              ref: 404                                      app: 404 
+same sign out                     ref: 302 /                                    app: 302 /

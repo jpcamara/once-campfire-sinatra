@@ -1,9 +1,9 @@
 # Campfire benchmarks: Rails, Sinatra and Rage
 
-These are the notes, scripts and raw results for three Ruby takes on
-[once-campfire](https://github.com/basecamp/once-campfire). Each one was measured with DHH's
-harness from [once-campfire-rust](https://github.com/basecamp/once-campfire-rust) and checked
-with its Playwright parity harness.
+These are three Ruby takes on [once-campfire](https://github.com/basecamp/once-campfire). All three
+were measured with DHH's harness from
+[once-campfire-rust](https://github.com/basecamp/once-campfire-rust) and checked with its Playwright
+parity harness.
 
 | Implementation | Code |
 |---|---|
@@ -11,30 +11,152 @@ with its Playwright parity harness.
 | Sinatra + Falcon | [jpcamara/once-campfire-sinatra](https://github.com/jpcamara/once-campfire-sinatra) |
 | Rage + Sequel | [jpcamara/once-campfire-rage](https://github.com/jpcamara/once-campfire-rage) |
 
+## Current numbers
+
+The setup: a Hetzner AMD Ryzen 7 PRO 8700GE, 16 concurrent clients, and four hardware threads per
+app, with the load generator on four others. YJIT and jemalloc are on for every app. Each number is
+requests/sec, the median of alternating reps.
+
+| HTTP workload (requests/sec) | Rails (stock) | Rails (optimized) | Sinatra | Rage |
+|---|---:|---:|---:|---:|
+| Room page | 223 | 523 | *in progress* | 10,086 |
+| Messages page | 371 | 2,017 | *in progress* | 24,347 |
+| Sidebar | 475 | 3,615 | *in progress* | 33,190 |
+| Search | 377 | 859 | *in progress* | 16,966 |
+| Post a message | 199 | 270 | *in progress* | 1,836 |
+
+These are each implementation's latest A/B numbers. A final run of all three apps together, plus a
+mixed read/write run, comes once Sinatra's fixes land. Sinatra's last numbers before that work
+(room 23,608, messages 26,042, sidebar 25,245, search 23,867, post 3,398) included whole-page
+caching, which has since been removed (see below).
+
+## The rules
+
+**Parity.** Each app must match the Rails reference as a black box. That's checked with DHH's
+Playwright harness (HTML, DOM, accessibility tree, assets, cable frames and screenshots on every
+seed) and with server-HTML diffs. The only allowed differences are the ones the Rust port documents
+in its README under "Known differences". The one that matters most: `Sec-Fetch-Site` replaces CSRF
+tokens, so a page renders the same until its content changes.
+
+**Caching.** We only use caching techniques that the Rust or Elixir ports actually use, checked
+against their source:
+
+- **Rust** renders every page on every request. It caches message fragments already gzipped and
+  splices them in. Its front-server cache only covers public responses.
+- **Elixir**
+  ([PR #5](https://github.com/basecamp/once-campfire-elixir/pull/5)) adds a read cache that's
+  cleared when a table is written. It also memoizes the room page's shell by its inputs, keeps
+  messages-page parts per ETag, and keeps the finished sidebar until its tables change.
+
+An earlier version of all three apps kept finished room and search pages whole. Neither reference
+does that, and a benchmark that never interleaves writes with reads rewards it heavily. It's been
+removed. The "Removed" rows below show what it was worth.
+
+## Where the gains come from
+
+Each change was A/B tested against the commit before it: requests/sec at 16 clients, median of 3–5
+alternating reps, with a fresh seed each time. Every step had its own baseline, so the percentages
+don't multiply exactly into the totals.
+
+**Source** says where each idea came from. **Ours** means it has no reference precedent; those
+changes are internal, invisible from outside, and mostly bug fixes. A dash means no notable change
+on that route.
+
+### Rails (optimized)
+
+| Change | Source | Room | Messages | Sidebar | Search | Post |
+|---|---|---:|---:|---:|---:|---:|
+| No `Rack::Deflater` (Thruster gzips), Redis `compress: false`, no `Rack::ETag`, 4 workers | Ours (config) | +56% | +52% | +19% | +31% | +19% |
+| Puma → Falcon | Ours | +1% | +3% | +10% | +12% | +1% |
+| Skip static-file disk checks; tags once per process; `Current.account` once | Ours | +10% | — | +14% | +14% | — |
+| Per-process copy of versioned fragments; cache versions without a DB checkout | Ours | +13% | +20% | +6% | +8% | — |
+| Boost forms built as strings | Ours | — | +2% | — | — | +8% |
+| `Sec-Fetch-Site` instead of CSRF tokens | Rust | +14% | +16% | — | +9% | — |
+| Keep each page's gzip by digest | Rust, Elixir | +7% | +20% | +7% | — | — |
+| Read cache (`PRAGMA data_version`) | Elixir | — | +10% | +16% | +14% | — |
+| Keep the finished sidebar | Elixir | | | +227% | | |
+| Cookies only when they change | Rust | +17–23% on every read route | | | | |
+| Messages page kept per ETag (vs. no keeping) | Elixir | | +86% | | | |
+| ~~Keep finished room / search pages~~ | **Removed**: no precedent | (+352%) | | | (+254%) | |
+| Push job query fixes | Ours | | | | | +1% |
+| Restore `Rack::Deflater` (needed for parity) | — | −1–3% | | | | |
+
+Tried and dropped: PostgreSQL (slower when it shares the same 4 CPUs), one transaction per post,
+and in-process jobs (−16% on post).
+
+### Sinatra
+
+| Change | Source | Room | Messages | Sidebar | Search | Post |
+|---|---|---:|---:|---:|---:|---:|
+| Split pages by byte offset | Ours (bug in our code) | +18% | — | — | +7% | — |
+| Keep each page segment's deflate block | Rust | +37% | — | — | +34% | — |
+| Read cache (`PRAGMA data_version`) | Elixir | +16% | +21% | +16% | +25% | — |
+| Keep the finished sidebar | Elixir | | | +61% | | |
+| Fix: `config.ru` rebuilt the Rack stack per request | Bug fix | | | +114% | | |
+| ~~Keep finished room / messages / search~~ | **Being removed** | (+145%) | (+56%) | | (+80%) | |
+| Fix: the image ran in development mode | Bug fix | +18% | | +25% | | |
+| Falcon without its gzip middleware | Ours | +14% | | | | |
+| Keep records built from cached rows | Ours | +14% | +15% | | | |
+| Remember verified session signatures | Elixir | +12% | | +16% | | |
+| Message versions as an ETag part | Rust | +7% | +8% | | | |
+| Post without reloading the new message | Ours | | | | | +10% |
+| WAL checkpoints in their own process | Rust | | | | | +10% |
+| Plain-text bodies skip the rich-text pipeline | Ours | | | | | +38% |
+| One Redis PUBLISH per post | Ours | | | | | +4% |
+| Retry the write lock every 100 µs, not 1 ms | Ours | | | | | +20% |
+| Public-response cache (avatars 16.4k → 82.6k) | Rust, Thruster | | | | | |
+
+### Rage
+
+| Change | Source | Room | Messages | Sidebar | Search | Post |
+|---|---|---:|---:|---:|---:|---:|
+| Sequel prepared statements run by name | Rust | +17% | — | +23% | — | +24% |
+| Split pages by byte offset | Ours (bug in shared code) | +23% | +2% | — | +10% | — |
+| Keep each page segment's gzip | Rust | +44% | — | — | +44% | — |
+| Keep a body's gzip by its ETag | Rust, Elixir | | | +56% | | |
+| Read cache (`PRAGMA data_version`) | Elixir | +26% | +34% | +39% | +47% | 0% |
+| Keep the finished sidebar | Elixir | | | +240% | | |
+| Keep finished messages pages by ETag | Elixir | | +90% | | | |
+| ~~Keep finished room / search pages~~ | **Removed**: no precedent | (+130%) | | | (+130%) | |
+| Room / search shell memoized, messages spliced per request | Elixir | (in the above) | | | | |
+| Audit fixes, mostly random-token page markers (cause not isolated) | — | +26% | — | −8% | +34% | — |
+| Build the new message from the request's own data | Ours | | | | | +13% |
+| Public-response cache (avatars 8.8×) | Rust, Thruster | | | | | |
+
+Moving WAL checkpoints off the request path did nothing in Rage (−2%), so it was dropped: its
+commit cost is the WAL writes themselves.
+
+## Caveats
+
+- **The read routes never see a write during the run.** The caches that Elixir also uses (sidebar,
+  messages page per ETag, read cache) therefore hit nearly every request. The Rust and Elixir
+  numbers share this property. A mixed read/write run comes with the final numbers.
+- **Worker counts differ.** Optimized Rails, Sinatra and Rage each run 4 processes; stock Rails runs
+  3, its default.
+- **Hardware.** The published Rust and Elixir numbers come from faster machines (DHH's Ryzen AI
+  MAX+ 395, an Apple M3), so they don't compare column for column with these.
+
+## Security and parity status
+
+An independent audit (`notes/audit.md`) reviewed every cache for cross-user exposure, and the
+security of all three apps. It found no cache that could serve one user's data to another. It did
+find real bugs in Sinatra and Rage: stored XSS through uploads, no Origin check on `/cable`, a bot
+API forgery gap, and fragment-marker injection. It also found a few undisclosed differences from
+Rails in all three.
+
+| | Audit fixes | Playwright parity |
+|---|---|---|
+| Rails (optimized) | done | default 874/874 |
+| Rage | done (30/30 verified from outside) | every seed: 874, 25, 33, 16, 8 of 8 |
+| Sinatra | in progress | default 874/874 before the fixes |
+
 ## What's here
 
-- `notes/what-made-them-fast.md`: start here. It lists every change, its measured effect, where
-  the idea came from, and the caveats.
-- `notes/audit.md`: an independent audit of the three implementations, covering divergences, cache
-  correctness, security and benchmark method.
+- `notes/what-made-them-fast.md`: the longer write-up of every change.
+- `notes/audit.md`: the independent audit.
 - `notes/{rails-opt,sinatra,rage}.md`: working notes for each implementation.
-- `notes/elixir-rust-optimizations.md`: an analysis of the Rust port's history and the Elixir
-  port's PR #5.
+- `notes/elixir-rust-optimizations.md`: an analysis of the Rust port's history and Elixir's PR #5.
 - `bench/`: the changed copy of the harness's `bench/run` (each change is marked `HETZNER CHANGE`),
   a probe script, and the PostgreSQL experiment.
 - `tools/`: profiling, A/B and page-diff scripts. Set `BOX` / `BOX_IP` for your own machine.
-- `results/hetzner/`: the raw result JSONs and parity reports.
-
-## Status
-
-This is a snapshot of work in progress. The open items, all described in `notes/`:
-
-- **Security fixes in Sinatra and Rage are underway.** These come from the audit: stored XSS
-  through uploads, no Origin check on `/cable`, a missing CSRF check on the bot API, and
-  fragment-marker injection.
-- **Whole-page response caching is being removed.** All three apps cached the finished room, search
-  and messages pages. Neither the Rust nor the Elixir port does that, and it flatters a benchmark
-  that never interleaves writes with reads. It's being replaced with Elixir-style assembly on every
-  request.
-- **The numbers here aren't final.** A final benchmark and a mixed read/write run come after those
-  changes.
+- `results/hetzner/`: raw result JSONs and parity reports.
