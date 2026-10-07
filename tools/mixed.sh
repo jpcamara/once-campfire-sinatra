@@ -16,7 +16,7 @@ LG=target/bench/release/loadgen
 labels=parity/.seed/default/labels.json
 label() { python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))[sys.argv[2]])' "$labels" "$1"; }
 room=$(label rooms.watercooler)
-image_for() { case "$1" in sinatra) echo campfire-sinatra:app ;; rage) echo campfire-rage:app ;; rails-opt) echo campfire-reference:rails-opt ;; reference) echo campfire-reference:app ;; esac; }
+image_for() { case "$1" in rust) echo campfire-rust:app ;; sinatra) echo campfire-sinatra:app ;; rage) echo campfire-rage:app ;; rails-opt) echo campfire-reference:rails-opt ;; reference) echo campfire-reference:app ;; esac; }
 # Stock Rails keeps its default process count (ceil(nproc * 0.666) = 3); the others run 4, as in bench/run-hetzner.
 workers_for() { case "$1" in reference) echo "" ;; *) echo 4 ;; esac; }
 
