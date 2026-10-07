@@ -1,0 +1,42 @@
+{
+ "app": "rage",
+ "rep": 3,
+ "rate": 100,
+ "read": {
+  "avg_bytes": 16499,
+  "conc": 16,
+  "errors": 0,
+  "gzip": true,
+  "latency": {
+   "max_ms": 105.919,
+   "mean_ms": 2.41,
+   "n": 132653,
+   "p50_ms": 1.666,
+   "p90_ms": 4.851,
+   "p99_ms": 8.575
+  },
+  "ok": 132653,
+  "path": "/rooms/486777696",
+  "rps": 6631.9,
+  "secs": 20.0,
+  "statuses": {
+   "200": 132653
+  }
+ },
+ "post": {
+  "offered_rate": 100.0,
+  "achieved_rate": 100.0,
+  "sent": 2600,
+  "statuses": {
+   "200": 2600
+  },
+  "errors": 0,
+  "latency_ms": {
+   "p50": 3.18,
+   "p90": 14.3,
+   "p99": 30.84,
+   "max": 45.03
+  },
+  "elapsed_s": 25.99
+ }
+}

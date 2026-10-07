@@ -6,11 +6,17 @@ Results are requests/sec, median of 3 alternating runs, with YJIT and jemalloc o
 
 | HTTP workload (requests/sec) | Rails (stock) | Rails (optimized) | Sinatra | Rage |
 |---|---:|---:|---:|---:|
-| Room page | 223 | 2,857 | 23,608 | 18,590 |
-| Messages page | 371 | 2,958 | 26,042 | 24,788 |
-| Sidebar | 475 | 3,621 | 25,245 | 33,067 |
-| Search | 377 | 3,508 | 23,867 | 28,688 |
-| Post a message | 199 | 256 | 3,398 | 1,784 |
+| Room page | 225 | 538 | 12,849 | 10,127 |
+| Messages page | 364 | 2,003 | 19,729 | 24,569 |
+| Sidebar | 482 | 3,578 | 23,016 | 34,134 |
+| Search | 378 | 872 | 15,503 | 16,837 |
+| Post a message | 198 | 258 | 3,302 | 1,848 |
+
+These are from the final run on Oct 7, 2026, with all four apps measured together, 3 rotating
+reps, and 0 errors. Whole-page caching of the room, search and messages pages has been removed
+from all three apps, because neither the Rust nor the Elixir port does it. The per-change tables
+below come from the A/B run for each step, and the "Removed" rows show what that caching was
+worth.
 
 **Ground rules.** Every app has to match the Rails reference as a black box. That's checked with
 DHH's Playwright parity harness plus server-HTML diffs. The only differences allowed are the ones
@@ -122,7 +128,7 @@ precedent; those changes are internal and invisible from outside.
 | Read cache (`PRAGMA data_version`) | Elixir | +16% | +21% | +16% | +25% | — |
 | Keep the finished sidebar | Elixir | | | +61% | | |
 | Fix: `config.ru` rebuilt the Rack stack per request | Bug fix | | | +114% | | |
-| Keep finished room / messages / search | **None (being removed)** | +145% | +56% | | +80% | |
+| ~~Keep finished room / messages / search~~ | **Removed**: no precedent | +145% | +56% | | +80% | |
 | Fix: the image ran in development mode | Bug fix | +18% | | +25% | | |
 | Falcon without its ContentEncoding middleware | Ours | +14% | | | | |
 | Keep records built from cached rows | Ours | +14% | +15% | | | |
@@ -171,7 +177,7 @@ the WAL writes themselves.
 | Read cache (`PRAGMA data_version`) | Elixir | +26% | +34% | +39% | +47% | 0% |
 | Keep the finished sidebar | Elixir | | | +240% | | |
 | Keep finished messages pages by ETag | Elixir | | +90% | | | |
-| Keep finished room / search pages | **None (being removed)** | +200% | | | +150% | |
+| ~~Keep finished room / search pages~~ | **Removed**: no precedent | +200% | | | +150% | |
 | WAL checkpoints off the request path | Rust | | | | | −2% (dropped) |
 | Build the new message from the request's own data | Ours | | | | | +13% |
 | Public-response cache (avatars 8.8×, CSS +9%) | Rust, Thruster | | | | | |
@@ -197,41 +203,32 @@ How far each one takes it:
 
 ## Caveats
 
-- **The read routes are pure cache hits.** The benchmark never interleaves writes with them, so the
-  "kept until any write" responses hit about 100% of the time. Rust's numbers share this property.
-  A one-rep smoke test (not a final result) loaded the room page while posts arrived in the
-  background:
+- **The read routes never see a write during the run.** The caches that Elixir also uses (sidebar,
+  messages page per ETag, read cache) hit nearly every request. The Rust and Elixir numbers share
+  this property. This mixed run loads the room page while another user posts into the same room
+  (reads/sec at 16 clients, the median of 3 reps, each on a fresh seed):
 
-  | Room page reads/sec | 0 posts/s | 20 posts/s | 100 posts/s |
+  | Posts/sec in the background | 0 | 20 | 100 |
   |---|---:|---:|---:|
-  | Sinatra | 22,820 | 18,673 | 15,694 |
-  | Rage | 18,631 | 17,176 | 11,682 |
-  | Rails (optimized) | 2,586 | 1,089 | 188 |
+  | Rails (stock) | 228 | 214 | 194 |
+  | Rails (optimized) | 537 | 430 | 208 |
+  | Sinatra | 12,648 | 12,096 | 8,909 |
+  | Rage | 10,074 | 9,309 | 6,697 |
 
-  Sinatra and Rage hold up under writes. Optimized Rails doesn't: every write throws away its kept
-  pages, and rebuilding them is expensive.
+  Sinatra and Rage keep about 70% of their read rate at 100 posts/sec. Optimized Rails falls to
+  about stock's level.
 - **Worker counts differ.** Optimized Rails, Sinatra and Rage each run 4 processes; stock Rails
-  runs 3 (its default).
-- **Open audit findings.** An independent audit (`notes/audit.md`) found security bugs in Sinatra
-  and Rage that aren't fixed yet:
-  - uploads served inline (stored XSS)
-  - no Origin check on `/cable`
-  - bot writes skip CSRF
-  - fragment-marker injection
-  - a few undisclosed differences from Rails
-
-  The fixes shouldn't change the numbers. The final benchmark is on hold until they land.
+  runs 3, its default.
+- **Uploads:** Sinatra and Rage are about 2× slower than Rails (135 ms vs 67 ms), and that isn't
+  fixed yet.
+- **Audit.** Every finding from the independent audit (`notes/audit.md`) is fixed in all three apps,
+  except a few minor nits that are listed in each app's notes.
 - **Parity.** These are Playwright cells on the final images.
 
   | Seed | Sinatra | Rage | Rails (optimized) |
   |---|---|---|---|
-  | default | 874 / 874 | 873 + 1 allowed | 874 / 874 |
-  | crowd | 25 / 25 | 25 / 25 | 25 / 25 |
-  | custom_styles | 33 / 33 | 32 / 33 | 33 / 33 |
-  | first_run | 0 / 16 | 0 / 16 | 16 / 16 |
-  | restricted | 8 / 8 | 8 / 8 | 8 / 8 |
-
-  - **first_run:** Sinatra and Rage return a 500 on a fresh install with no account yet. A layout
-    helper calls a method on the missing account. This bug isn't fixed yet.
-  - **custom_styles:** Rage JSON-escapes a custom logo URL in the manifest, where Rails HTML-escapes
-    it. Sinatra already has the fix.
+  | default | 874 / 874 | 874 / 874 | 874 / 874 |
+  | crowd | 25 / 25 | 25 / 25 | 25 / 25 (before the fix pass) |
+  | custom_styles | 33 / 33 | 33 / 33 | 33 / 33 (before the fix pass) |
+  | first_run | 16 / 16 | 16 / 16 | 16 / 16 (before the fix pass) |
+  | restricted | 8 / 8 | 8 / 8 | 8 / 8 (before the fix pass) |

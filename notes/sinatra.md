@@ -57,6 +57,88 @@ on the Hetzner box, built from `apps/sinatra/Dockerfile` (reuses the reference i
 - Public responses are cached per process (Thruster's cache is one per container), so a second
   request that reaches another worker says `X-Cache: miss` where the reference says `hit`.
 
+## Whole-page keeping removed (Oct 7)
+
+Room, search and messages pages are no longer kept whole until the database changes. Neither the
+Rust nor the Elixir port does that. They're now assembled on every request the way Elixir does it
+(bbddf04): a kept shell plus each message's cached fragment and compressed block for room and search,
+and parts + gzip by ETag for the messages page. The sidebar keeps its finished HTML, as Elixir's
+sidebar.ex does.
+
+What whole-page keeping was worth (`.work-sinatra/ab.sh`, c=16, 8 s, a fresh seed and probe per
+measurement, 4 alternating reps, 0 errors; image m75f85be = 75f85be, s1 = bbddf04):
+
+| Route | Whole page kept (75f85be) | Assembled per request (bbddf04) | Change |
+|---|---:|---:|---:|
+| Room | 23,724 [23,687–23,899] | 13,634 [13,536–13,731] | −43% |
+| Search | 23,566 [23,443–23,756] | 16,571 [16,538–16,836] | −30% |
+| Messages | 25,902 [25,595–26,035] | 21,037 [20,964–21,103] | −19% |
+
+Medians [min–max]. Raw: `.work-sinatra/ab-s1.txt` on the box.
+
+## Audit fixes (Oct 7, notes/audit.md)
+
+One commit each, on main after bbddf04:
+
+| Finding | Fix | Commit |
+|---|---|---|
+| S1 stored XSS | Blobs served with Active Storage's content_type_for_serving / forced_disposition_for_serving (the Rust port's lists) | 94e7470 |
+| S2 / D6 /cable any Origin | Same-origin-as-host check, 404 "Page not found" otherwise | 954b64f |
+| S3 bot API CSRF, D2/D3/D4/D16 | Forgery check as the Rust port specifies it (null/foreign Origin, Sec-Fetch-Site values, no header only without SSL), public 422 page, authentication before the check, bot writes by cookie checked, return_to for every method | c229222 |
+| S4 marker injection | Markers carry a boot-time secret | 3582df3 |
+| first_run 500 | Logo path and logo check without an account; manifest small-logo URL | 3ef3adf, 418d230 |
+| S7 / D9 email case | Stored as typed, as Rails and Rust do | 03e82d1 |
+| S5 / D10 push on sign-out | push_subscription_endpoint removed on sign-out | f5cc252 |
+| D7 private-IP bans | Ban#ip_address_is_public; RecordInvalid → 422, ban rolled back | 3cc5b1f, 09882fe |
+| D8 boosts | Stored whole; boost create/destroy touches the room too | 48a8191 |
+| S6 / D5 HTTPS | assume_ssl/force_ssl unless DISABLE_SSL: https scheme, HSTS, Secure cookies | 4ed2bb0 |
+| D11 / D12 headers | X-Request-Id, X-Runtime, Date (real clock under FAKETIME) | 7705f46 |
+| C1 StaticFiles | Kept under the canonical path only | a526053 |
+| C2 public cache buffering | Bodies over 1 MB stream (no cache, gzip as sent); Vary index bounded | 80cd5a8 |
+| D1 CSRF meta tag | Removed; overrides/models/file_uploader.js (Rust's) installed at build | 31f73ed |
+| D4 browser check order | AllowBrowser runs last, after ban, auth and forgery | da802e8 |
+| D14 / D15 | If-Modified-Since 304s for public/ files, HEAD 304s, Range → X-Cache bypass | bc1f181 |
+| D24 checkpointer | Restarted if it exits | 1dd8a67 |
+
+Left as is, and why:
+- D13 per-worker public cache (`X-Cache: miss` where Thruster says `hit` for a request that lands on
+  another worker): Thruster's cache is one per container; ours is one per Falcon process. Documented.
+- D18 turbo-stream whitespace on message create: bodies are identical after the harness normalizes.
+- C3 whole-page cache byte bounds: the whole-page caches are gone; the shell and messages-page caches
+  are capped by entry count (512 each) like the fragment cache.
+- C5-C8 nits.
+
+## Final parity on the fixed code (Oct 7)
+
+Image `campfire-sinatra:f1` 31ca2dbf96fc / candidate ad4d7d9ab801, built from the box tree whose 97
+tracked code files match main (93d5f24; code unchanged since 418d230) by sha256. Default ports
+4111/4112, `.work-sinatra/final-fix.sh`.
+
+| Seed | Cells | Pass | Fail | Allowed | Error |
+|---|---:|---:|---:|---:|---:|
+| default (6 batches) | 874 | 874 | 0 | 0 | 0 |
+| first_run | 16 | 16 | 0 | 0 | 0 |
+| crowd | 25 | 25 | 0 | 0 | 0 |
+| custom_styles | 33 | 33 | 0 | 0 | 0 |
+| restricted | 8 | 8 | 0 | 0 | 0 |
+
+Before that, on the s3 image: the server-HTML diff of every page in script/paths.txt was identical,
+all 24 write flows matched, with `CAMPFIRE_CHECK_CACHES=1` logging no mismatches. On s1 (the
+page-assembly change alone) the stale-read check read 136 pages after posts and a rename across 4
+workers with none stale.
+
+Security checks (`.work-sinatra/sec-check.sh f1`, results in `sec-f1.txt`):
+- an HTML upload is served as application/octet-stream with an attachment disposition
+- /cable from a foreign Origin gets 404 "Page not found"; from its own origin, 101
+- a write with `Origin: null`, `Sec-Fetch-Site: none` or `cross-site` gets the public 422 page
+- `GET /searches?q=%01999%02` gets 200
+- X-Request-Id, X-Runtime and Date are on page responses
+- HEAD with a matching If-None-Match gets 304
+- a static file under `/assets//...` still serves
+
+The one line marked FAIL there is the script's own count: the 422 page has "That didn't work" in
+its title and heading, so the count is 2, not 1.
+
 ## Parity status (Playwright harness)
 
 `parity/bin/candidate compare` on the box, reference vs `campfire-sinatra-candidate`, default seed,

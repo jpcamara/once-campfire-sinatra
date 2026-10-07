@@ -11,24 +11,52 @@ parity harness.
 | Sinatra + Falcon | [jpcamara/once-campfire-sinatra](https://github.com/jpcamara/once-campfire-sinatra) |
 | Rage + Sequel | [jpcamara/once-campfire-rage](https://github.com/jpcamara/once-campfire-rage) |
 
-## Current numbers
+## Final numbers
 
-The setup: a Hetzner AMD Ryzen 7 PRO 8700GE, 16 concurrent clients, and four hardware threads per
-app, with the load generator on four others. YJIT and jemalloc are on for every app. Each number is
-requests/sec, the median of alternating reps.
+The final run was on Oct 7, 2026, with DHH's `bench/run`, on a Hetzner AMD Ryzen 7 PRO 8700GE.
+Each app gets four hardware threads, with the load generator on four others. YJIT and jemalloc are
+on. Each number is the median of 3 runs, rotating the app order, and all four apps ran together.
+There were 0 errors.
 
-| HTTP workload (requests/sec) | Rails (stock) | Rails (optimized) | Sinatra | Rage |
+| HTTP workload (requests/sec, 16 clients) | Rails (stock) | Rails (optimized) | Sinatra | Rage |
 |---|---:|---:|---:|---:|
-| Room page | 223 | 523 | *in progress* | 10,086 |
-| Messages page | 371 | 2,017 | *in progress* | 24,347 |
-| Sidebar | 475 | 3,615 | *in progress* | 33,190 |
-| Search | 377 | 859 | *in progress* | 16,966 |
-| Post a message | 199 | 270 | *in progress* | 1,836 |
+| Room page | 225 | 538 | 12,849 | 10,127 |
+| Messages page | 364 | 2,003 | 19,729 | 24,569 |
+| Sidebar | 482 | 3,578 | 23,016 | 34,134 |
+| Search | 378 | 872 | 15,503 | 16,837 |
+| Post a message | 198 | 258 | 3,302 | 1,848 |
+| Avatar | 62,491 | 62,420 | 73,935 | 165,748 |
 
-These are each implementation's latest A/B numbers. A final run of all three apps together, plus a
-mixed read/write run, comes once Sinatra's fixes land. Sinatra's last numbers before that work
-(room 23,608, messages 26,042, sidebar 25,245, search 23,867, post 3,398) included whole-page
-caching, which has since been removed (see below).
+| Other | Rails (stock) | Rails (optimized) | Sinatra | Rage |
+|---|---:|---:|---:|---:|
+| Action Cable, 1,000 clients: p50 delivery | 42.8 ms | 40.1 ms | 9.3 ms | 5.0 ms |
+| Action Cable, 1,000 clients: saturated delivery | 13 msg/s | 12 msg/s | 103 msg/s | 194 msg/s |
+| Upload + thumbnail (505 KB) | 67 ms | 66 ms | 135 ms | 134 ms |
+| Idle memory (anon) | 284 MB | 613 MB | 200 MB | 170 MB |
+| Cold start | 3.6 s | 5.9 s | 1.5 s | 1.6 s |
+
+In every Action Cable run, every client got every message.
+
+Notes on the second table:
+
+- **Uploads:** Sinatra and Rage are about 2× slower than Rails, and that isn't fixed yet.
+- **Idle memory:** optimized Rails uses more because it runs 4 Falcon processes against stock's 3
+  Puma workers, plus its per-process caches.
+
+**Room-page reads while posts arrive.** The read routes above never see a write. This run shows what
+the caches do under real traffic: reads/sec at 16 clients, while another user posts into the same
+room at a steady rate. It's the median of 3 reps, each on a fresh seed. Every post succeeded at the
+offered rate.
+
+| Posts/sec in the background | 0 | 20 | 100 | Post p50 at 100/s |
+|---|---:|---:|---:|---:|
+| Rails (stock) | 228 | 214 | 194 | 9.9 ms |
+| Rails (optimized) | 537 | 430 | 208 | 25.6 ms |
+| Sinatra | 12,648 | 12,096 | 8,909 | 2.3 ms |
+| Rage | 10,074 | 9,309 | 6,697 | 3.2 ms |
+
+At 100 posts/sec, Sinatra and Rage keep about 70% of their read rate. Optimized Rails falls to
+about stock's level, because each write invalidates the caches it depends on.
 
 ## The rules
 
@@ -93,7 +121,7 @@ and in-process jobs (−16% on post).
 | Read cache (`PRAGMA data_version`) | Elixir | +16% | +21% | +16% | +25% | — |
 | Keep the finished sidebar | Elixir | | | +61% | | |
 | Fix: `config.ru` rebuilt the Rack stack per request | Bug fix | | | +114% | | |
-| ~~Keep finished room / messages / search~~ | **Being removed** | (+145%) | (+56%) | | (+80%) | |
+| ~~Keep finished room / messages / search~~ | **Removed**: no precedent | (−43% when removed) | (−19%) | | (−30%) | |
 | Fix: the image ran in development mode | Bug fix | +18% | | +25% | | |
 | Falcon without its gzip middleware | Ours | +14% | | | | |
 | Keep records built from cached rows | Ours | +14% | +15% | | | |
@@ -130,7 +158,7 @@ commit cost is the WAL writes themselves.
 
 - **The read routes never see a write during the run.** The caches that Elixir also uses (sidebar,
   messages page per ETag, read cache) therefore hit nearly every request. The Rust and Elixir
-  numbers share this property. A mixed read/write run comes with the final numbers.
+  numbers share this property. The mixed read/write table above shows the effect of writes.
 - **Worker counts differ.** Optimized Rails, Sinatra and Rage each run 4 processes; stock Rails runs
   3, its default.
 - **Hardware.** The published Rust and Elixir numbers come from faster machines (DHH's Ryzen AI
@@ -148,7 +176,7 @@ Rails in all three.
 |---|---|---|
 | Rails (optimized) | done | default 874/874 |
 | Rage | done (30/30 verified from outside) | every seed: 874, 25, 33, 16, 8 of 8 |
-| Sinatra | in progress | default 874/874 before the fixes |
+| Sinatra | done | every seed: 874, 25, 33, 16, 8 of 8 |
 
 ## What's here
 

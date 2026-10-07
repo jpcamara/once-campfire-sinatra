@@ -1,0 +1,27 @@
+{
+ "app": "reference",
+ "rep": 2,
+ "rate": 0,
+ "read": {
+  "avg_bytes": 44364,
+  "conc": 16,
+  "errors": 0,
+  "gzip": true,
+  "latency": {
+   "max_ms": 202.879,
+   "mean_ms": 70.07,
+   "n": 4573,
+   "p50_ms": 77.951,
+   "p90_ms": 123.711,
+   "p99_ms": 152.959
+  },
+  "ok": 4573,
+  "path": "/rooms/486777696",
+  "rps": 227.9,
+  "secs": 20.06,
+  "statuses": {
+   "200": 4573
+  }
+ },
+ "post": null
+}
