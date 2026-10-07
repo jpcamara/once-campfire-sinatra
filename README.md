@@ -63,7 +63,61 @@ traffic:
 The per-change table below comes from the A/B run for each step. Each step was measured against
 the commit just before it, so the percentages don't multiply exactly into the totals.
 
-**Where the gains come from.** Each change was measured with an A/B against the commit before it.
+## Caching
+
+The rule here: only cache what the Rust or Elixir ports cache, checked against their source.
+
+**What the Rust port caches** (from its source):
+
+| Cache | What it holds | Rust source |
+|---|---|---|
+| Message fragments | Rails' own `cache message do` fragments, in memory, bounded by bytes | `views/src/fragment_cache.rs` |
+| Compressed pieces | Each fragment's deflate block, the text between fragments, and a whole body's gzip by digest | `kit/src/deflater/splice.rs` |
+| Public responses | `Cache-Control: public` responses such as avatars and assets | `kit/src/front/cache.rs` |
+| Prepared statements | 256 per connection | `db` crate |
+
+Rust caches no query results and no pages, sidebars or page shells. It renders every page on every
+request.
+
+**What this app caches**, with each cache's precedent and its effect in a per-step A/B:
+
+| Cache | Precedent | Measured effect |
+|---|---|---|
+| Message fragments in memory | Rust | built in |
+| Compressed pieces; whole-body gzip by digest | Rust | room and search +34–37% |
+| Public responses (avatars, assets) | Rust, Thruster | avatars 5× |
+| Prepared statements | Rust | built in |
+| Read cache (`PRAGMA data_version`), and records built from it | Elixir only | +16–25% on every read route |
+| Finished sidebar until its data changes | Elixir only | sidebar +61% |
+| Messages page parts per ETag | Elixir only | not measured alone |
+| Room and search shell, memoized by its inputs | Elixir only | not measured alone |
+| Verified session signatures | Elixir only | room +12%, sidebar +16% |
+| Memoized avatar tokens, signed ids, stream names, initials | This app | not measured alone |
+
+**Rust-level caching only.** `CAMPFIRE_CACHING=rust` turns off every cache that only the Elixir port
+(or this app) has, and keeps the rest. The run used the same harness, box and CPUs as the full
+run, on images built from the commit that adds the switch: 3 reps, 0 errors. Rails (stock) is from the full run; in this run it measured 221 / 365 / 467 /
+368 / 196.
+
+| Workload (req/s, 16 clients) | Rails (stock) | Full caching | Rust-level caching only | Full ÷ Rust-level |
+|---|---:|---:|---:|---:|
+| Room page | 225 | 12,849 | 4,812 | 2.7× |
+| Messages page | 364 | 19,729 | 7,637 | 2.6× |
+| Sidebar | 482 | 23,016 | 6,365 | 3.6× |
+| Search | 378 | 15,503 | 7,442 | 2.1× |
+| Post a message | 198 | 3,302 | 3,165 | 1.0× |
+
+The same mixed read/write run (3 reps, fresh seed each):
+
+| Room reads/sec while posts arrive at | 0/s | 20/s | 100/s |
+|---|---:|---:|---:|
+| Rails (stock) | 228 | 214 | 194 |
+| Sinatra, full caching | 12,648 | 12,096 | 8,909 |
+| Sinatra, Rust-level caching only | 4,763 | 4,634 | 3,741 |
+
+## Where the gains come from
+
+Each change was measured with an A/B against the commit before it.
 
 | Change | Source | Room | Messages | Sidebar | Search | Post |
 |---|---|---:|---:|---:|---:|---:|
