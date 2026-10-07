@@ -232,8 +232,8 @@ module Campfire
     end
 
     delete "/session" do
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       db.transaction { |w| w.run("DELETE FROM sessions WHERE id = ?", @session.id) }
       Broadcasts.disconnect_user(current_user.id, reconnect: true) # Authentication#disconnect_remote_connections
       response.delete_cookie("session_token", path: "/")
@@ -293,8 +293,8 @@ module Campfire
     end
 
     post %r{/rooms/(\d+)/messages} do |room_id|
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       membership = repo.membership(current_user.id, room_id.to_i)
       return render_room_not_found unless membership
 
@@ -330,16 +330,16 @@ module Campfire
     end
 
     post %r{/rooms/(opens|closeds)} do |kind|
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       head_response(403) unless can_create_rooms?
       room = Rooms.create(self, kind == "opens" ? "Rooms::Open" : "Rooms::Closed", (params["room"] || {})["name"].to_s, Array(params["user_ids"]))
       redirect url_for("/rooms/#{room.id}")
     end
 
     patch %r{/rooms/(opens|closeds)/(\d+)} do |kind, id|
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       room = repo.user_room(current_user.id, id.to_i)
       return redirect_with_alert("/", "Room not found or inaccessible") unless room && !room.direct?
       head_response(403) unless current_user.can_administer?(room)
@@ -354,8 +354,8 @@ module Campfire
     end
 
     post "/rooms/directs" do
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       room = Rooms.find_or_create_direct(self, (Array(params["user_ids"]).map(&:to_i) + [ current_user.id ]).uniq)
       redirect url_for("/rooms/#{room.id}")
     end
@@ -378,8 +378,8 @@ module Campfire
     end
 
     delete %r{/rooms(?:/directs)?/(\d+)} do |id|
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       room = repo.user_room(current_user.id, id.to_i)
       return redirect_with_alert("/", "Room not found or inaccessible") unless room && (room.direct? == request.path_info.include?("/directs/"))
       head_response(403) unless room.direct? || current_user.can_administer?(room)
@@ -406,8 +406,8 @@ module Campfire
 
     helpers do
       def update_account
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       head_response(403) unless current_user.can_administer?
       Accounts.update(self, params["account"] || {})
       redirect_with_notice("/account/edit", "✓")
@@ -427,8 +427,8 @@ module Campfire
     end
 
     patch %r{/account/users/(\d+)} do |id|
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       head_response(403) unless current_user.can_administer?
       user = repo.user(id.to_i)
       record_not_found! unless user&.active?
@@ -438,8 +438,8 @@ module Campfire
     end
 
     delete %r{/account/users/(\d+)} do |id|
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       head_response(403) unless current_user.can_administer?
       user = repo.user(id.to_i)
       record_not_found! unless user&.active?
@@ -448,8 +448,8 @@ module Campfire
     end
 
     post "/account/join_code" do
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       head_response(403) unless current_user.can_administer?
       code = SecureRandom.alphanumeric(12).scan(/.{4}/).join("-")
       db.transaction { |w| w.run("UPDATE accounts SET join_code = ?, updated_at = ?", code, TimeFormat.now_text) }
@@ -464,16 +464,16 @@ module Campfire
     end
 
     patch "/account/custom_styles" do
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       head_response(403) unless current_user.can_administer?
       db.transaction { |w| w.run("UPDATE accounts SET custom_styles = ?, updated_at = ?", (params["account"] || {})["custom_styles"], TimeFormat.now_text) }
       redirect_with_notice("/account/custom_styles/edit", "✓")
     end
 
     delete "/account/logo" do
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       head_response(403) unless current_user.can_administer?
       db.transaction do |w|
         w.run("DELETE FROM active_storage_attachments WHERE record_type = 'Account' AND name = 'logo'")
@@ -517,24 +517,24 @@ module Campfire
     end
 
     post "/account/bots" do
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       head_response(403) unless current_user.can_administer?
       BotAccounts.create(self, params["user"] || {})
       redirect url_for("/account/bots")
     end
 
     patch %r{/account/bots/(\d+)} do |id|
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       head_response(403) unless current_user.can_administer?
       BotAccounts.update(self, active_bot!(id), params["user"] || {})
       redirect url_for("/account/bots")
     end
 
     put %r{/account/bots/(\d+)/key} do |id|
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       head_response(403) unless current_user.can_administer?
       bot = active_bot!(id)
       db.transaction { |w| w.run("UPDATE users SET bot_token = ?, updated_at = ? WHERE id = ?", SecureRandom.alphanumeric(12), TimeFormat.now_text, bot.id) }
@@ -542,8 +542,8 @@ module Campfire
     end
 
     delete %r{/account/bots/(\d+)} do |id|
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       head_response(403) unless current_user.can_administer?
       Accounts.deactivate(self, active_bot!(id))
       redirect url_for("/account/bots")
@@ -585,8 +585,8 @@ module Campfire
     end
 
     post "/users/me/push_subscriptions" do
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       attributes = params["push_subscription"] || {}
       halt 400, "" if attributes.empty?
       status PushSubscriptions.create(self, attributes) ? 200 : 422
@@ -594,15 +594,15 @@ module Campfire
     end
 
     delete %r{/users/me/push_subscriptions/(\d+)} do |id|
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       db.transaction { |w| w.run("DELETE FROM push_subscriptions WHERE id = ? AND user_id = ?", id.to_i, current_user.id) }
       redirect url_for("/users/me/push_subscriptions")
     end
 
     post %r{/users/me/push_subscriptions/(\d+)/test_notifications} do |id|
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       row = db.row("SELECT endpoint, p256dh_key, auth_key FROM push_subscriptions WHERE id = ? AND user_id = ?", id.to_i, current_user.id) or record_not_found!
       payload = { title: "Campfire Test", body: SecureRandom.uuid, path: url_for("/users/me/push_subscriptions") }
       badge = db.value("SELECT COUNT(*) FROM memberships WHERE user_id = ? AND unread_at IS NOT NULL", current_user.id)
@@ -611,8 +611,8 @@ module Campfire
     end
 
     post "/unfurl_link" do
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       halt 400, "" if params["url"].to_s.empty?
       if (metadata = Unfurl.metadata(params["url"].to_s))
         headers "Content-Type" => "application/json; charset=utf-8"
@@ -722,23 +722,23 @@ module Campfire
     end
 
     patch "/users/me/profile" do
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       attributes = params["user"] || {}
       Profiles.update(self, current_user, attributes)
       redirect_with_notice("/users/me/profile", attributes["avatar"] ? "It may take up to 30 minutes to change everywhere." : "✓")
     end
 
     delete %r{/users/(me|\d+)/avatar} do
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       Profiles.remove_avatar(self, current_user)
       redirect url_for("/users/me/profile")
     end
 
     post %r{/users/(\d+)/ban} do |id|
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       head_response(403) unless current_user.can_administer?
       user = repo.user(id.to_i) or record_not_found!
       Bans.ban(self, user)
@@ -746,8 +746,8 @@ module Campfire
     end
 
     delete %r{/users/(\d+)/ban} do |id|
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       head_response(403) unless current_user.can_administer?
       user = repo.user(id.to_i) or record_not_found!
       Bans.unban(self, user)
@@ -766,8 +766,8 @@ module Campfire
     end
 
     put %r{/rooms/(\d+)/involvement} do |room_id|
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       membership = repo.membership(current_user.id, room_id.to_i) or record_not_found!
       Involvements.update(self, membership, params["involvement"].to_s)
       redirect url_for("/rooms/#{membership.room_id}/involvement")
@@ -795,8 +795,8 @@ module Campfire
     end
 
     patch %r{/rooms/(\d+)/messages/(\d+)} do |room_id, id|
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       room = room_scoped!(room_id)
       message = repo.room_message(room.id, id.to_i) or record_not_found!
       head_response(403) unless current_user.can_administer?(message)
@@ -805,8 +805,8 @@ module Campfire
     end
 
     delete %r{/rooms/(\d+)/messages/(\d+)} do |room_id, id|
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       room = room_scoped!(room_id)
       message = repo.room_message(room.id, id.to_i) or record_not_found!
       head_response(403) unless current_user.can_administer?(message)
@@ -857,16 +857,16 @@ module Campfire
     end
 
     post %r{/messages/(\d+)/boosts} do |message_id|
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       message = reachable_message!(message_id)
       Boosts.create(self, message, (params["boost"] || {})["content"].to_s)
       redirect url_for("/messages/#{message.id}/boosts")
     end
 
     delete %r{/messages/(\d+)/boosts/(\d+)} do |message_id, id|
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       message = reachable_message!(message_id)
       Boosts.destroy(self, message, id.to_i) or record_not_found!
       status 204
@@ -916,16 +916,16 @@ module Campfire
     end
 
     post "/searches" do
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       query = params["q"]&.gsub(/[^[:word:]]/, " ")
       Searches.record(self, current_user, query)
       redirect url_for("/searches?q=#{URI.encode_www_form_component(query.to_s)}")
     end
 
     delete "/searches/clear" do
-      verify_same_origin!
       require_authentication!
+      verify_same_origin!
       db.transaction { |w| w.run("DELETE FROM searches WHERE user_id = ?", current_user.id) }
       redirect url_for("/searches")
     end
@@ -1173,9 +1173,7 @@ module Campfire
       def require_authentication!
         return if restore_authentication
 
-        if request.get? || request.head?
-          write_session("return_to_after_authenticating" => request.url)
-        end
+        write_session("return_to_after_authenticating" => request.url)
         halt redirect(url_for("/session/new"))
       end
 
@@ -1257,23 +1255,42 @@ module Campfire
 
       # Sec-Fetch-Site replaces CSRF tokens, as in the Rust port: cross-site writes are rejected,
       # and so is a mismatched Origin.
+      # verify_authenticity_token by Sec-Fetch-Site instead of tokens, as the Rust port does
+      # (crates/kit/src/ctx.rs; Rails main's `protect_from_forgery using: :header_only`): a null or
+      # foreign Origin fails, same-origin and same-site pass, and a missing header passes only when
+      # neither the request nor the app uses SSL. A failure is InvalidAuthenticityToken's public 422.
       def verify_same_origin!
-        site = request.env["HTTP_SEC_FETCH_SITE"]
+        return if request.get? || request.head?
         origin = request.env["HTTP_ORIGIN"]
-        forbidden = site == "cross-site" || (site.nil? && request.scheme == "https") ||
-          (origin && origin != "null" && origin != base_url)
-        halt 422, "" if forbidden
+        valid_origin = origin.nil? || (origin != "null" && origin == base_url)
+        allowed =
+          case request.env["HTTP_SEC_FETCH_SITE"]
+          when "same-origin", "same-site" then true
+          when nil then !request.ssl? && !Campfire.ssl?
+          else false
+          end
+        return if valid_origin && allowed
+        without_security_headers
+        without_version_headers
+        halt 422, { "Content-Type" => "text/html; charset=utf-8" }, File.read(File.join(ROOT, "public/422.html"))
       end
 
       # ---- Rooms
 
-      # Authentication's restore_authentication || bot_authentication, then the user's room
+      # Authentication's restore_authentication || bot_authentication, then the user's room. Forgery
+      # protection applies unless the request was authenticated by its bot key
+      # (`protect_from_forgery ... unless: -> { authenticated_by.bot_key? }`).
       def bot_room!(bot_key, room_id)
         bot = restore_authentication
-        unless bot
+        if bot
+          verify_same_origin!
+        else
           id, token = bot_key.strip.split("-", 2)
           row = db.row("SELECT #{User.columns} FROM users WHERE id = ? AND bot_token = ? AND status = 0 AND role = 2 LIMIT 1", id.to_i, token.to_s)
-          halt 302, { "Location" => url_for("/session/new") }, "" unless row
+          unless row
+            write_session("return_to_after_authenticating" => request.url)
+            halt redirect(url_for("/session/new"))
+          end
           bot = User.new(*row)
         end
         room = repo.user_room(bot.id, room_id.to_i) or head_response(404)

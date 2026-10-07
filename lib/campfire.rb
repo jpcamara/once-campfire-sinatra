@@ -33,6 +33,9 @@ require_relative "campfire/unfurl"
 require_relative "campfire/static_files"
 
 module Campfire
+  # production.rb: config.assume_ssl and config.force_ssl, unless DISABLE_SSL is set.
+  def self.ssl? = ENV["DISABLE_SSL"].to_s.strip.empty?
+
   def self.boot
     Assets.load(ROOT)
     View.compile(ROOT)
