@@ -1147,11 +1147,13 @@ module Campfire
       end
 
       # ActiveStorage::Blobs::RedirectController and Representations::RedirectController
+      # Blob#url: the type and disposition the blob is served with, not the uploader's.
       def redirect_to_disk(blob, disposition)
         without_version_headers
-        disposition = disposition == "attachment" ? "attachment" : "inline"
+        disposition = Storage.forced_disposition_for_serving(blob.content_type) || (disposition == "attachment" ? "attachment" : "inline")
         headers "Cache-Control" => "max-age=300, private"
-        redirect url_for(Storage.disk_path(runtime, key: blob.key, filename: blob.filename, content_type: blob.content_type,
+        redirect url_for(Storage.disk_path(runtime, key: blob.key, filename: blob.filename,
+          content_type: Storage.content_type_for_serving(blob.content_type),
           disposition: Storage.content_disposition(disposition, blob.filename)))
       end
 

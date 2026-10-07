@@ -37,6 +37,24 @@ module Campfire
       verifier(runtime).verify(signed, purpose: purpose)
     end
 
+    # config.active_storage's content_types_allowed_inline and content_types_to_serve_as_binary as
+    # Campfire runs them (Rails 8.2 defaults; the Rust port's crates/storage/src/content_types.rs).
+    ALLOWED_INLINE = %w[ image/webp image/avif image/png image/gif image/jpeg image/tiff image/bmp
+      image/vnd.adobe.photoshop image/vnd.microsoft.icon application/pdf ].freeze
+    SERVE_AS_BINARY = %w[ text/html image/svg+xml application/postscript application/x-shockwave-flash
+      text/xml application/xml application/xhtml+xml application/mathml+xml text/cache-manifest ].freeze
+
+    # ActiveStorage::Blob#content_type_for_serving
+    def content_type_for_serving(content_type)
+      SERVE_AS_BINARY.include?(content_type) ? "application/octet-stream" : content_type
+    end
+
+    # ActiveStorage::Blob#forced_disposition_for_serving: anything that could run script on this
+    # origin, or that browsers shouldn't show inline, downloads instead.
+    def forced_disposition_for_serving(content_type)
+      "attachment" if SERVE_AS_BINARY.include?(content_type) || !ALLOWED_INLINE.include?(content_type)
+    end
+
     def blob_path(runtime, blob, disposition: nil)
       path = "/rails/active_storage/blobs/redirect/#{signed_blob_id(runtime, blob.id)}/#{escape_filename(blob.filename)}"
       disposition ? "#{path}?disposition=#{disposition}" : path
