@@ -31,6 +31,7 @@ require_relative "campfire/response_cache"
 require_relative "campfire/etag"
 require_relative "campfire/unfurl"
 require_relative "campfire/static_files"
+require_relative "campfire/ssl"
 
 module Campfire
   # ActiveRecord::RecordInvalid from a bang method: the request answers the public 422 page.

@@ -10,6 +10,7 @@ assets = Campfire::StaticFiles.new(File.join(__dir__, "public"))
 # Built once: a Rack::Builder used as the app would build the whole stack again on every request
 # (and the middlewares' kept state with it).
 app = Rack::Builder.app do
+  use Campfire::SSL if Campfire.ssl?
   use Campfire::ResponseCache
   use Campfire::Compression
   use Campfire::ETag
