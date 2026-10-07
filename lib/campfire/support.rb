@@ -858,7 +858,7 @@ module Campfire
           "name": #{JSON.generate(account&.name || "Campfire")},
           "icons": [
             {
-              "src": "#{logo.sub("?", "?size=small&amp;")}",
+              "src": "#{logo.include?("?") ? logo.sub("?", "?size=small&amp;") : "#{logo}?size=small"}",
               "type": "image/png",
               "sizes": "192x192"
             },
