@@ -1,0 +1,101 @@
+fatal: not a git repository (or any of the parent directories): .git
+fatal: not a git repository (or any of the parent directories): .git
+date: 2026-10-07T16:29:51+02:00
+host: 6.8.0-137-generic, AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics, 16 threads, 61GB
+server cpus: 4-7 (nproc 4); loadgen cpus: 0-3; network: host
+env: WEB_CONCURRENCY=3 JOB_CONCURRENCY=3 RAILS_MAX_THREADS=5 WEB_CONCURRENCY=4 
+rust extra env: 
+user agent: (none)
+rust image: campfire-rust:app sha256:ecb3890f2706b5cec162be650e18c22d15d1627382bdba574c36a123975fab8b 2026-10-07T16:29:31.789282932+02:00
+rust HEAD:  (dirty: 0 files)
+[16:31:01] load before run: 1.32 5.62 4.64 (waited 70s)
+[16:31:01] rust rep 1: starting (load: 1.32 5.62 4.64)
+[16:31:11] rust rep 1: cold start 312ms, idle 15MB (anon 13MB)
+[16:31:22] rust rep 1: room_show c=16 21433.3 rps p50 0.726 p99 1.308 {'200': 171480} err 0
+[16:31:32] rust rep 1: messages_page c=16 23756.1 rps p50 0.658 p99 1.119 {'200': 190061} err 0
+[16:31:42] rust rep 1: sidebar c=16 20808.7 rps p50 0.744 p99 1.394 {'200': 166483} err 0
+[16:31:52] rust rep 1: search c=16 21532.7 rps p50 0.696 p99 1.507 {'200': 172275} err 0
+[16:32:02] rust rep 1: avatar c=16 199242.4 rps p50 0.07 p99 0.243 {'200': 1594007} err 0
+[16:32:12] rust rep 1: static_css c=16 212542.9 rps p50 0.064 p99 0.226 {'200': 1700426} err 0
+[16:32:22] rust rep 1: up c=16 117939.7 rps p50 0.134 p99 0.237 {'200': 943559} err 0
+[16:32:32] rust rep 1: post_message c=16 4535.3 rps p50 2.871 p99 22.399 {'200': 36293} err 0
+[16:32:33] rust rep 1: done -> /opt/campfire-perf/results/rust-sanity/rust-1.json
+```
+date: 2026-10-07T16:29:51+02:00
+host: 6.8.0-137-generic, AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics, 16 threads, 61GB
+server cpus: 4-7 (nproc 4); loadgen cpus: 0-3; network: host
+env: WEB_CONCURRENCY=3 JOB_CONCURRENCY=3 RAILS_MAX_THREADS=5 WEB_CONCURRENCY=4 
+rust extra env: 
+user agent: (none)
+rust image: campfire-rust:app sha256:ecb3890f2706b5cec162be650e18c22d15d1627382bdba574c36a123975fab8b 2026-10-07T16:29:31.789282932+02:00
+rust HEAD:  (dirty: 0 files)
+```
+
+Reps: rust 1. Cells: median [min–max].
+
+### Startup and memory
+
+| Metric | Rust | Rust adv. |
+|---|---|---|
+| cold start: docker run → /up 200 (ms) | 312 | – |
+| idle memory.current (MB) | 15.0 | – |
+| idle anon (MB) | 13.0 | – |
+| peak memory.current under load (MB) | 150 | – |
+| peak anon under load (MB) | 94.0 | – |
+
+### HTTP (signed in as david; keep-alive; c = concurrent connections)
+
+| Metric | Rust | Rust adv. |
+|---|---|---|
+| room_show c=16 req/s | 21,433 | – |
+| room_show c=16 p50 ms | 0.73 | – |
+| room_show c=16 p99 ms | 1.31 | – |
+| messages_page c=16 req/s | 23,756 | – |
+| messages_page c=16 p50 ms | 0.66 | – |
+| messages_page c=16 p99 ms | 1.12 | – |
+| sidebar c=16 req/s | 20,809 | – |
+| sidebar c=16 p50 ms | 0.74 | – |
+| sidebar c=16 p99 ms | 1.39 | – |
+| search c=16 req/s | 21,533 | – |
+| search c=16 p50 ms | 0.70 | – |
+| search c=16 p99 ms | 1.51 | – |
+| avatar c=16 req/s | 199,242 | – |
+| avatar c=16 p50 ms | 0.07 | – |
+| avatar c=16 p99 ms | 0.24 | – |
+| static_css c=16 req/s | 212,543 | – |
+| static_css c=16 p50 ms | 0.06 | – |
+| static_css c=16 p99 ms | 0.23 | – |
+| up c=16 req/s | 117,940 | – |
+| up c=16 p50 ms | 0.13 | – |
+| up c=16 p99 ms | 0.24 | – |
+| post_message c=16 req/s | 4,535 | – |
+| post_message c=16 p50 ms | 2.87 | – |
+| post_message c=16 p99 ms | 22.4 | – |
+
+### HTTP errors / non-2xx-3xx (first rep, per app)
+
+| Metric | Rust | Rust adv. |
+|---|---|---|
+- rust: none
+
+### Action Cable fan-out (one room; chatter.js subscriptions per client)
+
+| Metric | Rust | Rust adv. |
+|---|---|---|
+
+### Upload + thumbnail (black_hole.jpg, 505 KB)
+
+| Metric | Rust | Rust adv. |
+|---|---|---|
+| POST with attachment (ms) | – | – |
+| then GET thumb → 200 (ms) | – | – |
+| POST → thumbnail served (ms) | – | – |
+
+### Memory during cable fan-out, by process (MB, peak within the phase)
+
+App process: Rails' Puma master and workers (Action Cable runs in them), or Rust's one campfire
+process (its front server included). Pss counts pages shared between forked workers once;
+RssAnon counts them in every process.
+
+| Metric | Rust | Rust adv. |
+|---|---|---|

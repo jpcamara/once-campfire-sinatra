@@ -1,0 +1,11 @@
+[18:07:02] rep 1 rust rate 0: reads 21120 {'200': 422414} err 0 posts None
+[18:07:34] rep 1 rust rate 20: reads 20626 {'200': 412541} err 0 posts (20.0, {'200': 520}, 'err', 0, 'p50', 2.31)
+[18:08:06] rep 1 rust rate 100: reads 19136 {'200': 382734} err 0 posts (100.0, {'200': 2600}, 'err', 0, 'p50', 2.2)
+[18:08:39] rep 2 rust rate 20: reads 20473 {'200': 409473} err 0 posts (20.0, {'200': 520}, 'err', 0, 'p50', 2.31)
+[18:09:11] rep 2 rust rate 100: reads 19156 {'200': 383131} err 0 posts (100.0, {'200': 2600}, 'err', 0, 'p50', 2.21)
+[18:09:37] rep 2 rust rate 0: reads 20968 {'200': 419368} err 0 posts None
+[18:10:09] rep 3 rust rate 100: reads 19215 {'200': 384309} err 0 posts (100.0, {'200': 2600}, 'err', 0, 'p50', 2.2)
+[18:10:35] rep 3 rust rate 0: reads 20936 {'200': 418728} err 0 posts None
+[18:11:07] rep 3 rust rate 20: reads 20526 {'200': 410534} err 0 posts (20.0, {'200': 520}, 'err', 0, 'p50', 2.34)
+mixed-done
+MIXED-EXIT 0

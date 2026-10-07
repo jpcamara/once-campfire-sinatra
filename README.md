@@ -58,6 +58,56 @@ offered rate.
 At 100 posts/sec, Sinatra and Rage keep about 70% of their read rate. Optimized Rails falls to
 about stock's level, because each write invalidates the caches it depends on.
 
+## Rust on the same box
+
+DHH's Rust port at ccece30, the commit whose README carries his published table, built with its
+pinned reference (90b3300). It ran with all four Ruby apps in one run on Oct 7: 3 reps, rotating
+order, every suite, 0 errors. It's one process, as `bench/run` runs it.
+
+| HTTP workload (requests/sec, 16 clients) | Rails (stock) | Rails (optimized) | Sinatra | Rage | Rust |
+|---|---:|---:|---:|---:|---:|
+| Room page | 225 | 551 | 12,861 | 10,127 | 21,229 |
+| Messages page | 360 | 1,984 | 19,729 | 24,638 | 23,565 |
+| Sidebar | 480 | 3,562 | 22,936 | 32,975 | 20,828 |
+| Search | 382 | 863 | 15,700 | 16,910 | 21,276 |
+| Post a message | 198 | 261 | 3,195 | 1,833 | 4,153 |
+| Avatar | 61,687 | 62,178 | 72,081 | 181,576 | 196,297 |
+
+| Other | Rails (stock) | Rails (optimized) | Sinatra | Rage | Rust |
+|---|---:|---:|---:|---:|---:|
+| Action Cable, 1,000 clients: p50 delivery | 44.6 ms | 40.9 ms | 9.0 ms | 5.0 ms | 4.3 ms |
+| Action Cable, 1,000 clients: saturated delivery | 11 msg/s | 12 msg/s | 106 msg/s | 196 msg/s | 378 msg/s |
+| Upload + thumbnail (505 KB) | 72 ms | 64 ms | 135 ms | 59 ms | 34 ms |
+| Idle memory (anon) | 282 MB | 617 MB | 201 MB | 170 MB | 13 MB |
+
+Rage's upload time is noisy between runs: 134 ms in the earlier final run, 59 ms here. Sinatra's
+was 135 ms both times.
+
+**Room-page reads while posts arrive** (same method as above):
+
+| Posts/sec in the background | 0 | 20 | 100 | Post p50 at 100/s |
+|---|---:|---:|---:|---:|
+| Rust | 20,968 | 20,526 | 19,156 | 2.2 ms |
+
+Rust renders every page on every request, so writes barely affect it: it keeps 91% of its read rate
+at 100 posts/sec.
+
+**This box against DHH's machine.** These are DHH's published numbers on a Ryzen AI MAX+ 395,
+against the same commits run here:
+
+| Route | Rails, DHH | Rails, here | Ratio | Rust, DHH | Rust, here | Ratio |
+|---|---:|---:|---:|---:|---:|---:|
+| Room page | 241 | 225 | 0.93 | 36,260 | 21,229 | 0.59 |
+| Messages page | 413 | 360 | 0.87 | 40,872 | 23,565 | 0.58 |
+| Sidebar | 552 | 480 | 0.87 | 34,672 | 20,828 | 0.60 |
+| Search | 435 | 382 | 0.88 | 33,299 | 21,276 | 0.64 |
+| Post a message | 273 | 198 | 0.73 | 6,896 | 4,153 | 0.60 |
+
+Rust runs at about 60% of DHH's numbers here. Stock Rails runs at about 87–93% on reads.
+Rails' reads lose less on this box than Rust's do. One guess is that Rust's per-request time is
+closer to the raw limits of the CPU and memory, so a faster core helps it more. We haven't
+measured that.
+
 ## Caching
 
 The rule: only cache what the Rust or Elixir ports cache, checked against their source.
@@ -223,7 +273,8 @@ commit cost is the WAL writes themselves.
 - **Worker counts differ.** Optimized Rails, Sinatra and Rage each run 4 processes; stock Rails runs
   3, its default.
 - **Hardware.** The published Rust and Elixir numbers come from faster machines (DHH's Ryzen AI
-  MAX+ 395, an Apple M3), so they don't compare column for column with these.
+  MAX+ 395, an Apple M3). Rust has also been run on this box; see "Rust on the same box". The
+  Elixir port hasn't been run here.
 
 ## Security and parity status
 
