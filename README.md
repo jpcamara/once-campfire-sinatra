@@ -29,28 +29,32 @@ per-change measurements and raw results are on the
 
 ## Performance
 
-Final run, Oct 7 2026: DHH's `bench/run` on a Hetzner Ryzen 7 PRO 8700GE. Each app gets four
-hardware threads and the load generator four others. YJIT and jemalloc are on. The numbers are
-medians of 3 runs in rotating order, measured alongside the other implementations and stock
-Rails, with 0 errors.
+Final run, Oct 8 2026, after the precedent audit: DHH's `bench/run` on a Hetzner Ryzen 7 PRO
+8700GE. Each app gets four hardware threads and the load generator four others. YJIT and jemalloc
+are on. The numbers are medians of 3 runs in rotating order (HTTP and Action Cable), measured
+alongside the other implementations, stock Rails and the Rust port, with 0 errors. Upload and
+cold-start times are from the Oct 7 run; the audit's reverts don't touch those paths.
 
 | Workload | Rails (stock) | Sinatra |
 |---|---:|---:|
-| Room page (req/s, 16 clients) | 225 | 12,849 |
-| Messages page | 364 | 19,729 |
-| Sidebar | 482 | 23,016 |
-| Search | 378 | 15,503 |
-| Post a message | 198 | 3,302 |
-| Avatar | 62,491 | 73,935 |
-| Action Cable, 1,000 clients: p50 delivery | 42.8 ms | 9.3 ms |
-| Action Cable, 1,000 clients: saturated | 13 msg/s | 103 msg/s |
-| Upload + thumbnail (505 KB) | 67 ms | 135 ms |
-| Idle memory (anon) | 284 MB | 200 MB |
-| Cold start | 3.6 s | 1.5 s |
+| Room page (req/s, 16 clients) | 221 | 11,349 |
+| Messages page | 370 | 16,256 |
+| Sidebar | 482 | 22,613 |
+| Search | 381 | 14,523 |
+| Post a message | 195 | 1,799 |
+| Avatar | 61,938 | 72,664 |
+| Action Cable, 1,000 clients: p50 delivery | 44.1 ms | 8.2 ms |
+| Action Cable, 1,000 clients: saturated | 12 msg/s | 104 msg/s |
+| Idle memory (anon) | 283 MB | 200 MB |
+| Upload + thumbnail (505 KB), Oct 7 run | 67 ms | 135 ms |
+| Cold start, Oct 7 run | 3.6 s | 1.5 s |
 
 Uploads are about 2× slower than in Rails (135 ms vs 67 ms). An earlier run of this app measured 42 ms; the cause of the change hasn't been found.
 
 Room, search and messages pages are assembled on every request, the way the Elixir port does it. They used to be kept whole until the database changed, which neither the Rust nor the Elixir port does. Removing that cost 43% on room, 30% on search and 19% on messages in an A/B (23,724 → 13,634, 23,566 → 16,571, 25,902 → 21,037). The sidebar keeps its finished HTML until its data changes, as Elixir's does.
+
+The precedent audit (Oct 8) then reverted every optimization with no Rust or Elixir counterpart. Most of
+them were on the post path, so posting fell from 3,195 to 1,799 req/s; room fell 12% and messages 18%.
 
 **Room-page reads while posts arrive** (reads/sec at 16 clients, the median of 3 reps, each on a
 fresh seed). The read routes above never see a write, so this shows what the caches do under real
@@ -58,8 +62,8 @@ traffic:
 
 | Posts/sec in the background | 0 | 20 | 100 |
 |---|---:|---:|---:|
-| Rails (stock) | 228 | 214 | 194 |
-| Sinatra | 12,648 | 12,096 | 8,909 |
+| Rails (stock), Oct 7 run | 228 | 214 | 194 |
+| Sinatra | 11,253 | 10,806 | 7,748 |
 
 The per-change table below comes from the A/B run for each step. Each step was measured against
 the commit just before it, so the percentages don't multiply exactly into the totals.
@@ -67,26 +71,26 @@ the commit just before it, so the percentages don't multiply exactly into the to
 ## Compared with Rust on the same box
 
 DHH's [Rust port](https://github.com/basecamp/once-campfire-rust) (`ccece30`) was built and run on the
-same Hetzner box, in the same session as stock Rails and the three Ruby apps. Settings: 16 clients, four
-hardware threads per app, median of 3 alternating reps. Each app ran with its default caching.
+same Hetzner box, in the same Oct 8 session as stock Rails and the three Ruby apps. Settings: 16 clients,
+four hardware threads per app, median of 3 runs in rotating order. Each app ran with its default caching.
 
 | HTTP workload (requests/sec) | Rails | Rails (optimized) | Sinatra | Rage | Rust |
 |---|---:|---:|---:|---:|---:|
-| Room page | 225 | 551 | 12,861 | 10,127 | 21,229 |
-| Messages page | 360 | 1,984 | 19,729 | 24,638 | 23,565 |
-| Sidebar | 480 | 3,562 | 22,936 | 32,975 | 20,828 |
-| Search | 382 | 863 | 15,700 | 16,910 | 21,276 |
-| Post a message | 198 | 261 | 3,195 | 1,833 | 4,153 |
-| Avatar | 61,687 | 62,178 | 72,081 | 181,576 | 196,297 |
-| Cable p50, 1,000 clients | 44.6 ms | 40.9 ms | 9.0 ms | 5.0 ms | 4.3 ms |
-| Idle memory | 282 MB | 617 MB | 201 MB | 170 MB | 13 MB |
+| Room page | 221 | 529 | 11,349 | 10,094 | 21,155 |
+| Messages page | 370 | 1,985 | 16,256 | 24,763 | 23,515 |
+| Sidebar | 482 | 3,557 | 22,613 | 33,951 | 20,769 |
+| Search | 381 | 862 | 14,523 | 16,900 | 21,361 |
+| Post a message | 195 | 259 | 1,799 | 1,643 | 4,109 |
+| Avatar | 61,938 | 62,671 | 72,664 | 178,292 | 196,428 |
+| Cable p50, 1,000 clients | 44.1 ms | 41.1 ms | 8.2 ms | 5.0 ms | 4.4 ms |
+| Idle memory | 283 MB | 613 MB | 200 MB | 170 MB | 13 MB |
 
-With only the caching Rust does (`CAMPFIRE_CACHING=rust`), the Ruby apps read at roughly a quarter to a
-third of Rust's rate. Sinatra posts at three-quarters of Rust's rate. The extra caches all come from
-Elixir's port, and they're what let Ruby match Rust on the messages page and sidebar.
+With only the caching Rust does (`CAMPFIRE_CACHING=rust`), the Ruby apps read at roughly a quarter to
+two-fifths of Rust's rate, and post at about 40–45% of it. The extra caches all come from Elixir's port,
+and they're what let Ruby match Rust on the messages page and sidebar.
 
 **Hardware.** This box is slower than DHH's. On it, Rust runs at about 60% of his published numbers
-(room 21,229 vs 36,260). Stock Rails runs at 73–93% of his. So comparing these numbers with his table
+(room 21,155 vs 36,260). Stock Rails runs at 73–93% of his. So comparing these numbers with his table
 overstates the gap between Ruby and Rust by about 1.7×.
 
 ## Caching
@@ -113,59 +117,66 @@ request.
 | Compressed pieces; whole-body gzip by digest | Rust | room and search +34–37% |
 | Public responses (avatars, assets) | Rust, Thruster | avatars 5× |
 | Prepared statements | Rust | built in |
-| Read cache (`PRAGMA data_version`), and records built from it | Elixir only | +16–25% on every read route |
+| Read cache (`PRAGMA data_version`) | Elixir only | +16–25% on every read route |
 | Finished sidebar until its data changes | Elixir only | sidebar +61% |
 | Messages page parts per ETag | Elixir only | not measured alone |
 | Room and search shell, memoized by its inputs | Elixir only | not measured alone |
-| Verified session signatures | Elixir only | room +12%, sidebar +16% |
-| Memoized avatar tokens, signed ids, stream names, initials | This app | not measured alone |
+| Verified session_token cookie | Elixir only (`auth.ex`) | room +12%, sidebar +16% |
+| Memoized avatar tokens | Elixir only (`mentions.ex`) | not measured alone |
 
 **Rust-level caching only.** `CAMPFIRE_CACHING=rust` turns off every cache that only the Elixir port
-(or this app) has, and keeps the rest. The run used the same harness, box and CPUs as the full
-run, on images built from the commit that adds the switch: 3 reps, 0 errors. Rails (stock) is from the full run; in this run it measured 221 / 365 / 467 /
-368 / 196.
+has, and keeps the rest. It ran on Oct 8 with the same harness, box, CPUs and images as the full
+run: 3 runs in rotating order, HTTP suite, 0 errors. Rails (stock) is from the full run.
 
 | Workload (req/s, 16 clients) | Rails (stock) | Full caching | Rust-level caching only | Full ÷ Rust-level |
 |---|---:|---:|---:|---:|
-| Room page | 225 | 12,849 | 4,812 | 2.7× |
-| Messages page | 364 | 19,729 | 7,637 | 2.6× |
-| Sidebar | 482 | 23,016 | 6,365 | 3.6× |
-| Search | 378 | 15,503 | 7,442 | 2.1× |
-| Post a message | 198 | 3,302 | 3,165 | 1.0× |
+| Room page | 221 | 11,349 | 4,911 | 2.3× |
+| Messages page | 370 | 16,256 | 7,798 | 2.1× |
+| Sidebar | 482 | 22,613 | 6,403 | 3.5× |
+| Search | 381 | 14,523 | 7,641 | 1.9× |
+| Post a message | 195 | 1,799 | 1,817 | 1.0× |
 
 The same mixed read/write run (3 reps, fresh seed each):
 
 | Room reads/sec while posts arrive at | 0/s | 20/s | 100/s |
 |---|---:|---:|---:|
-| Rails (stock) | 228 | 214 | 194 |
-| Sinatra, full caching | 12,648 | 12,096 | 8,909 |
-| Sinatra, Rust-level caching only | 4,763 | 4,634 | 3,741 |
+| Rails (stock), Oct 7 run | 228 | 214 | 194 |
+| Sinatra, full caching | 11,253 | 10,806 | 7,748 |
+| Sinatra, Rust-level caching only | 4,782 | 4,710 | 3,711 |
 
 ## Where the gains come from
 
-Each change was measured with an A/B against the commit before it.
+Each change was measured with an A/B against the commit before it. Every change is a fix of our own
+bug, something the Rust port does, or a cache the Elixir port has. Changes with neither precedent
+were reverted (see below), as listed in
+[the precedent audit](https://github.com/jpcamara/once-campfire-sinatra/blob/benchmarks/notes/precedent-audit.md).
 
 | Change | Source | Room | Messages | Sidebar | Search | Post |
 |---|---|---:|---:|---:|---:|---:|
-| Split pages by byte offset | Ours (bug in our code) | +18% | — | — | +7% | — |
-| Keep each page segment's deflate block | Rust | +37% | — | — | +34% | — |
-| Read cache cleared on `PRAGMA data_version` | Elixir | +16% | +21% | +16% | +25% | — |
-| Keep the finished sidebar until its data changes | Elixir | | | +61% | | |
+| Split pages by byte offset | Bug fix | +18% | — | — | +7% | — |
+| Keep each page segment's deflate block | Rust (2947c64) | +37% | — | — | +34% | — |
+| Read cache cleared on `PRAGMA data_version` | Elixir (`db.ex`) | +16% | +21% | +16% | +25% | — |
+| Keep the finished sidebar until its data changes | Elixir (`sidebar.ex`) | | | +61% | | |
 | Fix: `config.ru` rebuilt the Rack stack per request | Bug fix | | | +114% | | |
-| ~~Keep finished room / search / messages pages whole~~ | **Removed**: no precedent | (−43% when removed) | (−19%) | | (−30%) | |
 | Fix: the image ran in development mode | Bug fix | +18% | | +25% | | |
-| Falcon without its gzip middleware | Ours | +14% | | | | |
-| Keep records built from cached rows | Ours | +14% | +15% | | | |
-| Remember verified session signatures | Elixir | +12% | | +16% | | |
-| Message versions as an ETag part | Rust | +7% | +8% | | | |
-| Post without reloading the new message | Ours | | | | | +10% |
-| WAL checkpoints in their own process | Rust | | | | | +10% |
-| Plain-text bodies skip the rich-text pipeline | Ours | | | | | +38% |
-| One Redis PUBLISH per post | Ours | | | | | +4% |
-| Retry the write lock every 100 µs, not 1 ms | Ours | | | | | +20% |
-| Public-response cache (avatars 16.4k → 82.6k req/s) | Rust, Thruster | | | | | |
+| Falcon without its own gzip layer (the app already compresses once) | Bug fix | +14% | | | | |
+| Remember the verified session_token cookie | Elixir (`auth.ex`) | +12% | | +16% | | |
+| WAL checkpoints in their own process | Rust (`db/src/database.rs`) | | | | | +10% |
+| `/assets` and `/cable` dispatched before routing | Rust (`app.rs`) | +5–8% on small routes | | | | |
+| Public-response cache (avatars 16.4k → 82.6k req/s) | Rust (`front/cache.rs`), Thruster | | | | | |
 
-"Ours" changes have no reference precedent. They're internal and invisible from outside.
+**Reverted for lack of precedent.** Each was measured as a gain when it was added:
+
+| Reverted change | Gain it had | Why |
+|---|---|---|
+| Keep finished room / search / messages pages whole | room +145%, messages +56%, search +80% | neither port keeps whole pages |
+| Plain-text bodies skip the rich-text pipeline | post +38% | Rust parses every body |
+| Retry the write lock every 100 µs, not 1 ms | post +20% | Rust has one writer thread and never retries |
+| Build a new message's view and push payload from the request | post +10% | Rust reads them back through its presenter |
+| One Redis PUBLISH per post | post +4% | Rust broadcasts one by one |
+| Keep records built from cached rows | room +14%, messages +15% | Elixir caches rows, not records |
+| Memoize the ETag's message-version list | room +7%, messages +8% | Rust builds ETag parts per request |
+| Remember every verifier's signatures, signed stream names and blob ids, initials SVGs | not measured alone | Rust generates each per use; Elixir only keeps the session cookie |
 
 ## Differences from Rails
 
@@ -183,9 +194,11 @@ The full list is in the
 
 ## Status
 
-- **Parity:** the Playwright harness passes every cell on the current code. That's 874 of 874 on the
-  default seed, with no allowed differences, and 82 of 82 on the other seeds: first_run 16, crowd 25,
-  custom_styles 33, restricted 8.
+- **Parity:** the Playwright harness passed every cell before the precedent audit: 874 of 874 on the
+  default seed, with no allowed differences, and 82 of 82 on the other seeds (first_run 16, crowd 25,
+  custom_styles 33, restricted 8). After the audit's reverts, the groups they touch passed again, 408 of 408
+  (auth, realtime, composer, users, messages). Server HTML matches the reference on 128 of 128 pages
+  (fresh and cached), and all 24 write flows match.
 - **Security:** an independent audit found four problems, and all are fixed:
   - stored XSS through uploads
   - no Origin check on `/cable`
