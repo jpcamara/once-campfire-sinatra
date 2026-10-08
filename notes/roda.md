@@ -133,3 +133,30 @@ and without a Turbo frame) matched except for `X-Cache` hit/miss, which depends 
 - **`send_file` didn't accept `disposition:`** (590cb1b): the disk-blob route answered 500.
 - **A halt from the before-action was taken for an unmatched path** (cfdd3e4). A banned IP's POST
   got the 404 page instead of 429. Playwright's auth/sign_in/banned_ip state caught it.
+
+## Results (Oct 8, image e1c9836 from 44c135c)
+
+Five-app run, 3 runs in rotating order, with stock Rails, Sinatra (fb24b48), Rage (623fb2d) and Rust
+(ccece30) in the same session; 0 errors. Requests/sec at 16 clients:
+
+| | Rails | Sinatra | Rage | Roda | Rust |
+|---|---:|---:|---:|---:|---:|
+| Room | 222 | 11,303 | 10,146 | 12,431 | 21,206 |
+| Messages | 362 | 16,197 | 24,784 | 19,386 | 23,634 |
+| Sidebar | 467 | 22,533 | 33,989 | 27,366 | 20,652 |
+| Search | 372 | 14,574 | 16,843 | 16,294 | 21,361 |
+| Post | 197 | 1,851 | 1,639 | 1,732 | 4,122 |
+| Avatar | 62,119 | 73,951 | 178,931 | 75,871 | 196,130 |
+
+Cable at 1,000 clients for Roda: p50 delivery 7.9 ms, 104 msg/s saturated, every message delivered.
+Upload 131 ms, idle anon 196 MB, cold start 1.4 s.
+
+- **Mixed run** (room reads at 0 / 20 / 100 posts/s): 12,282 / 11,124 / 7,686. Post p50 at 100/s is
+  3.2 ms.
+- **Rust-level caching only** (`CAMPFIRE_CACHING=rust`): room 5,037, messages 8,413, sidebar 6,448,
+  search 7,269, post 1,676.
+- **Run 1's env.txt** has no Roda image ID: `campfire-roda:app` was tagged from v5 24 seconds into
+  that run, before it reached Roda. All three runs used v5.
+
+Raw results: results/hetzner/roda/ (roda-5app, roda-mixed, roda-rust-caching, the parity reports,
+verify-v5.txt, compare-v5.txt).
