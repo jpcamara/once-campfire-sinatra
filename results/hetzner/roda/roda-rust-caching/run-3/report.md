@@ -1,0 +1,22 @@
+```
+date: 2026-10-08T07:50:15+02:00
+host: 6.8.0-137-generic, AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics, 16 threads, 61GB
+server cpus: 4-7 (nproc 4); loadgen cpus: 0-3; network: host
+env: WEB_CONCURRENCY=3 JOB_CONCURRENCY=3 RAILS_MAX_THREADS=5 WEB_CONCURRENCY=4 
+rust extra env: 
+user agent: (none)
+roda image: campfire-roda:app sha256:e1c9836cfb6fc66661f7a59cf899e6cec80d07c49e4d9e285b8d69de71eca2ee 2026-10-08T02:24:48.338647722+02:00
+rust HEAD:  (dirty: 0 files)
+```
+
+Reps: . Cells: median [min–max].
+
+### Startup and memory
+
+| Metric |  | Rust adv. |
+|---|---|
+| cold start: docker run → /up 200 (ms) |  | – |
+| idle memory.current (MB) |  | – |
+| idle anon (MB) |  | – |
+| peak memory.current under load (MB) |  | – |
+| peak anon under load (MB) |  | – |

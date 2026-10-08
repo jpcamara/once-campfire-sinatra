@@ -1,0 +1,39 @@
+== fixcheck
+PASS x-request-id on a page (1)
+PASS client x-request-id kept, sanitized (abcdef)
+PASS no x-request-id on an asset (0)
+PASS no x-request-id on /404.html (0)
+PASS cable: foreign origin (404)
+PASS cable: no origin (404)
+PASS cable: not an upgrade (Page not found)
+PASS cable: same origin (101)
+PASS forgery: Origin null (422)
+PASS forgery: foreign Origin (422)
+PASS forgery: Sec-Fetch-Site none (422)
+PASS forgery: cross-site (422)
+PASS forgery: same-site (200)
+PASS forgery: no header over plain HTTP (200)
+PASS forgery: 422 is the public page (1)
+PASS forgery: signed-out write goes to sign in (302)
+PASS bot API by cookie, cross-site (422)
+PASS bot API by key, cross-site (201)
+PASS marker in a search query (200)
+PASS marker in a search query (repeat) (200)
+PASS sidebar Link header, first (1)
+PASS sidebar Link header, kept (1)
+PASS html upload accepted (200)
+  blob link: /rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6MTUsInB1ciI6ImJsb2JfaWQifX0=--e4a6db3768ecbc8f6034ed4a1805bfdf51f318f7/fixcheck.html
+PASS html blob type (application/octet-stream)
+PASS html blob disposition (attachment)
+PASS boost keeps its full content (a boost that is longer than sixteen characters)
+PASS ban with a private-IP session refused (422)
+PASS the refused ban changed nothing (0)
+failures: 0
+== checkmode
+mismatches: 0
+== cable+upload suites
+[03:41:12] roda rep 1: cable 100 clients ready 100 lat all p50 5.047 p99 24.495 tput 631.0 msg/s 9473 / 9473
+[03:41:38] roda rep 1: cable 1000 clients ready 1000 lat all p50 12.143 p99 28.431 tput 95.0 msg/s 1521 / 1521
+[03:41:40] roda rep 1: upload median 48.7ms
+IndexError: list index out of range
+DONE

@@ -1,0 +1,10 @@
+06:04:18 reference rep 1 start:  06:04:18 up 36 days,  8:24,  4 users,  load average: 1.87, 2.95, 3.27
+06:09:41 reference rep 1 end:    06:09:41 up 36 days,  8:30,  5 users,  load average: 2.98, 3.04, 3.20
+06:09:41 sinatra rep 1 start:  06:09:41 up 36 days,  8:30,  5 users,  load average: 2.98, 3.04, 3.20
+06:15:30 sinatra rep 1 end:    06:15:30 up 36 days,  8:36,  5 users,  load average: 3.76, 3.30, 3.21
+06:15:30 rage rep 1 start:  06:15:30 up 36 days,  8:36,  5 users,  load average: 3.76, 3.30, 3.21
+06:21:27 rage rep 1 end:    06:21:27 up 36 days,  8:42,  5 users,  load average: 4.75, 3.61, 3.27
+06:21:27 roda rep 1 start:  06:21:27 up 36 days,  8:42,  5 users,  load average: 4.75, 3.61, 3.27
+06:27:44 roda rep 1 end:    06:27:44 up 36 days,  8:48,  5 users,  load average: 4.01, 3.38, 3.18
+06:27:44 rust rep 1 start:  06:27:44 up 36 days,  8:48,  5 users,  load average: 4.01, 3.38, 3.18
+06:33:41 rust rep 1 end:    06:33:41 up 36 days,  8:54,  5 users,  load average: 5.09, 4.17, 3.51

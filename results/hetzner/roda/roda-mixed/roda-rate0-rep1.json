@@ -1,0 +1,27 @@
+{
+ "app": "roda",
+ "rep": 1,
+ "rate": 0,
+ "read": {
+  "avg_bytes": 20002,
+  "conc": 16,
+  "errors": 0,
+  "gzip": true,
+  "latency": {
+   "max_ms": 26.831,
+   "mean_ms": 1.32,
+   "n": 242577,
+   "p50_ms": 1.723,
+   "p90_ms": 2.267,
+   "p99_ms": 3.273
+  },
+  "ok": 242577,
+  "path": "/rooms/486777696",
+  "rps": 12127.5,
+  "secs": 20.0,
+  "statuses": {
+   "200": 242577
+  }
+ },
+ "post": null
+}

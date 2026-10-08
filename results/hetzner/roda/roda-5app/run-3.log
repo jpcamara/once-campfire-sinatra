@@ -1,0 +1,357 @@
+fatal: not a git repository (or any of the parent directories): .git
+fatal: not a git repository (or any of the parent directories): .git
+date: 2026-10-08T07:05:07+02:00
+host: 6.8.0-137-generic, AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics, 16 threads, 61GB
+server cpus: 4-7 (nproc 4); loadgen cpus: 0-3; network: host
+env: WEB_CONCURRENCY=3 JOB_CONCURRENCY=3 RAILS_MAX_THREADS=5 WEB_CONCURRENCY=4 
+rust extra env: 
+user agent: (none)
+rage image: campfire-rage:app sha256:fec54a77a520a3121a8a5d20c4b2a4feadc6476a7119a55a0276551fce3fa5d8 2026-10-08T00:13:15.796284949+02:00
+roda image: campfire-roda:app sha256:e1c9836cfb6fc66661f7a59cf899e6cec80d07c49e4d9e285b8d69de71eca2ee 2026-10-08T02:24:48.338647722+02:00
+rust image: campfire-rust:app sha256:ecb3890f2706b5cec162be650e18c22d15d1627382bdba574c36a123975fab8b 2026-10-07T16:29:31.789282932+02:00
+reference image: campfire-reference:app sha256:0701d9b06ec642db9cdac8efc2854ba0e7f33d404af39d814acbc0d56323f6b0 2026-10-05T17:10:33.410393286+02:00
+sinatra image: campfire-sinatra:app sha256:4f4bbaf837cfc27c84131a57a6bc531a17e55d359d3c135b487c61e98ab5892c 2026-10-08T00:02:42.862560516+02:00
+rust HEAD:  (dirty: 0 files)
+[07:06:37] load before run: 1.36 2.84 3.09 (waited 90s)
+[07:06:37] rage rep 1: starting (load: 1.36 2.84 3.09)
+[07:06:49] rage rep 1: cold start 1569ms, idle 176MB (anon 170MB)
+[07:06:59] rage rep 1: room_show c=1 2818.3 rps p50 0.326 p99 0.798 {'200': 22547} err 0
+[07:07:07] rage rep 1: room_show c=16 10138.8 rps p50 1.402 p99 3.851 {'200': 81141} err 0
+[07:07:15] rage rep 1: room_show c=64 10113.7 rps p50 3.311 p99 15.895 {'200': 81063} err 0
+[07:07:25] rage rep 1: messages_page c=1 6421.8 rps p50 0.141 p99 0.532 {'200': 51375} err 0
+[07:07:33] rage rep 1: messages_page c=16 24783.5 rps p50 0.571 p99 1.319 {'200': 198283} err 0
+[07:07:41] rage rep 1: messages_page c=64 24416.7 rps p50 2.507 p99 4.883 {'200': 195451} err 0
+[07:07:51] rage rep 1: sidebar c=1 8303.0 rps p50 0.113 p99 0.252 {'200': 66425} err 0
+[07:08:00] rage rep 1: sidebar c=16 34049.9 rps p50 0.434 p99 1.205 {'200': 272417} err 0
+[07:08:08] rage rep 1: sidebar c=64 33938.0 rps p50 1.714 p99 4.005 {'200': 271621} err 0
+[07:08:18] rage rep 1: search c=1 4472.4 rps p50 0.206 p99 0.653 {'200': 35780} err 0
+[07:08:26] rage rep 1: search c=16 16843.3 rps p50 1.049 p99 1.942 {'200': 134767} err 0
+[07:08:34] rage rep 1: search c=64 16668.4 rps p50 3.845 p99 9.527 {'200': 133498} err 0
+[07:08:44] rage rep 1: avatar c=1 32868.8 rps p50 0.028 p99 0.041 {'200': 262953} err 0
+[07:08:52] rage rep 1: avatar c=16 165725.4 rps p50 0.109 p99 0.256 {'200': 1325860} err 0
+[07:09:00] rage rep 1: avatar c=64 179181.7 rps p50 0.266 p99 1.228 {'200': 1433674} err 0
+[07:09:10] rage rep 1: static_css c=1 36786.6 rps p50 0.025 p99 0.045 {'200': 294296} err 0
+[07:09:18] rage rep 1: static_css c=16 182635.2 rps p50 0.037 p99 0.413 {'200': 1461205} err 0
+[07:09:26] rage rep 1: static_css c=64 213272.7 rps p50 0.272 p99 1.075 {'200': 1706439} err 0
+[07:09:36] rage rep 1: up c=1 20265.2 rps p50 0.044 p99 0.14 {'200': 162123} err 0
+[07:09:44] rage rep 1: up c=16 78354.0 rps p50 0.136 p99 0.829 {'200': 626883} err 0
+[07:09:52] rage rep 1: up c=64 99294.0 rps p50 0.484 p99 2.229 {'200': 794497} err 0
+[07:10:02] rage rep 1: post_message c=1 662.7 rps p50 1.081 p99 14.191 {'200': 5302} err 0
+[07:10:10] rage rep 1: post_message c=16 1650.9 rps p50 8.503 p99 28.431 {'200': 13272} err 0
+[07:10:18] rage rep 1: post_message c=64 1763.4 rps p50 26.239 p99 177.535 {'200': 14291} err 0
+[07:10:41] rage rep 1: cable 100 clients ready 100 lat all p50 3.149 p99 5.107 tput 823.1 msg/s 12415 / 12415
+[07:11:06] rage rep 1: cable 500 clients ready 500 lat all p50 6.475 p99 29.551 tput 328.7 msg/s 4989 / 4989
+[07:11:31] rage rep 1: cable 1000 clients ready 1000 lat all p50 8.431 p99 12.439 tput 191.8 msg/s 2892 / 2892
+[07:11:34] rage rep 1: upload median 133.8ms
+[07:11:34] rage rep 1: done -> /opt/campfire-perf/results/roda-5app/run-3/rage-1.json
+[07:12:45] load before run: 1.39 2.75 3.02 (waited 70s)
+[07:12:45] roda rep 1: starting (load: 1.39 2.75 3.02)
+[07:12:56] roda rep 1: cold start 1429ms, idle 201MB (anon 195MB)
+[07:13:06] roda rep 1: room_show c=1 3276.1 rps p50 0.28 p99 0.838 {'200': 26209} err 0
+[07:13:14] roda rep 1: room_show c=16 12379.7 rps p50 1.151 p99 2.721 {'200': 99063} err 0
+[07:13:23] roda rep 1: room_show c=64 12299.1 rps p50 4.987 p99 7.367 {'200': 98467} err 0
+[07:13:33] roda rep 1: messages_page c=1 5045.7 rps p50 0.175 p99 0.647 {'200': 40368} err 0
+[07:13:41] roda rep 1: messages_page c=16 19385.8 rps p50 0.77 p99 1.912 {'200': 155103} err 0
+[07:13:49] roda rep 1: messages_page c=64 18977.6 rps p50 3.097 p99 4.799 {'200': 151884} err 0
+[07:13:59] roda rep 1: sidebar c=1 6895.1 rps p50 0.133 p99 0.319 {'200': 55162} err 0
+[07:14:07] roda rep 1: sidebar c=16 27366.5 rps p50 0.525 p99 1.686 {'200': 218957} err 0
+[07:14:15] roda rep 1: sidebar c=64 26945.8 rps p50 2.471 p99 4.331 {'200': 215655} err 0
+[07:14:25] roda rep 1: search c=1 4264.5 rps p50 0.215 p99 0.607 {'200': 34118} err 0
+[07:14:33] roda rep 1: search c=16 16293.8 rps p50 0.679 p99 2.829 {'200': 130380} err 0
+[07:14:41] roda rep 1: search c=64 16036.0 rps p50 4.163 p99 6.031 {'200': 128366} err 0
+[07:14:51] roda rep 1: avatar c=1 16456.1 rps p50 0.053 p99 0.226 {'200': 131650} err 0
+[07:14:59] roda rep 1: avatar c=16 77652.3 rps p50 0.175 p99 0.979 {'200': 621252} err 0
+[07:15:07] roda rep 1: avatar c=64 76819.1 rps p50 0.829 p99 2.051 {'200': 614691} err 0
+[07:15:17] roda rep 1: static_css c=1 20182.4 rps p50 0.044 p99 0.188 {'200': 161461} err 0
+[07:15:25] roda rep 1: static_css c=16 96505.1 rps p50 0.132 p99 0.878 {'200': 772082} err 0
+[07:15:33] roda rep 1: static_css c=64 96152.9 rps p50 0.83 p99 2.481 {'200': 769390} err 0
+[07:15:43] roda rep 1: up c=1 10296.0 rps p50 0.09 p99 0.276 {'200': 82369} err 0
+[07:15:51] roda rep 1: up c=16 42584.3 rps p50 0.321 p99 1.249 {'200': 340702} err 0
+[07:15:59] roda rep 1: up c=64 42318.2 rps p50 1.614 p99 2.911 {'200': 338675} err 0
+[07:16:09] roda rep 1: post_message c=1 686.1 rps p50 1.331 p99 2.615 {'200': 5489} err 0
+[07:16:17] roda rep 1: post_message c=16 1742.8 rps p50 7.491 p99 31.199 {'200': 13952} err 0
+[07:16:25] roda rep 1: post_message c=64 1756.3 rps p50 23.199 p99 197.375 {'200': 14081} err 0
+[07:16:48] roda rep 1: cable 100 clients ready 100 lat all p50 3.867 p99 9.463 tput 658.5 msg/s 9881 / 9881
+[07:17:13] roda rep 1: cable 500 clients ready 500 lat all p50 7.915 p99 20.751 tput 154.4 msg/s 2319 / 2319
+[07:17:38] roda rep 1: cable 1000 clients ready 1000 lat all p50 13.903 p99 26.367 tput 74.7 msg/s 1123 / 1123
+[07:17:40] roda rep 1: upload median 132.4ms
+[07:17:41] roda rep 1: done -> /opt/campfire-perf/results/roda-5app/run-3/roda-1.json
+[07:18:51] load before run: 1.32 2.70 2.97 (waited 70s)
+[07:18:51] rust rep 1: starting (load: 1.32 2.70 2.97)
+[07:19:02] rust rep 1: cold start 293ms, idle 15MB (anon 13MB)
+[07:19:12] rust rep 1: room_show c=1 5433.7 rps p50 0.18 p99 0.264 {'200': 43470} err 0
+[07:19:20] rust rep 1: room_show c=16 21029.2 rps p50 0.739 p99 1.333 {'200': 168249} err 0
+[07:19:28] rust rep 1: room_show c=64 21795.9 rps p50 2.869 p99 5.139 {'200': 174432} err 0
+[07:19:38] rust rep 1: messages_page c=1 6032.6 rps p50 0.163 p99 0.226 {'200': 48262} err 0
+[07:19:46] rust rep 1: messages_page c=16 23414.8 rps p50 0.667 p99 1.139 {'200': 187332} err 0
+[07:19:54] rust rep 1: messages_page c=64 24146.5 rps p50 2.599 p99 4.443 {'200': 193230} err 0
+[07:20:04] rust rep 1: sidebar c=1 5087.1 rps p50 0.192 p99 0.287 {'200': 40698} err 0
+[07:20:12] rust rep 1: sidebar c=16 20616.8 rps p50 0.751 p99 1.401 {'200': 164948} err 0
+[07:20:20] rust rep 1: sidebar c=64 21307.9 rps p50 2.923 p99 5.451 {'200': 170516} err 0
+[07:20:30] rust rep 1: search c=1 5772.6 rps p50 0.171 p99 0.229 {'200': 46182} err 0
+[07:20:38] rust rep 1: search c=16 21021.7 rps p50 0.712 p99 1.554 {'200': 168187} err 0
+[07:20:46] rust rep 1: search c=64 26467.1 rps p50 2.295 p99 4.539 {'200': 211781} err 0
+[07:20:56] rust rep 1: avatar c=1 38710.7 rps p50 0.024 p99 0.033 {'200': 309688} err 0
+[07:21:04] rust rep 1: avatar c=16 196959.6 rps p50 0.071 p99 0.239 {'200': 1575752} err 0
+[07:21:12] rust rep 1: avatar c=64 201884.1 rps p50 0.27 p99 1.737 {'200': 1615313} err 0
+[07:21:23] rust rep 1: static_css c=1 41978.2 rps p50 0.022 p99 0.03 {'200': 335828} err 0
+[07:21:31] rust rep 1: static_css c=16 207932.7 rps p50 0.068 p99 0.226 {'200': 1663528} err 0
+[07:21:39] rust rep 1: static_css c=64 209163.6 rps p50 0.259 p99 1.78 {'200': 1673571} err 0
+[07:21:49] rust rep 1: up c=1 23922.0 rps p50 0.039 p99 0.059 {'200': 191378} err 0
+[07:21:57] rust rep 1: up c=16 120559.7 rps p50 0.132 p99 0.231 {'200': 964519} err 0
+[07:22:05] rust rep 1: up c=64 123755.9 rps p50 0.499 p99 1.057 {'200': 990325} err 0
+[07:22:15] rust rep 1: post_message c=1 1991.7 rps p50 0.436 p99 0.787 {'200': 15934} err 0
+[07:22:23] rust rep 1: post_message c=16 4121.7 rps p50 2.897 p99 37.727 {'200': 32986} err 0
+[07:22:31] rust rep 1: post_message c=64 4068.0 rps p50 11.903 p99 50.015 {'200': 32591} err 0
+[07:22:53] rust rep 1: cable 100 clients ready 100 lat all p50 2.065 p99 2.757 tput 2242.4 msg/s 33640 / 33640
+[07:23:18] rust rep 1: cable 500 clients ready 500 lat all p50 4.787 p99 8.551 tput 715.6 msg/s 10739 / 10739
+[07:23:43] rust rep 1: cable 1000 clients ready 1000 lat all p50 7.179 p99 18.655 tput 381.6 msg/s 5729 / 5729
+[07:23:45] rust rep 1: upload median 35.0ms
+[07:23:47] rust rep 1: done -> /opt/campfire-perf/results/roda-5app/run-3/rust-1.json
+[07:25:08] load before run: 1.49 3.09 3.14 (waited 80s)
+[07:25:08] reference rep 1: starting (load: 1.49 3.09 3.14)
+[07:25:21] reference rep 1: cold start 3600ms, idle 302MB (anon 282MB)
+[07:25:32] reference rep 1: room_show c=1 92.1 rps p50 10.503 p99 12.751 {'200': 737} err 0
+[07:25:40] reference rep 1: room_show c=16 221.7 rps p50 70.911 p99 130.239 {'200': 1787} err 0
+[07:25:49] reference rep 1: room_show c=64 191.9 rps p50 346.623 p99 436.479 {'200': 1598} err 0
+[07:25:59] reference rep 1: messages_page c=1 164.8 rps p50 5.927 p99 7.587 {'200': 1319} err 0
+[07:26:07] reference rep 1: messages_page c=16 361.6 rps p50 43.423 p99 90.431 {'200': 2902} err 0
+[07:26:15] reference rep 1: messages_page c=64 337.4 rps p50 183.807 p99 271.103 {'200': 2756} err 0
+[07:26:25] reference rep 1: sidebar c=1 195.9 rps p50 5.015 p99 6.715 {'200': 1568} err 0
+[07:26:33] reference rep 1: sidebar c=16 456.8 rps p50 33.887 p99 63.935 {'200': 3673} err 0
+[07:26:41] reference rep 1: sidebar c=64 374.4 rps p50 173.567 p99 225.023 {'200': 3062} err 0
+[07:26:51] reference rep 1: search c=1 152.2 rps p50 6.487 p99 7.899 {'200': 1218} err 0
+[07:26:59] reference rep 1: search c=16 355.1 rps p50 45.759 p99 97.855 {'200': 2854} err 0
+[07:27:08] reference rep 1: search c=64 310.9 rps p50 204.799 p99 285.183 {'200': 2550} err 0
+[07:27:18] reference rep 1: avatar c=1 17900.5 rps p50 0.052 p99 0.119 {'200': 143206} err 0
+[07:27:26] reference rep 1: avatar c=16 62236.4 rps p50 0.17 p99 1.288 {'200': 497914} err 0
+[07:27:34] reference rep 1: avatar c=64 50550.1 rps p50 0.471 p99 7.775 {'200': 404469} err 0
+[07:27:44] reference rep 1: static_css c=1 22996.3 rps p50 0.041 p99 0.088 {'200': 183972} err 0
+[07:27:52] reference rep 1: static_css c=16 84460.4 rps p50 0.133 p99 0.963 {'200': 675715} err 0
+[07:28:00] reference rep 1: static_css c=64 70751.5 rps p50 0.436 p99 5.347 {'200': 566105} err 0
+[07:28:10] reference rep 1: up c=1 1539.4 rps p50 0.582 p99 1.256 {'200': 12315} err 0
+[07:28:18] reference rep 1: up c=16 3450.3 rps p50 4.531 p99 8.623 {'200': 27620} err 0
+[07:28:26] reference rep 1: up c=64 3404.1 rps p50 18.655 p99 28.031 {'200': 27309} err 0
+[07:28:36] reference rep 1: post_message c=1 98.9 rps p50 8.171 p99 33.407 {'200': 793} err 0
+[07:28:44] reference rep 1: post_message c=16 185.2 rps p50 79.871 p99 225.663 {'200': 1496} err 0
+[07:28:53] reference rep 1: post_message c=64 198.9 rps p50 319.743 p99 458.751 {'200': 1648} err 0
+[07:29:16] reference rep 1: cable 100 clients ready 100 lat all p50 18.847 p99 66.431 tput 74.4 msg/s 1121 / 1121
+[07:29:41] reference rep 1: cable 500 clients ready 500 lat all p50 50.175 p99 114.879 tput 23.8 msg/s 359 / 359
+[07:30:08] reference rep 1: cable 1000 clients ready 1000 lat all p50 86.975 p99 170.495 tput 12.4 msg/s 189 / 189
+[07:30:10] reference rep 1: upload median 86.8ms
+[07:30:11] reference rep 1: done -> /opt/campfire-perf/results/roda-5app/run-3/reference-1.json
+[07:31:21] load before run: 1.30 2.84 3.09 (waited 70s)
+[07:31:21] sinatra rep 1: starting (load: 1.30 2.84 3.09)
+[07:31:33] sinatra rep 1: cold start 1532ms, idle 205MB (anon 199MB)
+[07:31:43] sinatra rep 1: room_show c=1 3106.4 rps p50 0.281 p99 0.707 {'200': 24852} err 0
+[07:31:51] sinatra rep 1: room_show c=16 11306.9 rps p50 1.389 p99 2.377 {'200': 90475} err 0
+[07:31:59] sinatra rep 1: room_show c=64 10965.7 rps p50 5.963 p99 6.959 {'200': 87794} err 0
+[07:32:10] sinatra rep 1: messages_page c=1 4439.4 rps p50 0.186 p99 0.591 {'200': 35516} err 0
+[07:32:18] sinatra rep 1: messages_page c=16 16372.3 rps p50 0.921 p99 1.76 {'200': 131001} err 0
+[07:32:26] sinatra rep 1: messages_page c=64 16247.6 rps p50 3.935 p99 7.631 {'200': 130090} err 0
+[07:32:36] sinatra rep 1: sidebar c=1 5922.7 rps p50 0.147 p99 0.541 {'200': 47383} err 0
+[07:32:44] sinatra rep 1: sidebar c=16 22971.7 rps p50 0.72 p99 1.545 {'200': 183794} err 0
+[07:32:52] sinatra rep 1: sidebar c=64 22347.2 rps p50 2.907 p99 4.089 {'200': 178852} err 0
+[07:33:02] sinatra rep 1: search c=1 3941.9 rps p50 0.223 p99 0.639 {'200': 31536} err 0
+[07:33:10] sinatra rep 1: search c=16 14737.7 rps p50 1.13 p99 2.113 {'200': 117920} err 0
+[07:33:18] sinatra rep 1: search c=64 14183.8 rps p50 4.431 p99 6.739 {'200': 113551} err 0
+[07:33:28] sinatra rep 1: avatar c=1 16102.7 rps p50 0.053 p99 0.245 {'200': 128823} err 0
+[07:33:36] sinatra rep 1: avatar c=16 73951.3 rps p50 0.213 p99 0.871 {'200': 591641} err 0
+[07:33:44] sinatra rep 1: avatar c=64 72852.5 rps p50 0.847 p99 1.774 {'200': 582921} err 0
+[07:33:54] sinatra rep 1: static_css c=1 20332.7 rps p50 0.042 p99 0.22 {'200': 162664} err 0
+[07:34:02] sinatra rep 1: static_css c=16 92924.5 rps p50 0.164 p99 0.828 {'200': 743430} err 0
+[07:34:10] sinatra rep 1: static_css c=64 92018.0 rps p50 0.625 p99 1.41 {'200': 736305} err 0
+[07:34:20] sinatra rep 1: up c=1 9490.5 rps p50 0.094 p99 0.455 {'200': 75925} err 0
+[07:34:28] sinatra rep 1: up c=16 39085.2 rps p50 0.357 p99 1.156 {'200': 312706} err 0
+[07:34:36] sinatra rep 1: up c=64 38388.3 rps p50 1.532 p99 2.839 {'200': 307206} err 0
+[07:34:46] sinatra rep 1: post_message c=1 719.4 rps p50 1.273 p99 2.509 {'200': 5755} err 0
+[07:34:54] sinatra rep 1: post_message c=16 1847.5 rps p50 6.987 p99 29.711 {'200': 14791} err 0
+[07:35:02] sinatra rep 1: post_message c=64 1837.0 rps p50 26.207 p99 145.279 {'200': 14731} err 0
+[07:35:25] sinatra rep 1: cable 100 clients ready 100 lat all p50 4.443 p99 7.407 tput 668.1 msg/s 10028 / 10028
+[07:35:50] sinatra rep 1: cable 500 clients ready 500 lat all p50 7.643 p99 16.087 tput 158.7 msg/s 2386 / 2386
+[07:36:16] sinatra rep 1: cable 1000 clients ready 1000 lat all p50 11.895 p99 44.767 tput 97.7 msg/s 1564 / 1564
+[07:36:18] sinatra rep 1: upload median 43.0ms
+[07:36:19] sinatra rep 1: done -> /opt/campfire-perf/results/roda-5app/run-3/sinatra-1.json
+```
+date: 2026-10-08T07:05:07+02:00
+host: 6.8.0-137-generic, AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics, 16 threads, 61GB
+server cpus: 4-7 (nproc 4); loadgen cpus: 0-3; network: host
+env: WEB_CONCURRENCY=3 JOB_CONCURRENCY=3 RAILS_MAX_THREADS=5 WEB_CONCURRENCY=4 
+rust extra env: 
+user agent: (none)
+rage image: campfire-rage:app sha256:fec54a77a520a3121a8a5d20c4b2a4feadc6476a7119a55a0276551fce3fa5d8 2026-10-08T00:13:15.796284949+02:00
+roda image: campfire-roda:app sha256:e1c9836cfb6fc66661f7a59cf899e6cec80d07c49e4d9e285b8d69de71eca2ee 2026-10-08T02:24:48.338647722+02:00
+rust image: campfire-rust:app sha256:ecb3890f2706b5cec162be650e18c22d15d1627382bdba574c36a123975fab8b 2026-10-07T16:29:31.789282932+02:00
+reference image: campfire-reference:app sha256:0701d9b06ec642db9cdac8efc2854ba0e7f33d404af39d814acbc0d56323f6b0 2026-10-05T17:10:33.410393286+02:00
+sinatra image: campfire-sinatra:app sha256:4f4bbaf837cfc27c84131a57a6bc531a17e55d359d3c135b487c61e98ab5892c 2026-10-08T00:02:42.862560516+02:00
+rust HEAD:  (dirty: 0 files)
+```
+
+Reps: reference 1, rust 1. Cells: median [min–max].
+
+### Startup and memory
+
+| Metric | Rails | Rust | Rust adv. |
+|---|---|---|---|
+| cold start: docker run → /up 200 (ms) | 3,600 | 293 | 12.3× |
+| idle memory.current (MB) | 302 | 15.0 | 20.1× |
+| idle anon (MB) | 282 | 13.0 | 21.7× |
+| peak memory.current under load (MB) | 1,546 | 366 | 4.2× |
+| peak anon under load (MB) | 1,452 | 269 | 5.4× |
+
+### HTTP (signed in as david; keep-alive; c = concurrent connections)
+
+| Metric | Rails | Rust | Rust adv. |
+|---|---|---|---|
+| room_show c=1 req/s | 92.1 | 5,434 | 59.0× |
+| room_show c=1 p50 ms | 10.5 | 0.18 | 58.4× |
+| room_show c=1 p99 ms | 12.8 | 0.26 | 48.3× |
+| room_show c=16 req/s | 222 | 21,029 | 94.9× |
+| room_show c=16 p50 ms | 70.9 | 0.74 | 96.0× |
+| room_show c=16 p99 ms | 130 | 1.33 | 97.7× |
+| room_show c=64 req/s | 192 | 21,796 | 113.6× |
+| room_show c=64 p50 ms | 347 | 2.87 | 120.8× |
+| room_show c=64 p99 ms | 436 | 5.14 | 84.9× |
+| messages_page c=1 req/s | 165 | 6,033 | 36.6× |
+| messages_page c=1 p50 ms | 5.93 | 0.16 | 36.4× |
+| messages_page c=1 p99 ms | 7.59 | 0.23 | 33.6× |
+| messages_page c=16 req/s | 362 | 23,415 | 64.8× |
+| messages_page c=16 p50 ms | 43.4 | 0.67 | 65.1× |
+| messages_page c=16 p99 ms | 90.4 | 1.14 | 79.4× |
+| messages_page c=64 req/s | 337 | 24,146 | 71.6× |
+| messages_page c=64 p50 ms | 184 | 2.60 | 70.7× |
+| messages_page c=64 p99 ms | 271 | 4.44 | 61.0× |
+| sidebar c=1 req/s | 196 | 5,087 | 26.0× |
+| sidebar c=1 p50 ms | 5.01 | 0.19 | 26.1× |
+| sidebar c=1 p99 ms | 6.71 | 0.29 | 23.4× |
+| sidebar c=16 req/s | 457 | 20,617 | 45.1× |
+| sidebar c=16 p50 ms | 33.9 | 0.75 | 45.1× |
+| sidebar c=16 p99 ms | 63.9 | 1.40 | 45.6× |
+| sidebar c=64 req/s | 374 | 21,308 | 56.9× |
+| sidebar c=64 p50 ms | 174 | 2.92 | 59.4× |
+| sidebar c=64 p99 ms | 225 | 5.45 | 41.3× |
+| search c=1 req/s | 152 | 5,773 | 37.9× |
+| search c=1 p50 ms | 6.49 | 0.17 | 37.9× |
+| search c=1 p99 ms | 7.90 | 0.23 | 34.5× |
+| search c=16 req/s | 355 | 21,022 | 59.2× |
+| search c=16 p50 ms | 45.8 | 0.71 | 64.3× |
+| search c=16 p99 ms | 97.9 | 1.55 | 63.0× |
+| search c=64 req/s | 311 | 26,467 | 85.1× |
+| search c=64 p50 ms | 205 | 2.29 | 89.2× |
+| search c=64 p99 ms | 285 | 4.54 | 62.8× |
+| avatar c=1 req/s | 17,900 | 38,711 | 2.2× |
+| avatar c=1 p50 ms | 0.05 | 0.02 | 2.2× |
+| avatar c=1 p99 ms | 0.12 | 0.03 | 3.6× |
+| avatar c=16 req/s | 62,236 | 196,960 | 3.2× |
+| avatar c=16 p50 ms | 0.17 | 0.07 | 2.4× |
+| avatar c=16 p99 ms | 1.29 | 0.24 | 5.4× |
+| avatar c=64 req/s | 50,550 | 201,884 | 4.0× |
+| avatar c=64 p50 ms | 0.47 | 0.27 | 1.7× |
+| avatar c=64 p99 ms | 7.78 | 1.74 | 4.5× |
+| static_css c=1 req/s | 22,996 | 41,978 | 1.8× |
+| static_css c=1 p50 ms | 0.04 | 0.02 | 1.9× |
+| static_css c=1 p99 ms | 0.09 | 0.03 | 2.9× |
+| static_css c=16 req/s | 84,460 | 207,933 | 2.5× |
+| static_css c=16 p50 ms | 0.13 | 0.07 | 2.0× |
+| static_css c=16 p99 ms | 0.96 | 0.23 | 4.3× |
+| static_css c=64 req/s | 70,752 | 209,164 | 3.0× |
+| static_css c=64 p50 ms | 0.44 | 0.26 | 1.7× |
+| static_css c=64 p99 ms | 5.35 | 1.78 | 3.0× |
+| up c=1 req/s | 1,539 | 23,922 | 15.5× |
+| up c=1 p50 ms | 0.58 | 0.04 | 14.9× |
+| up c=1 p99 ms | 1.26 | 0.06 | 21.3× |
+| up c=16 req/s | 3,450 | 120,560 | 34.9× |
+| up c=16 p50 ms | 4.53 | 0.13 | 34.3× |
+| up c=16 p99 ms | 8.62 | 0.23 | 37.3× |
+| up c=64 req/s | 3,404 | 123,756 | 36.4× |
+| up c=64 p50 ms | 18.7 | 0.50 | 37.4× |
+| up c=64 p99 ms | 28.0 | 1.06 | 26.5× |
+| post_message c=1 req/s | 98.9 | 1,992 | 20.1× |
+| post_message c=1 p50 ms | 8.17 | 0.44 | 18.7× |
+| post_message c=1 p99 ms | 33.4 | 0.79 | 42.4× |
+| post_message c=16 req/s | 185 | 4,122 | 22.3× |
+| post_message c=16 p50 ms | 79.9 | 2.90 | 27.6× |
+| post_message c=16 p99 ms | 226 | 37.7 | 6.0× |
+| post_message c=64 req/s | 199 | 4,068 | 20.5× |
+| post_message c=64 p50 ms | 320 | 11.9 | 26.9× |
+| post_message c=64 p99 ms | 459 | 50.0 | 9.2× |
+
+### HTTP errors / non-2xx-3xx (first rep, per app)
+
+| Metric | Rails | Rust | Rust adv. |
+|---|---|---|---|
+- reference: none
+- rust: none
+
+### Action Cable fan-out (one room; chatter.js subscriptions per client)
+
+| Metric | Rails | Rust | Rust adv. |
+|---|---|---|---|
+| 100 clients: subscribed | 100 | 100 | 1.0× |
+| 100 clients: connect+subscribe all (s) | 0.32 | 0.06 | 5.3× |
+| 100 clients: paced post→one client p50 ms | 14.0 | 1.73 | 8.1× |
+| 100 clients: paced post→all clients p50 ms | 18.8 | 2.06 | 9.1× |
+| 100 clients: paced post→all clients p99 ms | 66.4 | 2.76 | 24.1× |
+| 100 clients: max sustained msgs/s (delivered to all) | 74.4 | 2,242 | 30.1× |
+| 100 clients: deliveries/s (client×message) | 7,444 | 224,239 | 30.1× |
+| 100 clients: saturated post→all p50 ms | 59.0 | 1.99 | 29.7× |
+| 100 clients: saturated POST p50 ms | 47.8 | 1.51 | 31.7× |
+| 500 clients: subscribed | 500 | 500 | 1.0× |
+| 500 clients: connect+subscribe all (s) | 0.89 | 0.13 | 6.8× |
+| 500 clients: paced post→one client p50 ms | 25.7 | 2.96 | 8.7× |
+| 500 clients: paced post→all clients p50 ms | 50.2 | 4.79 | 10.5× |
+| 500 clients: paced post→all clients p99 ms | 115 | 8.55 | 13.4× |
+| 500 clients: max sustained msgs/s (delivered to all) | 23.8 | 716 | 30.1× |
+| 500 clients: deliveries/s (client×message) | 11,916 | 357,807 | 30.0× |
+| 500 clients: saturated post→all p50 ms | 130 | 11.8 | 11.0× |
+| 500 clients: saturated POST p50 ms | 128 | 5.17 | 24.7× |
+| 1000 clients: subscribed | 1,000 | 1,000 | 1.0× |
+| 1000 clients: connect+subscribe all (s) | 1.80 | 0.15 | 12.0× |
+| 1000 clients: paced post→one client p50 ms | 40.4 | 4.05 | 10.0× |
+| 1000 clients: paced post→all clients p50 ms | 87.0 | 7.18 | 12.1× |
+| 1000 clients: paced post→all clients p99 ms | 170 | 18.7 | 9.1× |
+| 1000 clients: max sustained msgs/s (delivered to all) | 12.4 | 382 | 30.8× |
+| 1000 clients: deliveries/s (client×message) | 12,442 | 381,583 | 30.7× |
+| 1000 clients: saturated post→all p50 ms | 266 | 23.3 | 11.4× |
+| 1000 clients: saturated POST p50 ms | 293 | 10.1 | 29.1× |
+
+### Upload + thumbnail (black_hole.jpg, 505 KB)
+
+| Metric | Rails | Rust | Rust adv. |
+|---|---|---|---|
+| POST with attachment (ms) | 86.3 | 34.6 | 2.5× |
+| then GET thumb → 200 (ms) | 0.40 | 0.40 | 1.0× |
+| POST → thumbnail served (ms) | 86.8 | 35.0 | 2.5× |
+
+### Memory during cable fan-out, by process (MB, peak within the phase)
+
+App process: Rails' Puma master and workers (Action Cable runs in them), or Rust's one campfire
+process (its front server included). Pss counts pages shared between forked workers once;
+RssAnon counts them in every process.
+
+| Metric | Rails | Rust | Rust adv. |
+|---|---|---|---|
+| 100 clients, all subscribed, idle: app process Pss | 565 | 121 | 4.7× |
+| 100 clients, all subscribed, idle: app process RssAnon | 713 | 99.2 | 7.2× |
+| 100 clients, all subscribed, idle: app + Redis + Thruster Pss | 601 | 121 | 5.0× |
+| 100 clients, all subscribed, idle: whole container Pss | 868 | 121 | 7.2× |
+| 100 clients, saturated fan-out: app process Pss | 674 | 119 | 5.7× |
+| 100 clients, saturated fan-out: app process RssAnon | 819 | 97.4 | 8.4× |
+| 100 clients, saturated fan-out: app + Redis + Thruster Pss | 722 | 119 | 6.1× |
+| 100 clients, saturated fan-out: whole container Pss | 989 | 119 | 8.3× |
+| 500 clients, all subscribed, idle: app process Pss | 623 | 117 | 5.3× |
+| 500 clients, all subscribed, idle: app process RssAnon | 766 | 95.0 | 8.1× |
+| 500 clients, all subscribed, idle: app + Redis + Thruster Pss | 689 | 117 | 5.9× |
+| 500 clients, all subscribed, idle: whole container Pss | 957 | 117 | 8.2× |
+| 500 clients, saturated fan-out: app process Pss | 867 | 116 | 7.5× |
+| 500 clients, saturated fan-out: app process RssAnon | 1,010 | 94.4 | 10.7× |
+| 500 clients, saturated fan-out: app + Redis + Thruster Pss | 943 | 116 | 8.1× |
+| 500 clients, saturated fan-out: whole container Pss | 1,207 | 116 | 10.4× |
+| 1000 clients, all subscribed, idle: app process Pss | 698 | 124 | 5.6× |
+| 1000 clients, all subscribed, idle: app process RssAnon | 841 | 102 | 8.2× |
+| 1000 clients, all subscribed, idle: app + Redis + Thruster Pss | 829 | 124 | 6.7× |
+| 1000 clients, all subscribed, idle: whole container Pss | 1,097 | 124 | 8.9× |
+| 1000 clients, saturated fan-out: app process Pss | 1,027 | 124 | 8.3× |
+| 1000 clients, saturated fan-out: app process RssAnon | 1,170 | 102 | 11.4× |
+| 1000 clients, saturated fan-out: app + Redis + Thruster Pss | 1,164 | 124 | 9.4× |
+| 1000 clients, saturated fan-out: whole container Pss | 1,429 | 124 | 11.5× |

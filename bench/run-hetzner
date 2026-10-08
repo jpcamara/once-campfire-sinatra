@@ -102,7 +102,8 @@ PASSWORD=$(label passwords.all)
 
 # HETZNER CHANGE: any other app name is the campfire-reference image tagged with that name.
 # HETZNER CHANGE: `sinatra` is the Sinatra port's image (apps/sinatra), `rage` the Rage port's (apps/rage).
-image_for() { case "$1" in reference) echo "$REFERENCE_IMAGE" ;; rust|rust-identity) echo "$RUST_IMAGE" ;; sinatra) echo "${SINATRA_IMAGE:-campfire-sinatra:app}" ;; rage) echo "${RAGE_IMAGE:-campfire-rage:app}" ;; *) echo "campfire-reference:$1" ;; esac; }
+# HETZNER CHANGE: `roda` is the Roda port's image (apps/roda).
+image_for() { case "$1" in reference) echo "$REFERENCE_IMAGE" ;; rust|rust-identity) echo "$RUST_IMAGE" ;; sinatra) echo "${SINATRA_IMAGE:-campfire-sinatra:app}" ;; rage) echo "${RAGE_IMAGE:-campfire-rage:app}" ;; roda) echo "${RODA_IMAGE:-campfire-roda:app}" ;; *) echo "campfire-reference:$1" ;; esac; }
 
 # Environment: parity/.env.reference, but with the reference's *default* process model for
 # SERVER_CPUS (config/puma.rb: workers = ceil(nproc * 0.666), JOB_CONCURRENCY the same, 5 threads;

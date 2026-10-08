@@ -1,6 +1,6 @@
-# Campfire benchmarks: Rails, Sinatra and Rage
+# Campfire benchmarks: Rails, Sinatra, Rage and Roda
 
-These are three Ruby takes on [once-campfire](https://github.com/basecamp/once-campfire). All three
+These are four Ruby takes on [once-campfire](https://github.com/basecamp/once-campfire). All four
 were measured with DHH's harness from
 [once-campfire-rust](https://github.com/basecamp/once-campfire-rust) and checked with its Playwright
 parity harness.
@@ -19,24 +19,28 @@ The final run was on Oct 8, 2026, after the [precedent audit](notes/precedent-au
 generator on four others. YJIT and jemalloc are on. Each number is the median of 3 runs in rotating
 order. All five apps ran together, including DHH's Rust port, and there were 0 errors.
 
-| HTTP workload (requests/sec, 16 clients) | Rails (stock) | Rails (optimized) | Sinatra | Rage | Rust |
-|---|---:|---:|---:|---:|---:|
-| Room page | 221 | 529 | 11,349 | 10,094 | 21,155 |
-| Messages page | 370 | 1,985 | 16,256 | 24,763 | 23,515 |
-| Sidebar | 482 | 3,557 | 22,613 | 33,951 | 20,769 |
-| Search | 381 | 862 | 14,523 | 16,900 | 21,361 |
-| Post a message | 195 | 259 | 1,799 | 1,643 | 4,109 |
-| Avatar | 61,938 | 62,671 | 72,664 | 178,292 | 196,428 |
+| HTTP workload (requests/sec, 16 clients) | Rails (stock) | Rails (optimized) | Sinatra | Rage | Roda† | Rust |
+|---|---:|---:|---:|---:|---:|---:|
+| Room page | 221 | 529 | 11,349 | 10,094 | 12,431 | 21,155 |
+| Messages page | 370 | 1,985 | 16,256 | 24,763 | 19,386 | 23,515 |
+| Sidebar | 482 | 3,557 | 22,613 | 33,951 | 27,366 | 20,769 |
+| Search | 381 | 862 | 14,523 | 16,900 | 16,294 | 21,361 |
+| Post a message | 195 | 259 | 1,799 | 1,643 | 1,732 | 4,109 |
+| Avatar | 61,938 | 62,671 | 72,664 | 178,292 | 75,871 | 196,428 |
 
-| Other | Rails (stock) | Rails (optimized) | Sinatra | Rage | Rust |
-|---|---:|---:|---:|---:|---:|
-| Action Cable, 1,000 clients: p50 delivery | 44.1 ms | 41.1 ms | 8.2 ms | 5.0 ms | 4.4 ms |
-| Action Cable, 1,000 clients: saturated delivery | 12 msg/s | 12 msg/s | 104 msg/s | 184 msg/s | 376 msg/s |
-| Idle memory (anon) | 283 MB | 613 MB | 200 MB | 170 MB | 13 MB |
-| Upload + thumbnail (505 KB), Oct 7 run | 72 ms | 64 ms | 135 ms | 59–134 ms | 34 ms |
-| Cold start, Oct 7 run | 3.6 s | 5.9 s | 1.5 s | 1.6 s | — |
+| Other | Rails (stock) | Rails (optimized) | Sinatra | Rage | Roda† | Rust |
+|---|---:|---:|---:|---:|---:|---:|
+| Action Cable, 1,000 clients: p50 delivery | 44.1 ms | 41.1 ms | 8.2 ms | 5.0 ms | 7.9 ms | 4.4 ms |
+| Action Cable, 1,000 clients: saturated delivery | 12 msg/s | 12 msg/s | 104 msg/s | 184 msg/s | 104 msg/s | 376 msg/s |
+| Idle memory (anon) | 283 MB | 613 MB | 200 MB | 170 MB | 196 MB | 13 MB |
+| Upload + thumbnail (505 KB), Oct 7 run | 72 ms | 64 ms | 135 ms | 59–134 ms | 131 ms (Oct 8) | 34 ms |
+| Cold start, Oct 7 run | 3.6 s | 5.9 s | 1.5 s | 1.6 s | 1.4 s (Oct 8) | — |
 
 In every Action Cable run, every client got every message.
+
+† Roda was added after the final run. Its numbers come from its own run of 3, in rotating order, with
+stock Rails, Sinatra, Rage and Rust in the same session, on the same box and code. In that run, the
+other four apps measured within 3% of the table above on every route. See [Roda](#roda) below.
 
 Notes:
 
@@ -60,6 +64,7 @@ offered rate. Stock Rails and Rust are from the Oct 7 run; their code didn't cha
 | Rails (optimized) | 534 | 441 | 205 | 25.9 ms |
 | Sinatra | 11,253 | 10,806 | 7,748 | 3.1 ms |
 | Rage | 10,100 | 9,361 | 6,558 | 3.6 ms |
+| Roda† | 12,282 | 11,124 | 7,686 | 3.2 ms |
 | Rust | 20,968 | 20,526 | 19,156 | 2.2 ms |
 
 At 100 posts/sec, Sinatra and Rage keep about 65–70% of their read rate, and Rust keeps 91%, since
@@ -87,6 +92,36 @@ Rust runs at about 60% of DHH's numbers here. Stock Rails runs at about 87–92%
 our numbers with his table overstates the gap between Ruby and Rust by about 1.5×. One guess at why:
 Rust's per-request time is closer to the raw limits of the CPU and memory, so a faster core helps it
 more. We haven't measured that.
+
+## Roda
+
+[jpcamara/once-campfire-roda](https://github.com/jpcamara/once-campfire-roda): Roda + Sequel on
+Falcon, from a snapshot of the Sinatra app. Every file is the same as Sinatra's except the web layer
+(`lib/campfire/app.rb`) and the database layer (`lib/campfire/db.rb`). It got the precedent audit's
+reverts too, so every optimization in it cites Rust or Elixir or fixes a bug of ours. The
+classification is in [notes/roda.md](notes/roda.md).
+
+Its own run (Oct 8; 3 runs in rotating order; image built from 44c135c; 0 errors), requests/sec at
+16 clients:
+
+| Workload | Rails (stock) | Sinatra | Rage | Roda | Rust |
+|---|---:|---:|---:|---:|---:|
+| Room page | 222 | 11,303 | 10,146 | 12,431 | 21,206 |
+| Messages page | 362 | 16,197 | 24,784 | 19,386 | 23,634 |
+| Sidebar | 467 | 22,533 | 33,989 | 27,366 | 20,652 |
+| Search | 372 | 14,574 | 16,843 | 16,294 | 21,361 |
+| Post a message | 197 | 1,851 | 1,639 | 1,732 | 4,122 |
+
+- **Against Sinatra:** same server, same views. Roda + Sequel reads 10–21% faster than Sinatra + the
+  sqlite3 gem on every page route, and posts 6% slower.
+- **Rust-level caching only** (`CAMPFIRE_CACHING=rust`, 3 runs, HTTP suite): room 12,431 → 5,037,
+  messages 19,386 → 8,413, sidebar 27,366 → 6,448, search 16,294 → 7,269, post 1,732 → 1,676.
+- **Parity on the final image:** every seed passes with no allowed differences. That's default
+  874/874, crowd 25/25, custom_styles 33/33, first_run 16/16 and restricted 8/8.
+- **Other checks:** 64 server pages and 24 write flows match the reference, 28 of 28 security checks
+  pass, and cache check mode found 0 mismatches.
+- **A bug the Sinatra app still has:** a bot's form-encoded message answers 422 where Rails answers
+  201. Roda found and fixed it (590cb1b). Rack::MethodOverride had already read the body.
 
 ## Caching
 
