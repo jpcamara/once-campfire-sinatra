@@ -1,0 +1,10 @@
+[03:42:13] rep 1 rails-opt rate 0: reads 530 {'200': 10618} err 0 posts None
+[03:42:52] rep 1 rails-opt rate 20: reads 418 {'200': 8383} err 0 posts (20.0, {'200': 520}, 'err', 0, 'p50', 23.92)
+[03:43:30] rep 1 rails-opt rate 100: reads 206 {'200': 4158} err 0 posts (100.0, {'200': 2600}, 'err', 0, 'p50', 23.0)
+[03:43:57] rep 1 sinatra rate 0: reads 11314 {'200': 226304} err 0 posts None
+[03:44:31] rep 1 sinatra rate 20: reads 10806 {'200': 216133} err 0 posts (20.0, {'200': 520}, 'err', 0, 'p50', 3.1)
+[03:45:04] rep 1 sinatra rate 100: reads 7779 {'200': 155590} err 0 posts (100.0, {'200': 2600}, 'err', 0, 'p50', 3.28)
+[03:45:31] rep 1 rage rate 0: reads 10085 {'200': 201713} err 0 posts None
+[03:46:05] rep 1 rage rate 20: reads 9363 {'200': 187309} err 0 posts (20.0, {'200': 520}, 'err', 0, 'p50', 3.69)
+[03:46:38] rep 1 rage rate 100: reads 6495 {'200': 129943} err 0 posts (100.0, {'200': 2600}, 'err', 0, 'p50', 3.09)
+mixed-done

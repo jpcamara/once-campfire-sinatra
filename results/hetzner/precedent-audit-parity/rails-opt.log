@@ -1,0 +1,12 @@
+candidate: reference :4311 vs candidate :4312 (seed default, clock frozen at 2026-03-02T16:00:00Z)
+breakpoint widths: {"chromium":[799,800,801],"firefox":[960,961],"webkit":[959,960]}
+150 cells (32 on shared servers, 118 on fresh servers in 3 slots) × 2 targets, 6 workers
+[25/150] realtime/message_sent @ firefox-phone-light pass
+[50/150] interactions/composer/sent_attachment @ chromium-desktop-light pass
+[75/150] realtime/message_sent @ chromium-desktop-light pass
+[100/150] realtime/room_deleted_then_send @ firefox-desktop-light pass
+[125/150] realtime/typing/one @ chromium-phone-light pass
+[150/150] realtime/presence_read @ chromium-phone-dark pass
+150 cells: 150 pass (0 flaky), 0 fail, 0 allowed, 0 error in 1659.1s
+report: /opt/campfire-perf/once-campfire-rust/parity/out/precedent-audit/rails-opt/report.html
+exit 0

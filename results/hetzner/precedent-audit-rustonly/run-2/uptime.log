@@ -1,0 +1,6 @@
+04:51:16 sinatra rep 1 start:  04:51:16 up 36 days,  7:11,  9 users,  load average: 3.07, 3.69, 3.52
+04:55:47 sinatra rep 1 end:    04:55:47 up 36 days,  7:16,  9 users,  load average: 3.63, 3.26, 3.33
+04:55:47 rage rep 1 start:  04:55:47 up 36 days,  7:16,  9 users,  load average: 3.63, 3.26, 3.33
+05:00:29 rage rep 1 end:    05:00:29 up 36 days,  7:21,  9 users,  load average: 4.06, 3.22, 3.23
+05:00:29 rails-opt rep 1 start:  05:00:29 up 36 days,  7:21,  9 users,  load average: 4.06, 3.22, 3.23
+05:05:27 rails-opt rep 1 end:    05:05:27 up 36 days,  7:26,  9 users,  load average: 5.54, 3.64, 3.29

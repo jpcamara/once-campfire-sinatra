@@ -1,0 +1,4 @@
+mixed 1 exit 0
+mixed 2 exit 0
+mixed 3 exit 0
+all-done

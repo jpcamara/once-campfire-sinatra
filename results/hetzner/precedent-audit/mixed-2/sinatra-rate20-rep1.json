@@ -1,0 +1,42 @@
+{
+ "app": "sinatra",
+ "rep": 1,
+ "rate": 20,
+ "read": {
+  "avg_bytes": 16532,
+  "conc": 16,
+  "errors": 0,
+  "gzip": true,
+  "latency": {
+   "max_ms": 34.239,
+   "mean_ms": 1.48,
+   "n": 216562,
+   "p50_ms": 1.295,
+   "p90_ms": 1.966,
+   "p99_ms": 5.139
+  },
+  "ok": 216562,
+  "path": "/rooms/486777696",
+  "rps": 10827.2,
+  "secs": 20.0,
+  "statuses": {
+   "200": 216562
+  }
+ },
+ "post": {
+  "offered_rate": 20.0,
+  "achieved_rate": 20.0,
+  "sent": 520,
+  "statuses": {
+   "200": 520
+  },
+  "errors": 0,
+  "latency_ms": {
+   "p50": 3.19,
+   "p90": 6.28,
+   "p99": 12.8,
+   "max": 30.15
+  },
+  "elapsed_s": 25.96
+ }
+}

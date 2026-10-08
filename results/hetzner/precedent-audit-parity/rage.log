@@ -1,0 +1,23 @@
+candidate: reference :4211 vs candidate :4212 (seed default, clock frozen at 2026-03-02T16:00:00Z)
+breakpoint widths: {"chromium":[799,800,801],"firefox":[960,961],"webkit":[959,960]}
+408 cells (258 on shared servers, 150 on fresh servers in 3 slots) × 2 targets, 6 workers
+[25/408] auth/sign_in/banned_ip @ chromium-desktop-dark pass
+[50/408] auth/signed_out_redirect @ chromium-desktop-light pass
+[75/408] messages/long @ chromium-desktop-light pass
+[100/408] messages/table @ chromium-phone-dark pass
+[125/408] messages/sound_with_text @ chromium-phone-dark pass
+[150/408] messages/image_downscaled @ chromium-desktop-light pass
+[175/408] messages/from_bot @ chromium-desktop-light pass
+[200/408] messages/boosts/one @ chromium-phone-dark pass
+[225/408] interactions/composer/with_text @ chromium-bp800-dark pass
+[250/408] users/profile @ chromium-desktop-dark pass
+[275/408] users/show/self @ chromium-phone-light pass
+[300/408] realtime/removed_from_room @ firefox-phone-light pass
+[325/408] users/push_subscriptions/none @ chromium-phone-light pass
+[350/408] users/profile/avatar_uploaded @ chromium-desktop-dark pass
+[375/408] realtime/boosted @ chromium-phone-light pass
+[400/408] realtime/room_deleted_then_send @ chromium-desktop-light pass
+[408/408] realtime/presence_read @ chromium-phone-dark pass
+408 cells: 408 pass (0 flaky), 0 fail, 0 allowed, 0 error in 1714.5s
+report: /opt/campfire-perf/once-campfire-rust/parity/out/precedent-audit/rage/report.html
+exit 0

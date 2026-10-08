@@ -1,0 +1,27 @@
+{
+ "app": "rails-opt",
+ "rep": 1,
+ "rate": 0,
+ "read": {
+  "avg_bytes": 19352,
+  "conc": 16,
+  "errors": 0,
+  "gzip": true,
+  "latency": {
+   "max_ms": 130.751,
+   "mean_ms": 29.55,
+   "n": 10837,
+   "p50_ms": 28.687,
+   "p90_ms": 43.903,
+   "p99_ms": 59.295
+  },
+  "ok": 10837,
+  "path": "/rooms/486777696",
+  "rps": 540.9,
+  "secs": 20.04,
+  "statuses": {
+   "200": 10837
+  }
+ },
+ "post": null
+}
