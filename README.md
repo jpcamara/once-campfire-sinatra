@@ -12,7 +12,7 @@ per-change measurements and raw results are on the
 
 | Implementation | Code |
 |---|---|
-| Rails, optimized | [jpcamara/once-campfire, branch `perf`](https://github.com/jpcamara/once-campfire/tree/perf) |
+| Rails, optimized (retired Oct 10; use [upstream](https://github.com/basecamp/once-campfire)) | [jpcamara/once-campfire, branch `perf`](https://github.com/jpcamara/once-campfire/tree/perf) |
 | Sinatra + Falcon | this repo |
 | Rage + Sequel | [jpcamara/once-campfire-rage](https://github.com/jpcamara/once-campfire-rage) |
 | Roda + Sequel (Falcon) | [jpcamara/once-campfire-roda](https://github.com/jpcamara/once-campfire-roda) |
