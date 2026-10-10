@@ -1,0 +1,295 @@
+{
+  "metadata": {
+    "verification_revision": "ec02debb3e44f40b8778a6a42db3c4515b2f9eaf",
+    "response_validation": "route-contract-v1",
+    "started_at": "2026-10-10T18:50:37Z",
+    "seed_sha256": "92b4ad8eb8cb0601dddda6a733eb0813593f6ea834e339d9c83575355c84e51c",
+    "server_cpus": "4-7",
+    "client_cpus": "0-3",
+    "network": "host",
+    "gzip": true,
+    "duration": 8,
+    "concurrencies": "16",
+    "rounds": 3,
+    "loadgen_sha256": "8023f0c58da17d9501a1e127c8b2a290e1e6309be82a3ed30811c31d9ea7aa51",
+    "routes": "room_show,messages_page,sidebar,search",
+    "profile": "mixed-read-write-v1",
+    "mixed_writer": {
+      "clients": 1,
+      "maximum_writes_per_second": 10,
+      "room": 201306877,
+      "catch_up": false
+    },
+    "images": {
+      "rails": "sha256:460b8cf3f007f5b62d65a10995a1537399d01c4f19d8a0c7a2cde7791b822938",
+      "sinatra": "sha256:0c72080c879c9ff0fcffdc0f473cd5d62930b202f214dbf9d6761388322bf40e",
+      "rage": "sha256:2e34044c5867c6c0c30355f7e6bcd730b4987ccc50ad67186f668ff282e77724",
+      "roda": "sha256:b7c5944375640e8253d694cc8e6c827289377b42fae8f8112874848e6e7b1e85",
+      "rust": "sha256:b86c6bb0cfab62e6b68094c9f0602d342bcff737572cbcd2d78250023f515b21"
+    },
+    "image_labels": {
+      "rails": {
+        "org.opencontainers.image.description": "",
+        "org.opencontainers.image.licenses": "MIT",
+        "org.opencontainers.image.revision": "0aa339d81e0501841e3f23f0dd6e9b2e06e6b60d",
+        "org.opencontainers.image.source": ""
+      },
+      "sinatra": {
+        "org.opencontainers.image.revision": "cfab0378c9797f60fe10f874107cb43abe1edf08"
+      },
+      "rage": {
+        "org.opencontainers.image.revision": "92804d967f730466deb62b24c002bfa3ba06fd33"
+      },
+      "roda": {
+        "org.opencontainers.image.revision": "39effeafddb1808d7b83b736a245b35249786359"
+      },
+      "rust": {
+        "org.opencontainers.image.description": "",
+        "org.opencontainers.image.licenses": "MIT",
+        "org.opencontainers.image.revision": "6dae2fd3c1a2dce61ca11beb731bcce2b42b67ad",
+        "org.opencontainers.image.source": ""
+      }
+    },
+    "source_revisions": {
+      "rails": {
+        "head": "0aa339d81e0501841e3f23f0dd6e9b2e06e6b60d",
+        "dirty": false
+      },
+      "sinatra": {
+        "head": "efdfc566b777c2dbe15b23322a2663e567b1984b",
+        "dirty": false
+      },
+      "rage": {
+        "head": "8fd0ee25d77ff7e4f2543c6b2a4fbfd97901fd6a",
+        "dirty": false
+      },
+      "roda": {
+        "head": "6f3cc4e40105336b0cd3d847910219b334ce2a50",
+        "dirty": false
+      },
+      "rust": {
+        "head": "6dae2fd3c1a2dce61ca11beb731bcce2b42b67ad",
+        "dirty": false
+      }
+    },
+    "preflight_only": false,
+    "topology": {
+      "rails": {
+        "http_workers": "4",
+        "threads": "1",
+        "jobs": "Redis/Resque",
+        "cable": "Action Cable",
+        "response_cache_mb": "64"
+      },
+      "sinatra": {
+        "http_workers": "4",
+        "runtime": "Sinatra on Falcon",
+        "jobs": "in-process threads",
+        "cable": "async-websocket + Redis pub/sub",
+        "response_cache_mb": "64"
+      },
+      "rage": {
+        "http_workers": "4",
+        "runtime": "Rage on Iodine",
+        "jobs": "in-process",
+        "cable": "Rage::Cable on Iodine pub/sub",
+        "response_cache_mb": "64"
+      },
+      "roda": {
+        "http_workers": "4",
+        "runtime": "Roda on Falcon",
+        "jobs": "in-process threads",
+        "cable": "async-websocket + Redis pub/sub",
+        "response_cache_mb": "64"
+      },
+      "rust": {
+        "processes": 1,
+        "readers": "5",
+        "job_workers": "3",
+        "cable": "native tokio",
+        "jobs": "in-process",
+        "response_cache_mb": "64"
+      }
+    },
+    "runtimes": {
+      "rails": "rails",
+      "sinatra": "sinatra",
+      "rage": "rage",
+      "roda": "roda",
+      "rust": "rust"
+    },
+    "complete": true
+  },
+  "mixed_results": {
+    "rails": {
+      "room_show": {
+        "median_rps": 1544.9,
+        "runs": [
+          1661.6,
+          1497.6,
+          1544.9
+        ]
+      },
+      "messages_page": {
+        "median_rps": 1875.2,
+        "runs": [
+          1875.2,
+          1715.1,
+          1927.6
+        ]
+      },
+      "sidebar": {
+        "median_rps": 2838.3,
+        "runs": [
+          2838.3,
+          2694.3,
+          2851.7
+        ]
+      },
+      "search": {
+        "median_rps": 2580.3,
+        "runs": [
+          2589.3,
+          2277.6,
+          2580.3
+        ]
+      }
+    },
+    "sinatra": {
+      "room_show": {
+        "median_rps": 20703.4,
+        "runs": [
+          21097.3,
+          20703.4,
+          20334.5
+        ]
+      },
+      "messages_page": {
+        "median_rps": 22143.3,
+        "runs": [
+          22284.2,
+          22013.7,
+          22143.3
+        ]
+      },
+      "sidebar": {
+        "median_rps": 21605.0,
+        "runs": [
+          21605.0,
+          21114.4,
+          21704.6
+        ]
+      },
+      "search": {
+        "median_rps": 22409.7,
+        "runs": [
+          22747.5,
+          22409.7,
+          22380.9
+        ]
+      }
+    },
+    "rage": {
+      "room_show": {
+        "median_rps": 20501.1,
+        "runs": [
+          20264.8,
+          20685.4,
+          20501.1
+        ]
+      },
+      "messages_page": {
+        "median_rps": 28234.2,
+        "runs": [
+          28234.2,
+          22570.6,
+          28725.3
+        ]
+      },
+      "sidebar": {
+        "median_rps": 29963.3,
+        "runs": [
+          29963.3,
+          30255.2,
+          29902.1
+        ]
+      },
+      "search": {
+        "median_rps": 29954.9,
+        "runs": [
+          29659.5,
+          30046.9,
+          29954.9
+        ]
+      }
+    },
+    "roda": {
+      "room_show": {
+        "median_rps": 23241.9,
+        "runs": [
+          23241.9,
+          23782.8,
+          22750.7
+        ]
+      },
+      "messages_page": {
+        "median_rps": 25974.8,
+        "runs": [
+          25441.1,
+          26499.4,
+          25974.8
+        ]
+      },
+      "sidebar": {
+        "median_rps": 24993.5,
+        "runs": [
+          24837.4,
+          25295.3,
+          24993.5
+        ]
+      },
+      "search": {
+        "median_rps": 24818.4,
+        "runs": [
+          24818.4,
+          25448.3,
+          24786.8
+        ]
+      }
+    },
+    "rust": {
+      "room_show": {
+        "median_rps": 39564.0,
+        "runs": [
+          40001.3,
+          39564.0,
+          39464.6
+        ]
+      },
+      "messages_page": {
+        "median_rps": 37996.6,
+        "runs": [
+          37767.9,
+          38323.8,
+          37996.6
+        ]
+      },
+      "sidebar": {
+        "median_rps": 46939.4,
+        "runs": [
+          46810.6,
+          46939.4,
+          47426.5
+        ]
+      },
+      "search": {
+        "median_rps": 46151.1,
+        "runs": [
+          46627.8,
+          45647.9,
+          46151.1
+        ]
+      }
+    }
+  }
+}

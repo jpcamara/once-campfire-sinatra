@@ -12,7 +12,56 @@ parity harness.
 | Rage + Sequel | [jpcamara/once-campfire-rage](https://github.com/jpcamara/once-campfire-rage) |
 | Roda + Sequel (Falcon) | [jpcamara/once-campfire-roda](https://github.com/jpcamara/once-campfire-roda) |
 
-## Final numbers
+## Latest: DHH's verification harness, with the finished-page cache (Oct 10)
+
+Upstream Rails and the Rust port both added a cache of finished private pages, kept until the next
+database commit: upstream Rails
+[ac73267](https://github.com/basecamp/once-campfire/commit/ac73267) /
+[0f5d0b2](https://github.com/basecamp/once-campfire/commit/0f5d0b2) /
+[8d02540](https://github.com/basecamp/once-campfire/commit/8d02540), Rust
+[d09811c](https://github.com/basecamp/once-campfire-rust/commit/d09811c), both following the C
+port. Sinatra, Rage and Roda now do the same (`lib/campfire/page_cache.rb` in each). Auth, room
+access and cookies still run on every request, and any commit from any process clears the cache.
+
+This run used DHH's own verification harness
+([basecamp/once-campfire-verification](https://github.com/basecamp/once-campfire-verification)
+`ec02deb`) on the same Hetzner box. App on CPUs 4-7, load generator on 0-3, 3 rounds, 8-second
+samples, upstream Rails `0aa339d` and Rust `6dae2fd` in the same session. Every response passed the
+harness's route checks and every write passed its audit, with 0 errors or invalid responses. Raw
+results are in `results/hetzner/pagecache-2026-10-10/`.
+
+| HTTP workload (requests/sec, 16 clients) | Rails (upstream) | Sinatra | Rage | Roda | Rust |
+|---|---:|---:|---:|---:|---:|
+| Room page | 3,189 | 22,266 | 21,106 | 24,769 | 42,282 |
+| Messages page | 3,206 | 23,808 | 28,381 | 27,073 | 40,615 |
+| Sidebar | 3,568 | 22,403 | 31,245 | 26,254 | 48,314 |
+| Search | 3,450 | 22,008 | 29,798 | 26,107 | 47,564 |
+| Post a message | 282 | 1,973 | 1,985 | 1,823 | 4,792 |
+
+Mixed profile: 16 readers plus one writer posting at up to 10 messages/sec. Upstream Rails
+acknowledged 389–391 of its 400 writes per round; every other app made all 400.
+
+| Read requests/sec | Rails (upstream) | Sinatra | Rage | Roda | Rust |
+|---|---:|---:|---:|---:|---:|
+| Room page | 1,545 | 20,703 | 20,501 | 23,242 | 39,564 |
+| Messages page | 1,875 | 22,143 | 28,234 | 25,975 | 37,997 |
+| Sidebar | 2,838 | 21,605 | 29,963 | 24,994 | 46,939 |
+| Search | 2,580 | 22,410 | 29,955 | 24,818 | 46,151 |
+
+Before this cache, the same harness on the same day gave room pages of 11,062 (Sinatra), 7,870
+(Rage) and 12,103 (Roda). On this box the Ruby apps now read at about half of Rust's rate, and
+6–9× upstream Rails.
+
+**Checks for the cache, in each app:**
+- Playwright passes every cell on every seed.
+- Server HTML matches the reference on 128/128 pages, and all 24 write flows match.
+- With the cache on and off, statuses are identical through foreign writes, a revoked membership,
+  a banned user and a deleted session.
+- Check mode found 0 mismatches.
+
+The script is `tools/pagecache-check.sh`.
+
+## Final numbers (Oct 8, DHH's `bench/run`)
 
 The final run was on Oct 8, 2026, after the [precedent audit](notes/precedent-audit.md). It used DHH's
 `bench/run` on a Hetzner AMD Ryzen 7 PRO 8700GE. Each app gets four hardware threads, with the load

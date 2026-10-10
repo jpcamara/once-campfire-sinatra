@@ -2,10 +2,10 @@
 # Local: pair-verify.sh APP IMAGE -> server-HTML diff (script/compare over script/paths.txt, twice:
 # the second pass reads cached pages) and the write flows (script/flows, on fresh seed copies) of the
 # reference vs IMAGE. Both run on the box via APP's script/box-pair under the bench lock, reached
-# through an SSH tunnel. APP is sinatra (ports 4494/4496) or rage (4594/4596).
+# through an SSH tunnel. APP is sinatra (ports 4494/4496), rage (4594/4596) or roda (4794/4796).
 set -uo pipefail
 app=$1 image=$2
-case "$app" in sinatra) ref=4494 cand=4496 ;; rage) ref=4594 cand=4596 ;; *) echo "unknown app $app" >&2; exit 2 ;; esac
+case "$app" in sinatra) ref=4494 cand=4496 ;; rage) ref=4594 cand=4596 ;; roda) ref=4794 cand=4796 ;; *) echo "unknown app $app" >&2; exit 2 ;; esac
 box=${BOX:?set BOX=user@host}
 cd ~/Projects/campfire-perf/apps/$app
 log=/tmp/$app-pair-$$.log
