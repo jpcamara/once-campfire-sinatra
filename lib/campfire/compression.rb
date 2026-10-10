@@ -68,6 +68,9 @@ module Campfire
       def streaming? = true
     end
 
+    # The gzip of a whole body, as this middleware makes it.
+    def self.gzip_string(content) = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, Zlib::MAX_WBITS + 16).deflate(content, Zlib::FINISH)
+
     private
       def gzip(body)
         content = +""

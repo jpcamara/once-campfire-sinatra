@@ -120,6 +120,7 @@ module Campfire
     # ApplicationController's checks. AllowBrowser is the last of them: see browser_gate!.
     before do
       db.check_for_changes
+      @page_cache_version = db.generation # captured before authentication (PageCache)
       headers SECURITY_HEADERS
       headers "X-Version" => runtime.app_version, "X-Rev" => runtime.git_revision.to_s
       next if request.path_info.start_with?("/rails/active_storage", "/up")
@@ -271,13 +272,17 @@ module Campfire
       return redirect_with_alert("/", "Room not found or inaccessible") unless room
 
       remember_last_room_visited(room)
-      messages = find_room_messages(room, message_id)
-      render_room(room, messages)
+      cached_page { render_room(room, find_room_messages(room, message_id)) }
     end
 
     get %r{/rooms/(\d+)/messages} do |room_id|
       require_authentication!
       room = room_scoped!(room_id)
+      cached_page { messages_index(room) }
+    end
+
+    # MessagesController#index, after authentication and the room check.
+    def messages_index(room)
       messages =
         if (before = params["before"]).to_s != ""
           anchor = repo.room_message(room.id, before.to_i) or record_not_found!
@@ -899,6 +904,10 @@ module Campfire
 
     get %r{/users/(me|\d+)/sidebar} do
       require_authentication!
+      cached_page { kept_sidebar }
+    end
+
+    def kept_sidebar
       html_headers
       return render_sidebar if Campfire.rust_caching_only?
       key = [ db.generation, current_user, base_url, request.user_agent, env["HTTP_TURBO_FRAME"], env["HTTP_ACCEPT"] ]
@@ -923,10 +932,12 @@ module Campfire
 
     get "/searches" do
       require_authentication!
-      raw = params["q"]
-      query = raw&.gsub(/[^[:word:]]/, " ")
-      messages = query.to_s.strip.empty? ? [] : repo.search(current_user.id, query)
-      render_search(query.to_s.strip.empty? ? nil : query, raw, messages)
+      cached_page do
+        raw = params["q"]
+        query = raw&.gsub(/[^[:word:]]/, " ")
+        messages = query.to_s.strip.empty? ? [] : repo.search(current_user.id, query)
+        render_search(query.to_s.strip.empty? ? nil : query, raw, messages)
+      end
     end
 
     post "/searches" do
@@ -1011,6 +1022,67 @@ module Campfire
     CHECK_CACHES = ENV["CAMPFIRE_CHECK_CACHES"]
 
     helpers do
+      # A finished private page from PageCache, or rendered and kept there. Runs after authentication
+      # and the room check, before the page's own queries, as upstream Rails' cache_read_response
+      # does. Pages with a flash, conditional requests, HEAD and responses that set a cookie or
+      # aren't a 200 text/html page are rendered as usual and not kept. With CAMPFIRE_CHECK_CACHES=1
+      # a hit is rendered again and compared.
+      def cached_page
+        cache = PageCache.instance
+        return yield unless cache.enabled? && request.get? && @session && flash_now.empty? &&
+          !env["HTTP_IF_NONE_MATCH"] && !env["HTTP_IF_MODIFIED_SINCE"]
+
+        version = @page_cache_version
+        gzip = env["HTTP_ACCEPT_ENCODING"].to_s.include?("gzip") # Compression's test
+        key = JSON.generate([ request.path_info, request.query_string, base_url, request.user_agent, gzip,
+          env["HTTP_ACCEPT"], env["HTTP_TURBO_FRAME"], current_user.id, request.cookies.except("_campfire_session").to_a.sort ])
+        return yield if key.bytesize > PageCache::MAX_KEY_BYTES
+
+        entry = cache.read(key, version, current_database_version)
+        unless entry
+          rendered = nil
+          cache.synchronize_render(key, version) do
+            entry = cache.read(key, version, current_database_version)
+            if !entry && version == current_database_version
+              cookies_before = response.headers["Set-Cookie"]
+              rendered = yield
+              entry = keep_page(cache, key, version, rendered, gzip) if response.headers["Set-Cookie"] == cookies_before
+            end
+          end
+          return rendered if rendered && !entry
+          return yield unless entry # waited behind a render made at a newer version: render this one alone
+        end
+
+        check_kept_page(entry, gzip) { yield } if CHECK_CACHES
+        headers entry.headers
+        headers "Content-Encoding" => "gzip" if gzip
+        headers "Content-Length" => entry.body.bytesize.to_s
+        entry.body
+      end
+
+      def current_database_version
+        db.check_for_changes
+        db.generation
+      end
+
+      def keep_page(cache, key, version, rendered, gzip)
+        return unless response.status == 200 && response.headers["Content-Type"].to_s.start_with?("text/html") &&
+          !response.headers["Content-Encoding"]
+        html = rendered.is_a?(FragmentBody) ? rendered.to_s : Array(rendered).join
+        return if html.empty?
+        kept = PageCache::KEPT_HEADERS.filter_map { |name| (value = response.headers[name]) && [ name, value ] }.to_h
+        kept["etag"] ||= %(W/"#{Digest::MD5.hexdigest(html)}") unless kept["last-modified"] # Rack::ETag's, once
+        body = gzip ? (rendered.is_a?(FragmentBody) ? rendered.gzip : Compression.gzip_string(html)) : html
+        cache.write(key, version, current_database_version, body, kept)
+      end
+
+      def check_kept_page(entry, gzip)
+        fresh = yield
+        fresh = fresh.is_a?(FragmentBody) ? fresh.to_s : Array(fresh).join
+        kept = gzip ? Zlib.gunzip(entry.body) : entry.body
+        warn "CACHE MISMATCH page #{request.path_info} (#{kept.bytesize} kept vs #{fresh.bytesize} fresh bytes)" unless fresh.b == kept.b
+      end
+
       # CAMPFIRE_CHECK_CACHES=1: a kept response is rendered again and compared, and a mismatch logged.
       def check_kept(name, kept)
         fresh = yield

@@ -14,8 +14,8 @@ module Campfire
   def self.ssl? = ENV["DISABLE_SSL"].to_s.strip.empty?
 
   # CAMPFIRE_CACHING=rust keeps only the caches the Rust port has: message fragments, their
-  # compressed pieces and whole-body gzip, the public-response cache, prepared statements and
-  # static assets. It turns off the ones only the Elixir port has: the read cache, kept sidebars,
+  # compressed pieces and whole-body gzip, finished private pages (PageCache; Rust d09811c), the
+  # public-response cache, prepared statements and static assets. It turns off the ones only the Elixir port has: the read cache, kept sidebars,
   # kept shells of room and search pages, kept messages pages, the remembered session_token
   # signature and memoized avatar tokens. It's for measuring how much those caches are worth.
   def self.rust_caching_only? = RUST_CACHING_ONLY
@@ -39,6 +39,7 @@ require_relative "campfire/view"
 require_relative "campfire/broadcasts"
 require_relative "campfire/messages"
 require_relative "campfire/support"
+require_relative "campfire/page_cache"
 require_relative "campfire/app"
 require_relative "campfire/cable"
 require_relative "campfire/fragment_body"
